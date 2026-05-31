@@ -52,12 +52,71 @@
         const { useState, useEffect, useRef } = React;
 
         // ==========================================
-        // ⚠️ การตั้งค่าระบบหลัก
+        // ⚠️ ใส่ URL ของ Apps Script และพิกัดตรงนี้ ⚠️
         // ==========================================
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec";  
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec"; 
         const HOSPITAL_LAT = 17.162383247325145;
         const HOSPITAL_LON = 104.14513206230059;
         const ALLOWED_RADIUS = 100; // ระยะที่ยอมรับได้ (เมตร)
+
+        const DEPARTMENTS = [
+            "HR-IT", "บัญชี", "การเงินผู้ป่วย-สิทธิประโยชน์", "OPD", "IPD", "ห้องยา",
+            "ห้องปฏิบัติการทางการแพทย์", "เอกซเรย์", "OR-LR", "แม่บ้าน", "ซักฟอก",
+            "หน่วยจ่ายกลาง", "โภชนาการ", "เปล-ยานยนต์", "ช่าง", "เวชระเบียน", "ส่งเสริมสุขภาพ",
+            "ADMIN"
+        ];
+
+        // 🌟 ตั้งค่ากะประจำแผนก
+        const DEPT_SHIFTS = {
+            "OPD": ['ช', 'ช7', 'ช83', 'ช917'],
+            "IPD": ['ช', 'บ', 'ด', 'ช12', 'บ12'],
+            "ห้องยา": ['ช', 'ช83', 'บ', 'ด'],
+            "ห้องปฏิบัติการทางการแพทย์": ['ช', 'บ', 'ด', 'ช6', 'ช7'],
+            "เอกซเรย์": ['ช', 'ช7', 'บ', 'ด'],
+            "OR-LR": ['ช', 'ช7', 'ชบ7', 'บ', 'ด'],
+            "HR-IT": ['ช', 'ช83'],
+            "บัญชี": ['ช', 'ช83'],
+            "การเงินผู้ป่วย-สิทธิประโยชน์": ['ช', 'บ', 'ด'],
+            "ADMIN": ['ช', 'ช83']
+            // หากแผนกไหนไม่มีในรายการนี้ ระบบจะแสดงกะ "ทั้งหมด" ให้เลือก
+        };
+
+        const SHIFT_TYPES = {
+            'ด': { start: '00:00', end: '08:00', credit: 1, label: '00.00 - 08.00 (ด)' },
+            'ช616': { start: '06:00', end: '16:00', credit: 1.25, label: '06.00 - 16.00 (ช616)' },
+            'ช618': { start: '06:00', end: '18:00', credit: 1.5, label: '06.00 - 18.00 (ช618)' },
+            'ช619': { start: '06:00', end: '19:00', credit: 1.625, label: '06.00 - 19.00 (ช619)' },
+            'ช6': { start: '06:00', end: '14:00', credit: 1, label: '06.00 - 14.00 (ช6)' },
+            'ช719': { start: '07:00', end: '19:00', credit: 1.5, label: '07.00 - 19.00 (ช719)' },
+            'ช7': { start: '07:00', end: '15:00', credit: 1, label: '07.00 - 15.00 (ช7)' },
+            'ช21': { start: '07:00', end: '21:00', credit: 1.75, label: '07.00 - 21.00 (ช21)' },
+            'ชบ7': { start: '07:00', end: '23:00', credit: 2, label: '07.00 - 23.00 (ชบ7)' },
+            'ช': { start: '08:00', end: '16:00', credit: 1, label: '08.00 - 16.00 (ช)' },
+            'ชบ': { start: '08:00', end: '24:00', credit: 2, label: '08.00 - 24.00 (ชบ)' },
+            'ช20': { start: '08:00', end: '20:00', credit: 1.5, label: '08.00 - 20.00 (ช20)' },
+            'ช83': { start: '08:30', end: '16:30', credit: 1, label: '08.30 - 16.30 (ช83)' },
+            'ช9': { start: '09:00', end: '21:00', credit: 1.5, label: '09.00 - 21.00 (ช9)' },
+            'ช917': { start: '09:00', end: '17:00', credit: 1, label: '09.00 - 17.00 (ช917)' },
+            'บ15': { start: '15:00', end: '23:00', credit: 1, label: '15.00 - 23.00 (บ15)' },
+            'บ': { start: '16:00', end: '24:00', credit: 1, label: '16.00 - 24.00 (บ)' },
+            'บด': { start: '16:00', end: '08:00', credit: 2, label: '16.00 - 08.00 (บด)' },
+            'บ4': { start: '17:00', end: '21:00', credit: 0.5, label: '17.00 - 21.00 (บ4)' },
+        };
+
+        const getSortedShiftKeys = (deptName) => {
+            let keys = Object.keys(SHIFT_TYPES);
+            
+            // 🌟 ปิดการกรองกะตามแผนกชั่วคราว เพื่อให้ทุกแผนกเห็นกะทั้งหมด
+            // if (deptName && DEPT_SHIFTS[deptName]) {
+            //     keys = keys.filter(k => DEPT_SHIFTS[deptName].includes(k));
+            // }
+            
+            return keys.sort((a, b) => {
+                const startCmp = SHIFT_TYPES[a].start.localeCompare(SHIFT_TYPES[b].start);
+                if (startCmp !== 0) return startCmp;
+                return SHIFT_TYPES[a].label.localeCompare(SHIFT_TYPES[b].label);
+            });
+        };
 
         const sendToGoogleSheet = async (action, payload = {}) => {
             try {
@@ -108,119 +167,6 @@
             return timeStr + ' น.';
         };
 
-        const DEPARTMENTS = [
-            "HR-IT", "บัญชี", "การเงินผู้ป่วย-สิทธิประโยชน์", "OPD", "IPD", "ห้องยา",
-            "ห้องปฏิบัติการทางการแพทย์", "เอกซเรย์", "OR-LR", "แม่บ้าน", "ซักฟอก",
-            "หน่วยจ่ายกลาง", "โภชนาการ", "เปล-ยานยนต์", "ช่าง", "เวชระเบียน", "ส่งเสริมสุขภาพ",
-            "ADMIN"
-        ];
-
-        // 🌟 กะการทำงานที่อัปเดตแล้ว (เพิ่ม ชบ7)
-        const SHIFT_TYPES = {
-            'ด': { start: '00:00', end: '08:00', credit: 1, label: '00.00 - 08.00 (ด)' },
-            'ช616': { start: '06:00', end: '16:00', credit: 1.25, label: '06.00 - 16.00 (ช616)' },
-            'ช618': { start: '06:00', end: '18:00', credit: 1.5, label: '06.00 - 18.00 (ช618)' },
-            'ช619': { start: '06:00', end: '19:00', credit: 1.625, label: '06.00 - 19.00 (ช619)' },
-            'ช6': { start: '06:00', end: '14:00', credit: 1, label: '06.00 - 14.00 (ช6)' },
-            'ช719': { start: '07:00', end: '19:00', credit: 1.5, label: '07.00 - 19.00 (ช719)' },
-            'ช7': { start: '07:00', end: '15:00', credit: 1, label: '07.00 - 15.00 (ช7)' },
-            'ช21': { start: '07:00', end: '21:00', credit: 1.75, label: '07.00 - 21.00 (ช21)' },
-            'ชบ7': { start: '07:00', end: '23:00', credit: 2, label: '07.00 - 23.00 (ชบ7)' },
-            'ช': { start: '08:00', end: '16:00', credit: 1, label: '08.00 - 16.00 (ช)' },
-            'ชบ': { start: '08:00', end: '24:00', credit: 2, label: '08.00 - 24.00 (ชบ)' },
-            'ช20': { start: '08:00', end: '20:00', credit: 1.5, label: '08.00 - 20.00 (ช20)' },
-            'ช83': { start: '08:30', end: '16:30', credit: 1, label: '08.30 - 16.30 (ช83)' },
-            'ช9': { start: '09:00', end: '21:00', credit: 1.5, label: '09.00 - 21.00 (ช9)' },
-            'ช917': { start: '09:00', end: '17:00', credit: 1, label: '09.00 - 17.00 (ช917)' },
-            'บ15': { start: '15:00', end: '23:00', credit: 1, label: '15.00 - 23.00 (บ15)' },
-            'บ': { start: '16:00', end: '24:00', credit: 1, label: '16.00 - 24.00 (บ)' },
-            'บด': { start: '16:00', end: '08:00', credit: 2, label: '16.00 - 08.00 (บด)' },
-            'บ4': { start: '17:00', end: '21:00', credit: 0.5, label: '17.00 - 21.00 (บ4)' },
-        };
-
-        const getSortedShiftKeys = () => {
-            return Object.keys(SHIFT_TYPES).sort((a, b) => {
-                const startCmp = SHIFT_TYPES[a].start.localeCompare(SHIFT_TYPES[b].start);
-                if (startCmp !== 0) return startCmp;
-                return SHIFT_TYPES[a].label.localeCompare(SHIFT_TYPES[b].label);
-            });
-        };
-
-        // ==========================================
-        // View: Register
-        // ==========================================
-        function RegisterView({ employees, setEmployees, setActiveTab, sendToGoogleSheet }) {
-            const [formData, setFormData] = useState({ empId: '', fname: '', lname: '', dept: 'OPD', level: 'พนักงาน' });
-            const [isSubmitting, setIsSubmitting] = useState(false);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if (!formData.empId.trim() || !formData.fname.trim() || !formData.lname.trim()) {
-                    return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
-                }
-                const upperEmpId = formData.empId.trim().toUpperCase();
-                if (employees[upperEmpId]) {
-                    return alert("รหัสพนักงานนี้มีอยู่ในระบบแล้ว");
-                }
-
-                setIsSubmitting(true);
-                const res = await sendToGoogleSheet('register', { ...formData, empId: upperEmpId });
-                if (res.status === 'success') {
-                    alert("ลงทะเบียนสำเร็จ");
-                    setEmployees({ ...employees, [upperEmpId]: { ...formData } });
-                    setActiveTab('in'); 
-                }
-                setIsSubmitting(false);
-            };
-
-            return (
-                <div className="max-w-md mx-auto bg-white rounded-2xl shadow-minimal border border-violet-100 p-8 mt-6">
-                    <div className="text-center mb-6">
-                        <div className="w-16 h-16 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-4"><i className="fa-solid fa-user-plus text-2xl text-violet-500"></i></div>
-                        <h2 className="text-xl font-semibold text-gray-900">ลงทะเบียนพนักงานใหม่</h2>
-                    </div>
-                    
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1">รหัสพนักงาน (ID)</label>
-                            <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" placeholder="เช่น EMP01" />
-                        </div>
-                        <div className="flex gap-3">
-                            <div className="flex-1">
-                                <label className="block text-xs font-bold text-gray-500 mb-1">ชื่อ</label>
-                                <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" />
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-xs font-bold text-gray-500 mb-1">นามสกุล</label>
-                                <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" />
-                            </div>
-                        </div>
-                        <div className="flex gap-3">
-                            <div className="flex-1">
-                                <label className="block text-xs font-bold text-gray-500 mb-1">แผนก</label>
-                                <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400">
-                                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-xs font-bold text-gray-500 mb-1">ระดับ</label>
-                                <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400">
-                                    <option value="พนักงาน">พนักงาน</option>
-                                    <option value="หัวหน้า">หัวหน้า</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button type="submit" disabled={isSubmitting} className="w-full p-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium transition-colors mt-4">
-                            {isSubmitting ? 'กำลังบันทึก...' : 'ลงทะเบียน'}
-                        </button>
-                    </form>
-                </div>
-            );
-        }
-
-        // ==========================================
-        // App Main
-        // ==========================================
         function App() {
             const [activeTab, setActiveTab] = useState('in');
             const [currentTime, setCurrentTime] = useState(new Date());
@@ -241,14 +187,15 @@
             useEffect(() => {
                 const fetchInitialData = async () => {
                     if (GAS_URL.includes("ใส่_URL_ลงท้ายด้วย_EXEC_ของท่านที่นี่")) {
-                        setIsLoading(false); return;
+                        setIsLoading(false);
+                        return;
                     }
                     const res = await sendToGoogleSheet('getInitialData');
                     if (res.status === 'success') {
                         setEmployees(res.data.employees || {});
                         setRecords(res.data.records || []);
                         setSchedules(res.data.schedules || {});
-                        if (res.data.settings) setSettings(res.data.settings); 
+                        if (res.data.settings) setSettings(res.data.settings);
                     }
                     setIsLoading(false);
                 };
@@ -322,6 +269,77 @@
                             <AdminLoginView employees={employees} onLogin={(user) => setLoggedInAdmin(user)} onCancel={() => setActiveTab('in')} />
                         )}
                     </main>
+                </div>
+            );
+        }
+
+        function RegisterView({ employees, setEmployees, setActiveTab, sendToGoogleSheet }) {
+            const [formData, setFormData] = useState({ empId: '', fname: '', lname: '', dept: 'OPD', level: 'พนักงาน' });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!formData.empId.trim() || !formData.fname.trim() || !formData.lname.trim()) {
+                    return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+                }
+                const upperEmpId = formData.empId.trim().toUpperCase();
+                if (employees[upperEmpId]) {
+                    return alert("รหัสพนักงานนี้มีอยู่ในระบบแล้ว");
+                }
+
+                setIsSubmitting(true);
+                const res = await sendToGoogleSheet('register', { ...formData, empId: upperEmpId });
+                if (res.status === 'success') {
+                    alert("ลงทะเบียนสำเร็จ");
+                    setEmployees({ ...employees, [upperEmpId]: { ...formData } });
+                    setActiveTab('in'); 
+                }
+                setIsSubmitting(false);
+            };
+
+            return (
+                <div className="max-w-md mx-auto bg-white rounded-2xl shadow-minimal border border-violet-100 p-8 mt-6">
+                    <div className="text-center mb-6">
+                        <div className="w-16 h-16 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i className="fa-solid fa-user-plus text-2xl text-violet-500"></i>
+                        </div>
+                        <h2 className="text-xl font-semibold text-gray-900">ลงทะเบียนพนักงานใหม่</h2>
+                    </div>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">รหัสพนักงาน (ID)</label>
+                            <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" placeholder="เช่น EMP01" />
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-500 mb-1">ชื่อ</label>
+                                <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" />
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-500 mb-1">นามสกุล</label>
+                                <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" />
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-500 mb-1">แผนก</label>
+                                <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400">
+                                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-500 mb-1">ระดับ</label>
+                                <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400">
+                                    <option value="พนักงาน">พนักงาน</option>
+                                    <option value="หัวหน้า">หัวหน้า</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" disabled={isSubmitting} className="w-full p-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium transition-colors mt-4">
+                            {isSubmitting ? 'กำลังบันทึก...' : 'ลงทะเบียน'}
+                        </button>
+                    </form>
                 </div>
             );
         }
@@ -434,7 +452,13 @@
 
                 const scheduledShifts = schedules[today]?.[upperEmpId] || [];
                 const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ขาด'].includes(s));
-                if(validScheduledShifts.length > 0) setSelectedShift(validScheduledShifts[0]);
+                
+                if(validScheduledShifts.length > 0) {
+                    setSelectedShift(validScheduledShifts[0]);
+                } else {
+                    const defaultShiftKeys = getSortedShiftKeys(employees[upperEmpId].dept);
+                    if(defaultShiftKeys.length > 0) setSelectedShift(defaultShiftKeys[0]);
+                }
 
                 setErrorMsg('');
                 setLoggedInEmp({ id: upperEmpId, ...employees[upperEmpId] });
@@ -531,7 +555,7 @@
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">เลือกกะการทำงาน</label>
                                     <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)} className="w-full p-3.5 border border-gray-200 rounded-xl bg-white outline-none font-medium focus:border-emerald-400 transition-colors">
-                                        {getSortedShiftKeys().map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
+                                        {getSortedShiftKeys(loggedInEmp.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
                                     </select>
                                 </div>
                                 <div className={`p-3 rounded-xl flex items-center gap-3 text-xs font-medium border ${locationStatus === 'ok' ? 'bg-green-50 border-green-100 text-green-700' : locationStatus === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
@@ -797,9 +821,6 @@
             );
         };
 
-        // ==========================================
-        // View: Report (Admin/Supervisor)
-        // ==========================================
         function ReportView({ role, user, onLogout, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
             const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs'); 
             const [startDate, setStartDate] = useState('');
@@ -812,7 +833,6 @@
             const [filterDept, setFilterDept] = useState(defaultDept);
             const [filterEmp, setFilterEmp] = useState('');
             
-            // 🌟 ตั้งค่าวันทำงาน (Local State ดึงจาก Global)
             const [localWorkDays, setLocalWorkDays] = useState(settings?.standardWorkDays || 22);
             useEffect(() => { if(settings) setLocalWorkDays(settings.standardWorkDays); }, [settings]);
             
@@ -860,7 +880,7 @@
             const summaryMatrix = matrixEmployees.map(empId => {
                 const empRecords = records.filter(r => r.empId === empId && r.date.startsWith(matrixMonth));
                 const shiftsByDay = {};
-                const shiftCounts = {}; 
+                const shiftCounts = {};
                 let empTotalCredit = 0;
                 let empTotalLate = 0;
 
@@ -889,18 +909,19 @@
                         shiftsByDay[day] = scheduledShifts.length > 0 ? scheduledShifts.join(', ') : '-';
                         
                         scheduledShifts.forEach(s => {
+                            if (s) {
+                                shiftCounts[s] = (shiftCounts[s] || 0) + 1; 
+                            }
                             if(['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) {
                                 empTotalCredit += 1;
-                                shiftCounts[s] = (shiftCounts[s] || 0) + 1;
                             } else if (isFuture && SHIFT_TYPES[s]) {
                                 empTotalCredit += SHIFT_TYPES[s].credit;
-                                shiftCounts[s] = (shiftCounts[s] || 0) + 1;
                             }
                         });
                     }
                 });
                 
-                const otShifts = empTotalCredit - localWorkDays; // 🌟 ใช้การตั้งค่าส่วนกลาง
+                const otShifts = empTotalCredit - localWorkDays;
                 return { empId, fname: employees[empId].fname, lname: employees[empId].lname, dept: employees[empId].dept, shiftsByDay, empTotalCredit, empTotalLate, otShifts, shiftCounts };
             });
 
@@ -909,12 +930,13 @@
                 Object.keys(emp.shiftCounts).forEach(type => allShiftTypesUsed.add(type));
             });
             const sortedShiftTypesUsed = Array.from(allShiftTypesUsed).sort((a, b) => {
-                if (a === 'พักร้อน' || a === 'Vac') return 1;
-                if (b === 'พักร้อน' || b === 'Vac') return -1;
+                const nonWorkA = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(a);
+                const nonWorkB = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(b);
+                if (!nonWorkA && nonWorkB) return -1;
+                if (nonWorkA && !nonWorkB) return 1;
                 return a.localeCompare(b);
             });
 
-            // ================= Action Handlers =================
             const handleSaveSettings = async () => {
                 const res = await sendToGoogleSheet('saveSettings', { standardWorkDays: localWorkDays });
                 if(res.status === 'success') {
@@ -997,7 +1019,7 @@
                     const rowData = [row.empId, `${row.fname} ${row.lname}`, row.dept];
                     daysArray.forEach(day => rowData.push(row.shiftsByDay[day]));
                     sortedShiftTypesUsed.forEach(type => rowData.push(row.shiftCounts[type] || 0));
-                    rowData.push(row.empTotalCredit, localWorkDays, row.otShifts); // 🌟 ใช้การตั้งค่าส่วนกลาง
+                    rowData.push(row.empTotalCredit, localWorkDays, row.otShifts);
                     if (role === 'admin') rowData.push(row.empTotalLate);
 
                     csvContent += `"${rowData.join('","')}"\n`;
@@ -1085,7 +1107,7 @@
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 mb-1">กะการทำงาน</label>
                                         <select value={editModalData.shiftId} onChange={(e) => setEditModalData({...editModalData, shiftId: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg outline-none text-sm bg-white">
-                                            {getSortedShiftKeys().map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
+                                            {getSortedShiftKeys(employees[editModalData.empId]?.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex gap-3">
@@ -1129,7 +1151,7 @@
                                         <label className="block text-xs font-bold text-gray-500 mb-1">กะการทำงาน</label>
                                         <select value={addModalData.shiftId} onChange={(e) => setAddModalData({...addModalData, shiftId: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg outline-none text-sm bg-white">
                                             <option value="">-- เลือกกะ --</option>
-                                            {getSortedShiftKeys().map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
+                                            {getSortedShiftKeys(employees[addModalData.empId]?.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex gap-3">
@@ -1173,7 +1195,7 @@
                                                     className={`flex-1 p-2 border rounded-lg text-sm outline-none transition-colors ${shift ? 'border-gray-400 bg-white text-gray-900 font-medium' : 'border-gray-200 bg-gray-50 text-gray-500'}`}
                                                 >
                                                     <option value="">-- ไม่ได้ระบุ --</option>
-                                                    <optgroup label="กะการทำงาน (Work)">{getSortedShiftKeys().map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}</optgroup>
+                                                    <optgroup label="กะการทำงาน (Work)">{getSortedShiftKeys(employees[scheduleModalData.empId]?.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}</optgroup>
                                                     <optgroup label="สถานะอื่นๆ (Leave/Off)">{['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(key => <option key={key} value={key}>{key}</option>)}</optgroup>
                                                 </select>
                                                 <button onClick={() => handleRemoveScheduleShift(index)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 w-9 h-9 rounded-lg transition-colors flex items-center justify-center shrink-0"><i className="fa-solid fa-xmark"></i></button>
@@ -1307,7 +1329,7 @@
                             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
                                 <div>
                                     <h2 className="text-lg font-semibold text-gray-900">สรุปภาพรวมรายบุคคล และการเบิก OT</h2>
-                                    <p className="text-sm text-gray-500 mt-1">อ้างอิงจาก <span className="text-blue-600 font-bold">เวลาสแกนจริง</span> + <span className="text-emerald-600 font-bold">ตารางเวรล่วงหน้า</span></p>
+                                    <p className="text-sm text-gray-500 mt-1">ใช้ <span className="text-blue-600 font-bold">เวลาจริงในอดีต</span> + <span className="text-emerald-600 font-bold">ตารางเวรในอนาคต</span> (และรวมวันลา)</p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-3">
                                     <div className="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-2">
@@ -1362,7 +1384,6 @@
                                                     return <td key={day} className={`px-0.5 py-2 text-center text-[10px] font-medium border-r border-gray-50 ${shift && shift !== '-' ? (isNonWork ? 'text-orange-600 bg-orange-50/50' : 'text-blue-700 bg-blue-50/50') : 'text-gray-300'}`}>{shift}</td>
                                                 })}
                                                 
-                                                {/* นับเวรแยกประเภท */}
                                                 {sortedShiftTypesUsed.map(type => (
                                                     <td key={type} className="px-2 py-2 text-center font-bold text-indigo-700 bg-indigo-50/20 border-x border-gray-100">
                                                         {row.shiftCounts[type] || 0}
@@ -1401,14 +1422,14 @@
                                                 <th rowSpan="2" className="px-4 py-3 font-semibold text-blue-900 sticky left-0 bg-blue-50 z-10 border-r border-blue-100 align-middle">พนักงาน</th>
                                                 {daysArray.map(day => <th key={day} rowSpan="2" className="px-1 py-3 font-semibold text-blue-900 text-center min-w-[40px] align-middle">{day}</th>)}
                                                 
-                                                <th colSpan={sortedShiftTypesUsed.length} className="px-2 py-1 font-bold text-indigo-800 text-center bg-indigo-50/70 border-l border-b border-indigo-200 border-r border-gray-200">จำนวนเวรแยกประเภท</th>
+                                                <th colSpan={sortedShiftTypesUsed.length} className="px-2 py-1 font-bold text-indigo-800 text-center bg-indigo-50/50 border-l border-b border-indigo-200 border-r border-blue-100">จำนวนเวรแยกประเภท</th>
                                                 
                                                 <th rowSpan="2" className="px-3 py-3 font-bold text-gray-700 text-center bg-gray-100 border-l border-gray-200 align-middle">รวมเวร</th>
-                                                <th rowSpan="2" className="px-3 py-3 font-bold text-blue-700 text-center bg-blue-50 border-l border-blue-100 align-middle shadow-inner">เหลือ OT</th>
+                                                <th rowSpan="2" className="px-3 py-3 font-bold text-blue-700 text-center bg-blue-100/50 border-l border-blue-100 align-middle shadow-inner">เหลือ OT</th>
                                             </tr>
                                             <tr>
                                                 {sortedShiftTypesUsed.map(type => (
-                                                    <th key={type} className="px-1 py-1 font-semibold text-indigo-700 text-center bg-indigo-50/70 border-x border-white text-[11px]">{type}</th>
+                                                    <th key={type} className="px-1 py-1 font-semibold text-indigo-700 text-center bg-indigo-50/50 border-x border-white text-[11px]">{type}</th>
                                                 ))}
                                             </tr>
                                         </thead>
@@ -1433,7 +1454,7 @@
                                                             );
                                                         })}
                                                         
-                                                        {/* 🌟 ส่วนสรุปข้อมูลต่อท้ายตารางจัดเวร 🌟 */}
+                                                        {/* ตารางสรุปต่อท้ายในหน้าจัดเวร */}
                                                         {sortedShiftTypesUsed.map(type => (
                                                             <td key={type} className="px-2 py-2 text-center font-bold text-indigo-700 bg-indigo-50/20 border-x border-gray-100">
                                                                 {row.shiftCounts[type] || 0}
