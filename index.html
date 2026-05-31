@@ -52,9 +52,13 @@
         const { useState, useEffect, useRef } = React;
 
         // ==========================================
-        // ⚠️ ใส่ URL ของ Apps Script ตรงนี้ ⚠️
+        // ⚠️ การตั้งค่าระบบ (ตั้งค่าที่นี่) ⚠️
         // ==========================================
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec"; 
+        const HOSPITAL_LAT = 17.162383247325145; // พิกัดละติจูด รพ.
+        const HOSPITAL_LON = 104.14513206230059; // พิกัดลองจิจูด รพ.
+        const ALLOWED_RADIUS = 100; // ระยะที่อนุญาตให้สแกนได้ (เมตร)
+        // ==========================================
 
         const sendToGoogleSheet = async (action, payload = {}) => {
             try {
@@ -112,7 +116,6 @@
             "ADMIN"
         ];
 
-        // 🌟 เพิ่มกะตามที่ตกลงกันไว้
         const SHIFT_TYPES = {
             'ด': { start: '00:00', end: '08:00', credit: 1, label: '00.00 - 08.00 (ด)' },
             'ช616': { start: '06:00', end: '16:00', credit: 1.25, label: '06.00 - 16.00 (ช616)' },
@@ -138,7 +141,6 @@
             return Object.keys(SHIFT_TYPES).sort((a, b) => {
                 const startCmp = SHIFT_TYPES[a].start.localeCompare(SHIFT_TYPES[b].start);
                 if (startCmp !== 0) return startCmp;
-                // ถ้าเวลาเริ่มเท่ากัน ให้เรียงตามชื่อกะ
                 return SHIFT_TYPES[a].label.localeCompare(SHIFT_TYPES[b].label);
             });
         };
@@ -247,6 +249,80 @@
             );
         }
 
+        // ==========================================
+        // คอมโพเนนต์หน้าจอลงทะเบียน (RegisterView)
+        // ==========================================
+        function RegisterView({ employees, setEmployees, setActiveTab, sendToGoogleSheet }) {
+            const [formData, setFormData] = useState({ empId: '', fname: '', lname: '', dept: 'OPD', level: 'พนักงาน' });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!formData.empId.trim() || !formData.fname.trim() || !formData.lname.trim()) {
+                    return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+                }
+                const upperEmpId = formData.empId.trim().toUpperCase();
+                if (employees[upperEmpId]) {
+                    return alert("รหัสพนักงานนี้มีอยู่ในระบบแล้ว");
+                }
+
+                setIsSubmitting(true);
+                const res = await sendToGoogleSheet('register', { ...formData, empId: upperEmpId });
+                if (res.status === 'success') {
+                    alert("ลงทะเบียนสำเร็จ");
+                    setEmployees({ ...employees, [upperEmpId]: { ...formData } });
+                    setActiveTab('in'); // กลับไปหน้าเข้างาน
+                }
+                setIsSubmitting(false);
+            };
+
+            return (
+                <div className="max-w-md mx-auto bg-white rounded-2xl shadow-minimal border border-violet-100 p-8 mt-6">
+                    <div className="text-center mb-6">
+                        <div className="w-16 h-16 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i className="fa-solid fa-user-plus text-2xl text-violet-500"></i>
+                        </div>
+                        <h2 className="text-xl font-semibold text-gray-900">ลงทะเบียนพนักงานใหม่</h2>
+                    </div>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">รหัสพนักงาน (ID)</label>
+                            <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" placeholder="เช่น EMP01" />
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-500 mb-1">ชื่อ</label>
+                                <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" />
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-500 mb-1">นามสกุล</label>
+                                <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" />
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-500 mb-1">แผนก</label>
+                                <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400">
+                                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-500 mb-1">ระดับ</label>
+                                <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400">
+                                    <option value="พนักงาน">พนักงาน</option>
+                                    <option value="หัวหน้า">หัวหน้า</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" disabled={isSubmitting} className="w-full p-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium transition-colors mt-4">
+                            {isSubmitting ? 'กำลังบันทึก...' : 'ลงทะเบียน'}
+                        </button>
+                    </form>
+                </div>
+            );
+        }
+
         function AdminLoginView({ employees, onLogin, onCancel }) {
             const [adminId, setAdminId] = useState('');
             const [errorMsg, setErrorMsg] = useState('');
@@ -336,9 +412,8 @@
                     (position) => {
                         const lat = position.coords.latitude; const lon = position.coords.longitude;
                         setCurrentLocation({ lat, lon });
-                        const HOSPITAL_LAT = 17.162383247325145; const HOSPITAL_LON = 104.14513206230059;
                         const dist = getDistance(lat, lon, HOSPITAL_LAT, HOSPITAL_LON);
-                        if (dist <= 100) setLocationStatus('ok');
+                        if (dist <= ALLOWED_RADIUS) setLocationStatus('ok');
                         else { setErrorMsg(`อยู่นอกพื้นที่ รพ. (${Math.round(dist)}ม.)`); setLocationStatus('error'); }
                     },
                     (err) => { setErrorMsg("โปรดอนุญาตให้เข้าถึงตำแหน่ง (GPS)"); setLocationStatus('error'); },
@@ -356,7 +431,7 @@
                 if (activeRecord) { setErrorMsg(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[activeRecord.shiftId].label}"`); return; }
 
                 const scheduledShifts = schedules[today]?.[upperEmpId] || [];
-                const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ขาด'].includes(s));
+                const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ป่วย', 'ลา', 'ขาด'].includes(s));
                 if(validScheduledShifts.length > 0) setSelectedShift(validScheduledShifts[0]);
 
                 setErrorMsg('');
@@ -721,7 +796,7 @@
         };
 
         // ==========================================
-        // VIEW 3: Report & Management (รวม Admin กับ Supervisor)
+        // VIEW: Report & Management (รวม Admin กับ Supervisor)
         // ==========================================
         function ReportView({ role, user, onLogout, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet }) {
             const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs'); 
@@ -786,10 +861,17 @@
                 let empTotalCredit = 0;
                 let empTotalLate = 0;
 
+                // หาวันที่ปัจจุบันเพื่อใช้แยก "อดีต (เวลาจริง)" กับ "อนาคต (ตารางเวร)"
+                const todayY = now.getFullYear();
+                const todayM = String(now.getMonth() + 1).padStart(2, '0');
+                const todayD = String(now.getDate()).padStart(2, '0');
+                const todayStr = `${todayY}-${todayM}-${todayD}`;
+
                 daysArray.forEach(day => {
                     const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const dayRecords = empRecords.filter(r => r.date === dateStr);
                     const scheduledShifts = schedules[dateStr]?.[empId] || [];
+                    const isFuture = dateStr > todayStr;
                     
                     if (dayRecords.length > 0) {
                         shiftsByDay[day] = dayRecords.map(r => r.shiftId).join(', ');
@@ -804,12 +886,18 @@
                         });
                     } else {
                         shiftsByDay[day] = scheduledShifts.length > 0 ? scheduledShifts.join(', ') : '-';
-                        // ถ้าระบุว่าพักร้อนในตาราง ให้นับเป็น 1 เครดิต
+                        
                         scheduledShifts.forEach(s => {
-                            if(s === 'Vac' || s === 'พักร้อน') {
+                            if(['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) {
+                                // 🌟 วันหยุดที่ได้เงิน (วันลา/ป่วย) ได้เครดิตเสมอ ไม่ว่าจะเป็นอดีตหรืออนาคต
                                 empTotalCredit += 1;
-                                shiftCounts['พักร้อน'] = (shiftCounts['พักร้อน'] || 0) + 1;
+                                shiftCounts[s] = (shiftCounts[s] || 0) + 1;
+                            } else if (isFuture && SHIFT_TYPES[s]) {
+                                // 🌟 ถ้าเป็นวันในอนาคต (วันที่เหลือของเดือน) ให้นำตารางเวรมาคิดเครดิตล่วงหน้า
+                                empTotalCredit += SHIFT_TYPES[s].credit;
+                                shiftCounts[s] = (shiftCounts[s] || 0) + 1;
                             }
+                            // หมายเหตุ: หากเป็นวันในอดีต/วันนี้ แต่ไม่มีการลงเวลา ถือว่าขาดงาน จะไม่ถูกนำมาบวกเครดิต
                         });
                     }
                 });
@@ -824,10 +912,45 @@
                 Object.keys(emp.shiftCounts).forEach(type => allShiftTypesUsed.add(type));
             });
             const sortedShiftTypesUsed = Array.from(allShiftTypesUsed).sort((a, b) => {
-                if (a === 'พักร้อน' || a === 'Vac') return 1;
-                if (b === 'พักร้อน' || b === 'Vac') return -1;
+                const leaveTypes = ['Vac', 'พักร้อน', 'ป่วย', 'ลา', 'Off', 'ขาด'];
+                if (leaveTypes.includes(a) && !leaveTypes.includes(b)) return 1;
+                if (!leaveTypes.includes(a) && leaveTypes.includes(b)) return -1;
                 return a.localeCompare(b);
             });
+
+            // --- คำนวณสรุปเฉพาะของตารางเวรล่วงหน้า (เพื่อให้แสดงท้ายตารางจัดเวร) ---
+            const scheduleSummaryMatrix = matrixEmployees.map(empId => {
+                const shiftCounts = {};
+                let plannedTotalCredit = 0;
+
+                daysArray.forEach(day => {
+                    const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const plannedShifts = schedules[dateStr]?.[empId] || [];
+
+                    plannedShifts.forEach(s => {
+                        if (!s) return;
+                        shiftCounts[s] = (shiftCounts[s] || 0) + 1;
+                        if (SHIFT_TYPES[s]) {
+                            plannedTotalCredit += SHIFT_TYPES[s].credit;
+                        } else if (['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) {
+                            plannedTotalCredit += 1;
+                        }
+                    });
+                });
+
+                const otShifts = plannedTotalCredit - standardWorkDays;
+                return { empId, shiftCounts, plannedTotalCredit, otShifts };
+            });
+
+            const plannedShiftTypesUsed = new Set();
+            scheduleSummaryMatrix.forEach(emp => Object.keys(emp.shiftCounts).forEach(type => plannedShiftTypesUsed.add(type)));
+            const sortedPlannedShiftTypesUsed = Array.from(plannedShiftTypesUsed).sort((a, b) => {
+                const leaveTypes = ['Vac', 'พักร้อน', 'ป่วย', 'ลา', 'Off', 'ขาด'];
+                if (leaveTypes.includes(a) && !leaveTypes.includes(b)) return 1;
+                if (!leaveTypes.includes(a) && leaveTypes.includes(b)) return -1;
+                return a.localeCompare(b);
+            });
+            // ----------------------------------------
 
             const handleSaveEdit = async () => {
                 if(!editModalData.shiftId) return alert('กรุณาเลือกกะ');
@@ -936,17 +1059,32 @@
 
             const exportScheduleToCSV = () => {
                 if(matrixEmployees.length === 0) return alert("ไม่มีข้อมูลพนักงานสำหรับส่งออก");
-                let csvContent = "\uFEFFรหัสพนักงาน,ชื่อ-สกุล,แผนก," + daysArray.join(',') + "\n";
-                matrixEmployees.forEach(empId => {
+                
+                const headers = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'แผนก', ...daysArray];
+                sortedPlannedShiftTypesUsed.forEach(type => headers.push(type));
+                headers.push('รวมเวรทั้งหมด', 'วันทำการ', 'เหลือ OT');
+                
+                let csvContent = "\uFEFF" + headers.join(',') + "\n";
+                
+                matrixEmployees.forEach((empId, index) => {
                     const emp = employees[empId];
+                    const summary = scheduleSummaryMatrix[index];
                     const rowData = [empId, `${emp.fname} ${emp.lname}`, emp.dept];
+                    
                     daysArray.forEach(day => {
                         const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const shifts = schedules[dateStr]?.[empId] || [];
                         rowData.push(shifts.join(', ') || '-');
                     });
+                    
+                    sortedPlannedShiftTypesUsed.forEach(type => {
+                        rowData.push(summary.shiftCounts[type] || 0);
+                    });
+                    rowData.push(summary.plannedTotalCredit, standardWorkDays, summary.otShifts);
+                    
                     csvContent += `"${rowData.join('","')}"\n`;
                 });
+
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
                 link.download = `ตารางเวร_${matrixMonth}.csv`;
@@ -1080,7 +1218,7 @@
                                                 >
                                                     <option value="">-- ไม่ได้ระบุ --</option>
                                                     <optgroup label="กะการทำงาน (Work)">{getSortedShiftKeys().map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}</optgroup>
-                                                    <optgroup label="สถานะอื่นๆ (Leave/Off)">{['Off', 'Vac', 'พักร้อน', 'ลา', 'ขาด'].map(key => <option key={key} value={key}>{key}</option>)}</optgroup>
+                                                    <optgroup label="สถานะอื่นๆ (Leave/Off)">{['Off', 'Vac', 'พักร้อน', 'ป่วย', 'ลา', 'ขาด'].map(key => <option key={key} value={key}>{key}</option>)}</optgroup>
                                                 </select>
                                                 <button onClick={() => handleRemoveScheduleShift(index)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 w-9 h-9 rounded-lg transition-colors flex items-center justify-center shrink-0"><i className="fa-solid fa-xmark"></i></button>
                                             </div>
@@ -1213,7 +1351,7 @@
                             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
                                 <div>
                                     <h2 className="text-lg font-semibold text-gray-900">สรุปภาพรวมรายบุคคล และการเบิก OT</h2>
-                                    <p className="text-sm text-gray-500 mt-1">อ้างอิงจาก <span className="text-blue-600 font-bold">"ข้อมูลการลงเวลาจริง"</span> ผสมกับตารางเวร (สำหรับวันพักร้อน/ลา)</p>
+                                    <p className="text-sm text-gray-500 mt-1">ใช้ <span className="text-blue-600 font-bold">เวลาจริงในอดีต</span> + <span className="text-emerald-600 font-bold">ตารางเวรในอนาคต</span> (และรวมวันลา)</p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-3">
                                     <div className="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-2">
@@ -1286,7 +1424,12 @@
                                     <h2 className="text-lg font-semibold text-gray-900">จัดการตารางเวรล่วงหน้า (รายเดือน)</h2>
                                     <p className="text-sm text-gray-500 mt-1">คลิกที่ช่องวันที่ในตารางเพื่อ <strong>จัดเวร</strong> หรือระบุวันหยุดของพนักงาน</p>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">กำหนดวันทำการปกติ:</label>
+                                        <input type="number" min="0" value={standardWorkDays} onChange={e => setStandardWorkDays(Number(e.target.value))} className="w-16 p-1 border border-gray-300 rounded-md text-sm text-center outline-none focus:border-blue-400 bg-white font-bold text-blue-700" />
+                                        <span className="text-xs text-gray-500">วัน</span>
+                                    </div>
                                     <button onClick={exportScheduleToCSV} className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center"><i className="fa-solid fa-file-excel mr-2 text-green-600"></i>ส่งออกตารางเวร (Excel)</button>
                                 </div>
                             </div>
@@ -1295,13 +1438,29 @@
                                     <table className="min-w-full text-sm text-left whitespace-nowrap select-none">
                                         <thead className="bg-blue-50 border-b border-blue-100">
                                             <tr>
-                                                <th className="px-4 py-3 font-semibold text-blue-900 sticky left-0 bg-blue-50 z-10 border-r border-blue-100">พนักงาน</th>
-                                                {daysArray.map(day => <th key={day} className="px-1 py-3 font-semibold text-blue-900 text-center min-w-[40px]">{day}</th>)}
+                                                <th rowSpan={sortedPlannedShiftTypesUsed.length > 0 ? 2 : 1} className="px-4 py-3 font-semibold text-blue-900 sticky left-0 bg-blue-50 z-20 border-r border-blue-100 align-middle">พนักงาน</th>
+                                                {daysArray.map(day => <th key={day} rowSpan={sortedPlannedShiftTypesUsed.length > 0 ? 2 : 1} className="px-1 py-3 font-semibold text-blue-900 text-center min-w-[40px] align-middle">{day}</th>)}
+                                                
+                                                {sortedPlannedShiftTypesUsed.length > 0 && (
+                                                    <th colSpan={sortedPlannedShiftTypesUsed.length} className="px-2 py-1 font-bold text-indigo-800 text-center bg-indigo-50/70 border-l border-b border-indigo-200 border-r border-blue-100">จำนวนเวรแยกประเภท (จัดตาราง)</th>
+                                                )}
+                                                
+                                                <th rowSpan={sortedPlannedShiftTypesUsed.length > 0 ? 2 : 1} className="px-3 py-3 font-bold text-blue-900 text-center bg-blue-100 border-l border-blue-200 align-middle">รวมเวร</th>
+                                                <th rowSpan={sortedPlannedShiftTypesUsed.length > 0 ? 2 : 1} className="px-3 py-3 font-bold text-blue-900 text-center bg-blue-100 align-middle">วันทำการ</th>
+                                                <th rowSpan={sortedPlannedShiftTypesUsed.length > 0 ? 2 : 1} className="px-3 py-3 font-bold text-blue-800 text-center bg-blue-200 border-l border-blue-300 align-middle shadow-inner">เหลือ OT</th>
                                             </tr>
+                                            {sortedPlannedShiftTypesUsed.length > 0 && (
+                                                <tr>
+                                                    {sortedPlannedShiftTypesUsed.map(type => (
+                                                        <th key={type} className="px-1 py-1 font-semibold text-indigo-700 text-center bg-indigo-50/70 border-x border-white text-[11px]">{type}</th>
+                                                    ))}
+                                                </tr>
+                                            )}
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
-                                            {matrixEmployees.map(empId => {
+                                            {matrixEmployees.map((empId, empIndex) => {
                                                 const emp = employees[empId];
+                                                const summary = scheduleSummaryMatrix[empIndex];
                                                 return (
                                                     <tr key={empId} className="hover:bg-blue-50/50 transition-colors group">
                                                         <td className="px-4 py-2 sticky left-0 bg-white group-hover:bg-blue-50/50 z-10 border-r border-gray-200">
@@ -1318,6 +1477,17 @@
                                                                 </td>
                                                             );
                                                         })}
+
+                                                        {/* จำนวนเวรแยกประเภท (จัดตาราง) */}
+                                                        {sortedPlannedShiftTypesUsed.map(type => (
+                                                            <td key={type} className="px-2 py-2 text-center font-bold text-indigo-700 bg-indigo-50/20 border-x border-gray-100">
+                                                                {summary.shiftCounts[type] || 0}
+                                                            </td>
+                                                        ))}
+
+                                                        <td className="px-3 py-2 text-center font-bold text-gray-800 bg-gray-50 border-l border-gray-200">{summary.plannedTotalCredit}</td>
+                                                        <td className="px-3 py-2 text-center font-medium text-gray-500 bg-gray-50">{standardWorkDays}</td>
+                                                        <td className="px-3 py-2 text-center font-bold text-blue-700 bg-blue-50/50 border-l border-blue-100">{summary.otShifts > 0 ? `+${summary.otShifts}` : summary.otShifts}</td>
                                                     </tr>
                                                 );
                                             })}
