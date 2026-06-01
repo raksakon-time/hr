@@ -38,11 +38,12 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased; color: #0f172a; }
+        /* ปรับ Base Font ให้อ่านง่ายและเปลี่ยนสีข้อความหลักให้เป็นกรมท่า/น้ำเงินเข้ม */
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased; color: #0f172a; font-size: 16px; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         input:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px white inset !important; }
-        select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
+        select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%231e3a8a' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
     </style>
 </head>
 <body>
@@ -78,7 +79,6 @@
             "บัญชี": ['ช', 'ช83'],
             "การเงินผู้ป่วย-สิทธิประโยชน์": ['ช', 'บ', 'ด'],
             "ADMIN": ['ช', 'ช83']
-            // หากแผนกไหนไม่มีในรายการนี้ ระบบจะแสดงกะ "ทั้งหมด" ให้เลือก
         };
 
         const SHIFT_TYPES = {
@@ -106,7 +106,7 @@
         const getSortedShiftKeys = (deptName) => {
             let keys = Object.keys(SHIFT_TYPES);
             
-            // 🌟 ปิดการกรองกะตามแผนกชั่วคราว เพื่อให้ทุกแผนกเห็นกะทั้งหมด
+            // ปิดการกรองกะตามแผนกชั่วคราว เพื่อให้ทุกแผนกเห็นกะทั้งหมด
             // if (deptName && DEPT_SHIFTS[deptName]) {
             //     keys = keys.filter(k => DEPT_SHIFTS[deptName].includes(k));
             // }
@@ -212,46 +212,46 @@
 
             const getNavClass = (tabName) => {
                 const isActive = activeTab === tabName;
-                let activeStyle = 'bg-gray-900 text-white shadow-sm';
+                let activeStyle = 'bg-blue-950 text-white shadow-md font-bold';
                 if (isActive) {
-                    if (tabName === 'in') activeStyle = 'bg-emerald-600 text-white shadow-sm';
-                    else if (tabName === 'out') activeStyle = 'bg-rose-500 text-white shadow-sm';
-                    else if (tabName === 'dailyReport') activeStyle = 'bg-blue-600 text-white shadow-sm';
-                    else if (tabName === 'register') activeStyle = 'bg-violet-600 text-white shadow-sm';
-                    else if (tabName === 'supervisor') activeStyle = 'bg-amber-600 text-white shadow-sm';
-                    else if (tabName === 'report') activeStyle = 'bg-slate-800 text-white shadow-sm';
+                    if (tabName === 'in') activeStyle = 'bg-emerald-600 text-white shadow-md font-bold';
+                    else if (tabName === 'out') activeStyle = 'bg-rose-600 text-white shadow-md font-bold';
+                    else if (tabName === 'dailyReport') activeStyle = 'bg-blue-700 text-white shadow-md font-bold';
+                    else if (tabName === 'register') activeStyle = 'bg-violet-700 text-white shadow-md font-bold';
+                    else if (tabName === 'supervisor') activeStyle = 'bg-amber-600 text-white shadow-md font-bold';
+                    else if (tabName === 'report') activeStyle = 'bg-slate-800 text-white shadow-md font-bold';
                 }
-                return `px-3.5 py-2 text-[13px] sm:text-sm rounded-full flex items-center gap-1.5 transition-all font-medium whitespace-nowrap ${isActive ? activeStyle : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`;
+                return `px-4 py-2.5 text-sm sm:text-base rounded-full flex items-center gap-2 transition-all font-semibold whitespace-nowrap ${isActive ? activeStyle : 'text-blue-800 hover:text-blue-950 hover:bg-blue-50'}`;
             };
 
             if (isLoading) return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-                    <i className="fa-solid fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
-                    <h2 className="text-lg font-medium text-gray-600">กำลังดึงข้อมูลระบบ...</h2>
+                <div className="min-h-screen flex flex-col items-center justify-center bg-blue-50">
+                    <i className="fa-solid fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i>
+                    <h2 className="text-xl font-bold text-blue-900">กำลังดึงข้อมูลระบบ...</h2>
                 </div>
             );
 
             return (
                 <div className="min-h-screen flex flex-col">
-                    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
-                        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-                            <div className="flex justify-between items-center h-16 overflow-x-auto no-scrollbar">
-                                <div className="font-bold text-lg tracking-tight flex items-center gap-2 whitespace-nowrap mr-6 text-gray-900">
-                                    <div className="bg-gray-900 w-8 h-8 rounded-lg flex items-center justify-center"><i className="fa-solid fa-hospital-user text-white text-sm"></i></div>รักษ์สกล
+                    <nav className="bg-white border-b-2 border-blue-100 sticky top-0 z-50 shadow-sm">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                            <div className="flex justify-between items-center h-20 overflow-x-auto no-scrollbar">
+                                <div className="font-bold text-xl tracking-tight flex items-center gap-3 whitespace-nowrap mr-6 text-blue-950">
+                                    <div className="bg-blue-900 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"><i className="fa-solid fa-hospital-user text-white text-lg"></i></div>รักษ์สกล
                                 </div>
-                                <div className="flex space-x-1">
-                                    <button onClick={() => setActiveTab('in')} className={getNavClass('in')}><i className="fa-solid fa-arrow-right-to-bracket"></i> <span className="hidden sm:inline">เข้างาน</span></button>
-                                    <button onClick={() => setActiveTab('out')} className={getNavClass('out')}><i className="fa-solid fa-arrow-right-from-bracket"></i> <span className="hidden sm:inline">ออกงาน</span></button>
-                                    <button onClick={() => setActiveTab('dailyReport')} className={getNavClass('dailyReport')}><i className="fa-regular fa-calendar-check"></i> <span className="hidden sm:inline">ประวัติ</span></button>
-                                    <button onClick={() => setActiveTab('register')} className={getNavClass('register')}><i className="fa-solid fa-user-plus"></i> <span className="hidden sm:inline">ลงทะเบียน</span></button>
-                                    <div className="w-px h-6 bg-gray-200 mx-1 self-center"></div>
-                                    <button onClick={() => setActiveTab('supervisor')} className={getNavClass('supervisor')}><i className="fa-solid fa-user-tie"></i> <span>หัวหน้า</span></button>
-                                    <button onClick={() => setActiveTab('report')} className={getNavClass('report')}><i className="fa-solid fa-shield-halved"></i> <span className="hidden sm:inline">แอดมิน</span></button>
+                                <div className="flex space-x-1.5">
+                                    <button onClick={() => setActiveTab('in')} className={getNavClass('in')}><i className="fa-solid fa-arrow-right-to-bracket text-lg"></i> <span className="hidden sm:inline">เข้างาน</span></button>
+                                    <button onClick={() => setActiveTab('out')} className={getNavClass('out')}><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i> <span className="hidden sm:inline">ออกงาน</span></button>
+                                    <button onClick={() => setActiveTab('dailyReport')} className={getNavClass('dailyReport')}><i className="fa-regular fa-calendar-check text-lg"></i> <span className="hidden sm:inline">ประวัติ</span></button>
+                                    <button onClick={() => setActiveTab('register')} className={getNavClass('register')}><i className="fa-solid fa-user-plus text-lg"></i> <span className="hidden sm:inline">ลงทะเบียน</span></button>
+                                    <div className="w-0.5 h-8 bg-blue-200 mx-2 self-center rounded-full"></div>
+                                    <button onClick={() => setActiveTab('supervisor')} className={getNavClass('supervisor')}><i className="fa-solid fa-user-tie text-lg"></i> <span>หัวหน้า</span></button>
+                                    <button onClick={() => setActiveTab('report')} className={getNavClass('report')}><i className="fa-solid fa-shield-halved text-lg"></i> <span className="hidden sm:inline">แอดมิน</span></button>
                                 </div>
                             </div>
                         </div>
                     </nav>
-                    <main className="flex-grow max-w-[1240px] w-full mx-auto p-4 sm:p-6 lg:p-8">
+                    <main className="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
                         {activeTab === 'register' && <RegisterView employees={employees} setEmployees={setEmployees} setActiveTab={setActiveTab} sendToGoogleSheet={sendToGoogleSheet} />}
                         {activeTab === 'in' && <ClockInView currentTime={currentTime} records={records} setRecords={setRecords} formatDateForInput={formatDateForInput} employees={employees} schedules={schedules} sendToGoogleSheet={sendToGoogleSheet} />}
                         {activeTab === 'out' && <ClockOutView currentTime={currentTime} records={records} setRecords={setRecords} formatDateForInput={formatDateForInput} employees={employees} sendToGoogleSheet={sendToGoogleSheet} />}
@@ -298,45 +298,45 @@
             };
 
             return (
-                <div className="max-w-md mx-auto bg-white rounded-2xl shadow-minimal border border-violet-100 p-8 mt-6">
-                    <div className="text-center mb-6">
-                        <div className="w-16 h-16 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i className="fa-solid fa-user-plus text-2xl text-violet-500"></i>
+                <div className="max-w-lg mx-auto bg-white rounded-3xl shadow-floating border border-blue-100 p-8 sm:p-10 mt-6">
+                    <div className="text-center mb-8">
+                        <div className="w-20 h-20 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i className="fa-solid fa-user-plus text-3xl text-violet-600"></i>
                         </div>
-                        <h2 className="text-xl font-semibold text-gray-900">ลงทะเบียนพนักงานใหม่</h2>
+                        <h2 className="text-2xl font-bold text-blue-950">ลงทะเบียนพนักงานใหม่</h2>
                     </div>
                     
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1">รหัสพนักงาน (ID)</label>
-                            <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" placeholder="เช่น EMP01" />
+                            <label className="block text-sm font-bold text-blue-800 mb-1.5">รหัสพนักงาน (ID)</label>
+                            <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base" placeholder="เช่น EMP01" />
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex flex-col sm:flex-row gap-5">
                             <div className="flex-1">
-                                <label className="block text-xs font-bold text-gray-500 mb-1">ชื่อ</label>
-                                <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" />
+                                <label className="block text-sm font-bold text-blue-800 mb-1.5">ชื่อ</label>
+                                <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base" />
                             </div>
                             <div className="flex-1">
-                                <label className="block text-xs font-bold text-gray-500 mb-1">นามสกุล</label>
-                                <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400" />
+                                <label className="block text-sm font-bold text-blue-800 mb-1.5">นามสกุล</label>
+                                <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base" />
                             </div>
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex flex-col sm:flex-row gap-5">
                             <div className="flex-1">
-                                <label className="block text-xs font-bold text-gray-500 mb-1">แผนก</label>
-                                <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400">
+                                <label className="block text-sm font-bold text-blue-800 mb-1.5">แผนก</label>
+                                <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base">
                                     {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
                                 </select>
                             </div>
                             <div className="flex-1">
-                                <label className="block text-xs font-bold text-gray-500 mb-1">ระดับ</label>
-                                <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none focus:border-violet-400">
+                                <label className="block text-sm font-bold text-blue-800 mb-1.5">ระดับ</label>
+                                <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base">
                                     <option value="พนักงาน">พนักงาน</option>
                                     <option value="หัวหน้า">หัวหน้า</option>
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" disabled={isSubmitting} className="w-full p-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium transition-colors mt-4">
+                        <button type="submit" disabled={isSubmitting} className="w-full p-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-lg transition-colors mt-6 shadow-md">
                             {isSubmitting ? 'กำลังบันทึก...' : 'ลงทะเบียน'}
                         </button>
                     </form>
@@ -357,14 +357,14 @@
             };
 
             return (
-                <div className="max-w-sm mx-auto bg-white rounded-2xl p-8 shadow-minimal border border-gray-100 mt-10 text-center">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-lock text-2xl text-slate-500"></i></div>
-                    <h2 className="text-xl font-semibold text-gray-900">ผู้ดูแลระบบ (Admin)</h2>
-                    <p className="text-sm text-gray-500 mt-1 mb-6">เข้าสู่ระบบเพื่อจัดการข้อมูล</p>
-                    {errorMsg && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">{errorMsg}</div>}
-                    <input type="text" placeholder="รหัสพนักงาน ADMIN" value={adminId} onChange={e => setAdminId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-3.5 mb-4 border border-gray-200 rounded-xl bg-gray-50 outline-none text-center tracking-wide font-medium focus:bg-white focus:border-slate-400 transition-colors" />
-                    <button onClick={handleLogin} className="w-full p-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-medium transition-colors mb-2">เข้าสู่ระบบ</button>
-                    <button onClick={onCancel} className="w-full p-3 text-sm text-gray-500 hover:text-gray-800 transition-colors">ยกเลิก</button>
+                <div className="max-w-md mx-auto bg-white rounded-3xl p-10 shadow-floating border border-blue-100 mt-10 text-center">
+                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-lock text-3xl text-blue-600"></i></div>
+                    <h2 className="text-2xl font-bold text-blue-950">ผู้ดูแลระบบ (Admin)</h2>
+                    <p className="text-base text-blue-700 mt-2 mb-8 font-medium">เข้าสู่ระบบเพื่อจัดการข้อมูล</p>
+                    {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">{errorMsg}</div>}
+                    <input type="text" placeholder="รหัสพนักงาน ADMIN" value={adminId} onChange={e => setAdminId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-blue-500 transition-colors" />
+                    <button onClick={handleLogin} className="w-full p-4 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold text-lg transition-colors mb-3 shadow-md">เข้าสู่ระบบ</button>
+                    <button onClick={onCancel} className="w-full p-3 text-base text-blue-600 font-bold hover:text-blue-800 transition-colors">ยกเลิก</button>
                 </div>
             );
         }
@@ -382,14 +382,14 @@
             };
 
             return (
-                <div className="max-w-sm mx-auto bg-white rounded-2xl p-8 shadow-minimal border border-amber-100 mt-10 text-center">
-                    <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-user-shield text-2xl text-amber-600"></i></div>
-                    <h2 className="text-xl font-semibold text-gray-900">พื้นที่หัวหน้างาน (Supervisor)</h2>
-                    <p className="text-sm text-gray-500 mt-1 mb-6">เข้าสู่ระบบเพื่อจัดการตารางเวรและดูสรุปภาพรวมแผนก</p>
-                    {errorMsg && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">{errorMsg}</div>}
-                    <input type="text" placeholder="รหัสพนักงานของหัวหน้า" value={superId} onChange={e => setSuperId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-3.5 mb-4 border border-gray-200 rounded-xl bg-gray-50 outline-none text-center tracking-wide font-medium focus:bg-white focus:border-amber-400 transition-colors" />
-                    <button onClick={handleLogin} className="w-full p-3.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-medium transition-colors mb-2">เข้าสู่ระบบ</button>
-                    <button onClick={onCancel} className="w-full p-3 text-sm text-gray-500 hover:text-gray-800 transition-colors">ยกเลิก</button>
+                <div className="max-w-md mx-auto bg-white rounded-3xl p-10 shadow-floating border border-amber-200 mt-10 text-center">
+                    <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-user-shield text-3xl text-amber-600"></i></div>
+                    <h2 className="text-2xl font-bold text-blue-950">พื้นที่หัวหน้างาน (Supervisor)</h2>
+                    <p className="text-base text-blue-700 mt-2 mb-8 font-medium">เข้าสู่ระบบเพื่อจัดการตารางเวรและสรุปผล</p>
+                    {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">{errorMsg}</div>}
+                    <input type="text" placeholder="รหัสพนักงานของหัวหน้า" value={superId} onChange={e => setSuperId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-amber-100 rounded-xl bg-amber-50/30 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-amber-400 transition-colors" />
+                    <button onClick={handleLogin} className="w-full p-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-lg transition-colors mb-3 shadow-md">เข้าสู่ระบบ</button>
+                    <button onClick={onCancel} className="w-full p-3 text-base text-blue-600 font-bold hover:text-blue-800 transition-colors">ยกเลิก</button>
                 </div>
             );
         }
@@ -451,7 +451,7 @@
                 if (activeRecord) { setErrorMsg(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[activeRecord.shiftId].label}"`); return; }
 
                 const scheduledShifts = schedules[today]?.[upperEmpId] || [];
-                const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ขาด'].includes(s));
+                const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s));
                 
                 if(validScheduledShifts.length > 0) {
                     setSelectedShift(validScheduledShifts[0]);
@@ -467,6 +467,27 @@
 
             const handleClockIn = async () => {
                 setErrorMsg(''); setIsScanning(true);
+                
+                // --- 🌟 เริ่มระบบป้องกัน (BLOCK) การลงเวลา ---
+                const today = formatDateForInput(currentTime);
+                const scheduledShifts = schedules[today]?.[loggedInEmp.id] || [];
+                const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s));
+                
+                // กรณีที่ 1: มีตารางเวร แต่กะที่เลือกไม่ตรงกับตาราง
+                if (validScheduledShifts.length > 0 && !validScheduledShifts.includes(selectedShift)) {
+                    setErrorMsg(`ไม่อนุญาต: กะที่เลือกไม่ตรงกับตารางเวร กรุณาติดต่อหัวหน้างาน/HR`);
+                    setIsScanning(false); setCameraActive(false);
+                    return; // ⛔️ หยุดการทำงานและบล็อกการส่งข้อมูลทันที
+                }
+                
+                // กรณีที่ 2: ไม่มีตารางเวรในวันนี้เลย
+                if (validScheduledShifts.length === 0) {
+                    setErrorMsg(`ไม่อนุญาต: ไม่พบตารางเวรของคุณในวันนี้ กรุณาติดต่อหัวหน้างาน/HR`);
+                    setIsScanning(false); setCameraActive(false);
+                    return; // ⛔️ หยุดการทำงานและบล็อกการส่งข้อมูลทันที
+                }
+                // --- 🌟 สิ้นสุดระบบป้องกัน ---
+
                 const photoBase64 = captureImage(videoRef.current);
                 const shiftData = SHIFT_TYPES[selectedShift];
                 const [shiftHour, shiftMinute] = shiftData.start.split(':').map(Number);
@@ -484,94 +505,80 @@
                     lat: currentLocation?.lat, lon: currentLocation?.lon, photoBase64: photoBase64
                 };
 
-                const today = formatDateForInput(currentTime);
-                const scheduledShifts = schedules[today]?.[loggedInEmp.id] || [];
-                const validScheduledShifts = scheduledShifts.filter(s => s);
-                const isWrongShift = validScheduledShifts.length > 0 && !validScheduledShifts.includes(selectedShift);
-
                 const res = await sendToGoogleSheet('clockIn', newRecord);
                 if (res.status === 'success') {
                     setRecords([...records, newRecord]);
-                    setResult({ ...newRecord, shiftName: shiftData.label, isWrongShift, validScheduledShifts });
+                    setResult({ ...newRecord, shiftName: shiftData.label }); 
                 } else setErrorMsg("บันทึกไม่สำเร็จ: " + res.message);
                 setIsScanning(false); setCameraActive(false);
             };
 
             if (result) return (
-                <div className="max-w-sm mx-auto bg-white rounded-2xl p-8 shadow-minimal border border-gray-100 text-center mt-6">
-                    <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-check text-2xl text-emerald-500"></i></div>
-                    <h2 className="text-xl font-semibold text-gray-900">เข้างานสำเร็จ</h2>
-                    <div className="my-6 p-4 bg-emerald-50/30 rounded-xl border border-emerald-100">
-                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">เวลาเข้างาน</p>
-                        <p className="text-4xl font-bold text-emerald-700 tracking-tight mb-3">{displaySafeTime(result.timeIn)}</p>
-                        <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 bg-white px-3 py-1.5 rounded-lg border border-emerald-200">
+                <div className="max-w-md mx-auto bg-white rounded-3xl p-8 sm:p-10 shadow-floating border border-blue-100 text-center mt-6">
+                    <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-check text-4xl text-emerald-600"></i></div>
+                    <h2 className="text-2xl font-bold text-blue-950">เข้างานสำเร็จ</h2>
+                    <div className="my-8 p-6 bg-emerald-50 rounded-2xl border border-emerald-200">
+                        <p className="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-2">เวลาเข้างาน</p>
+                        <p className="text-5xl font-extrabold text-emerald-700 tracking-tight mb-4">{displaySafeTime(result.timeIn)}</p>
+                        <div className="inline-flex items-center gap-2 text-base font-bold text-emerald-800 bg-white px-4 py-2 rounded-xl border border-emerald-200 shadow-sm">
                             <i className="fa-solid fa-calendar-day"></i> กะ: {result.shiftName}
                         </div>
                     </div>
-                    {result.isWrongShift && (
-                        <div className="mb-4 text-left bg-orange-50 border border-orange-200 text-orange-800 p-3 rounded-xl text-sm flex gap-3">
-                            <i className="fa-solid fa-triangle-exclamation mt-0.5 text-orange-500"></i>
-                            <div>
-                                <p className="font-bold">แจ้งเตือน: ลงกะไม่ตรงตาราง!</p>
-                                <p className="text-xs mt-0.5">กะที่ถูกจัดไว้: {result.validScheduledShifts.map(s => SHIFT_TYPES[s]?.label || s).join(', ')}</p>
-                            </div>
-                        </div>
-                    )}
                     {result.isLate && (
-                        <div className="mb-6 inline-flex items-center gap-2 bg-red-50 text-red-600 px-4 py-2 rounded-full text-sm font-medium">
+                        <div className="mb-8 inline-flex items-center gap-2 bg-red-100 text-red-800 px-5 py-2.5 rounded-full text-base font-bold">
                             <i className="fa-regular fa-clock"></i> สาย {result.lateMinutes} นาที
                         </div>
                     )}
-                    <button onClick={() => {setResult(null); setLoggedInEmp(null); setEmpId(''); setCurrentLocation(null);}} className="w-full p-3.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors">เสร็จสิ้น</button>
+                    <button onClick={() => {setResult(null); setLoggedInEmp(null); setEmpId(''); setCurrentLocation(null);}} className="w-full p-4 rounded-xl border-2 border-blue-200 text-blue-800 font-bold text-lg hover:bg-blue-50 transition-colors">เสร็จสิ้น</button>
                 </div>
             );
 
             return (
-                <div className="max-w-sm mx-auto bg-white rounded-2xl shadow-minimal border border-emerald-100 overflow-hidden mt-6 relative">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-                    <div className="px-6 pt-8 pb-6 text-center border-b border-gray-50">
-                        <h2 className="text-lg font-medium text-emerald-600 mb-1">ลงเวลาเข้างาน</h2>
-                        <div className="text-5xl font-bold text-gray-900 tracking-tight font-mono">{formatTime24(currentTime)} <span className="text-xl">น.</span></div>
+                <div className="max-w-md mx-auto bg-white rounded-3xl shadow-floating border border-emerald-200 overflow-hidden mt-6 relative">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-emerald-500"></div>
+                    <div className="px-8 pt-10 pb-6 text-center border-b border-blue-50">
+                        <h2 className="text-xl font-bold text-emerald-700 mb-2">ลงเวลาเข้างาน</h2>
+                        <div className="text-6xl font-extrabold text-blue-950 tracking-tight font-mono drop-shadow-sm">{formatTime24(currentTime)} <span className="text-2xl">น.</span></div>
                     </div>
-                    <div className="p-6 space-y-6">
-                        {errorMsg && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium flex items-center gap-2"><i className="fa-solid fa-circle-exclamation"></i> {errorMsg}</div>}
+                    <div className="p-8 space-y-6">
+                        {errorMsg && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold flex items-start gap-3 border border-red-200"><i className="fa-solid fa-circle-exclamation mt-1"></i> <span>{errorMsg}</span></div>}
                         {!loggedInEmp ? (
                             <>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">รหัสพนักงาน</label>
-                                    <input type="text" value={empId} onChange={(e) => setEmpId(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full p-3.5 border border-gray-200 rounded-xl bg-gray-50 outline-none font-medium focus:bg-white focus:border-emerald-400 transition-colors placeholder:font-normal" placeholder="กรอกรหัสพนักงาน" />
+                                    <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">รหัสพนักงาน</label>
+                                    <input type="text" value={empId} onChange={(e) => setEmpId(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-lg focus:bg-white focus:border-emerald-500 transition-colors placeholder:font-medium placeholder:text-blue-300" placeholder="กรอกรหัสพนักงาน" />
                                 </div>
-                                <button onClick={handleLogin} className="w-full p-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors shadow-sm">ตรวจสอบข้อมูล</button>
+                                <button onClick={handleLogin} className="w-full p-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg transition-colors shadow-md">ตรวจสอบข้อมูล</button>
                             </>
                         ) : (
                             <div className="space-y-6 animate-in fade-in">
-                                <div className="flex items-center gap-4 bg-gray-50 border border-gray-100 p-4 rounded-xl">
-                                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600"><i className="fa-regular fa-user"></i></div>
+                                <div className="flex items-center gap-5 bg-blue-50 border border-blue-100 p-5 rounded-2xl">
+                                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-700 shadow-sm"><i className="fa-regular fa-user text-xl"></i></div>
                                     <div>
-                                        <p className="font-semibold text-gray-900">{loggedInEmp.fname} {loggedInEmp.lname}</p>
-                                        <p className="text-xs text-gray-500">{loggedInEmp.id} • {loggedInEmp.dept}</p>
+                                        <p className="font-bold text-lg text-blue-950">{loggedInEmp.fname} {loggedInEmp.lname}</p>
+                                        <p className="text-sm font-semibold text-blue-700">{loggedInEmp.id} • {loggedInEmp.dept}</p>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">เลือกกะการทำงาน</label>
-                                    <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)} className="w-full p-3.5 border border-gray-200 rounded-xl bg-white outline-none font-medium focus:border-emerald-400 transition-colors">
+                                    <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">เลือกกะการทำงาน</label>
+                                    <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)} className="w-full p-4 border-2 border-blue-200 rounded-xl bg-white outline-none font-bold text-blue-950 text-base focus:border-emerald-500 transition-colors shadow-sm">
                                         {getSortedShiftKeys(loggedInEmp.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
                                     </select>
                                 </div>
-                                <div className={`p-3 rounded-xl flex items-center gap-3 text-xs font-medium border ${locationStatus === 'ok' ? 'bg-green-50 border-green-100 text-green-700' : locationStatus === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
-                                    {locationStatus === 'ok' ? <><i className="fa-solid fa-location-dot"></i> พิกัดถูกต้อง (ใน รพ.)</> : locationStatus === 'error' ? <><i className="fa-solid fa-location-xmark"></i> พิกัดอยู่นอกพื้นที่ <button onClick={checkLocation} className="ml-auto underline font-bold">ลองใหม่</button></> : <><i className="fa-solid fa-spinner fa-spin"></i> ตรวจสอบพิกัด GPS...</>}
+                                <div className={`p-4 rounded-xl flex items-center gap-3 text-sm font-bold border-2 ${locationStatus === 'ok' ? 'bg-green-50 border-green-200 text-green-800' : locationStatus === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
+                                    {locationStatus === 'ok' ? <><i className="fa-solid fa-location-dot text-lg"></i> พิกัดถูกต้อง (ใน รพ.)</> : locationStatus === 'error' ? <><i className="fa-solid fa-location-xmark text-lg"></i> พิกัดอยู่นอกพื้นที่ <button onClick={checkLocation} className="ml-auto underline font-black text-red-900">ลองใหม่</button></> : <><i className="fa-solid fa-spinner fa-spin text-lg"></i> ตรวจสอบพิกัด GPS...</>}
                                 </div>
-                                <div className="border border-dashed border-gray-300 rounded-2xl h-48 flex items-center justify-center bg-gray-50 overflow-hidden relative group">
+                                <div className="border-2 border-dashed border-blue-300 rounded-2xl h-56 flex items-center justify-center bg-blue-50 overflow-hidden relative group">
                                     {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
-                                    <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok'} className={`flex flex-col items-center transition-colors ${locationStatus === 'ok' ? 'text-emerald-600 hover:text-emerald-700' : 'text-gray-300'}`}>
-                                        <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center mb-2 shadow-sm group-hover:shadow transition-all"><i className="fa-solid fa-camera"></i></div>
-                                        <span className="text-xs font-medium">เปิดกล้องสแกนใบหน้า</span>
+                                    <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok'} className={`flex flex-col items-center transition-colors ${locationStatus === 'ok' ? 'text-emerald-700 hover:text-emerald-800' : 'text-blue-300'}`}>
+                                        <div className="w-14 h-14 rounded-full bg-white border-2 border-emerald-200 flex items-center justify-center mb-3 shadow-md group-hover:shadow-lg transition-all"><i className="fa-solid fa-camera text-2xl"></i></div>
+                                        <span className="text-sm font-bold">เปิดกล้องสแกนใบหน้า</span>
                                     </button>}
                                 </div>
-                                <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok'} className={`w-full p-3.5 rounded-xl font-medium text-white transition-all ${(cameraActive && locationStatus === 'ok') ? 'bg-emerald-600 hover:bg-emerald-700 shadow-sm' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                                <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok'} className={`w-full p-4 rounded-xl font-bold text-lg text-white transition-all ${(cameraActive && locationStatus === 'ok') ? 'bg-emerald-600 hover:bg-emerald-700 shadow-md' : 'bg-blue-200 text-white cursor-not-allowed'}`}>
                                     {isScanning ? 'กำลังบันทึก...' : 'สแกนใบหน้า ยืนยันเข้างาน'}
                                 </button>
-                                <button onClick={() => {setLoggedInEmp(null); setCurrentLocation(null);}} className="w-full text-xs text-gray-400 font-medium hover:text-gray-600 text-center uppercase tracking-wider">ย้อนกลับ / เปลี่ยนพนักงาน</button>
+                                <button onClick={() => {setLoggedInEmp(null); setCurrentLocation(null);}} className="w-full text-sm text-blue-600 font-bold hover:text-blue-800 text-center uppercase tracking-wider mt-2">ย้อนกลับ / เปลี่ยนพนักงาน</button>
                             </div>
                         )}
                     </div>
@@ -636,72 +643,72 @@
             };
 
             if (successResult) return (
-                <div className="max-w-sm mx-auto bg-white rounded-2xl p-8 shadow-minimal border border-gray-100 text-center mt-6">
-                    <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-arrow-right-from-bracket text-2xl text-rose-500"></i></div>
-                    <h2 className="text-xl font-semibold text-gray-900">ลงเวลาออกงานสำเร็จ</h2>
-                    <div className="my-6 p-4 bg-rose-50/30 rounded-xl border border-rose-100">
-                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">เวลาออกงาน</p>
-                        <p className="text-4xl font-bold text-rose-600 tracking-tight mb-3">{displaySafeTime(successResult.timeOut)}</p>
-                        <div className="inline-flex items-center gap-2 text-sm font-medium text-rose-700 bg-white px-3 py-1.5 rounded-lg border border-rose-200">
-                            <i className="fa-solid fa-calendar-day text-rose-400"></i> กะ: {successResult.shiftName}
+                <div className="max-w-md mx-auto bg-white rounded-3xl p-8 sm:p-10 shadow-floating border border-blue-100 text-center mt-6">
+                    <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-arrow-right-from-bracket text-3xl text-rose-600"></i></div>
+                    <h2 className="text-2xl font-bold text-blue-950">ลงเวลาออกงานสำเร็จ</h2>
+                    <div className="my-8 p-6 bg-rose-50 rounded-2xl border border-rose-200">
+                        <p className="text-sm font-bold text-rose-800 uppercase tracking-wider mb-2">เวลาออกงาน</p>
+                        <p className="text-5xl font-extrabold text-rose-700 tracking-tight mb-4">{displaySafeTime(successResult.timeOut)}</p>
+                        <div className="inline-flex items-center gap-2 text-base font-bold text-rose-800 bg-white px-4 py-2 rounded-xl border border-rose-200 shadow-sm">
+                            <i className="fa-solid fa-calendar-day text-rose-500"></i> กะ: {successResult.shiftName}
                         </div>
                     </div>
-                    <button onClick={() => { setSuccessResult(null); setFoundRecord(null); setOutEmpId(''); }} className="w-full p-3.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors">เสร็จสิ้น</button>
+                    <button onClick={() => { setSuccessResult(null); setFoundRecord(null); setOutEmpId(''); }} className="w-full p-4 rounded-xl border-2 border-blue-200 text-blue-800 font-bold text-lg hover:bg-blue-50 transition-colors">เสร็จสิ้น</button>
                 </div>
             );
 
             return (
-                <div className="max-w-sm mx-auto bg-white rounded-2xl shadow-minimal border border-rose-100 overflow-hidden mt-6 relative">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-rose-500"></div>
-                    <div className="px-6 pt-8 pb-6 text-center border-b border-gray-50">
-                        <h2 className="text-lg font-medium text-rose-600 mb-1">ลงเวลาออกงาน</h2>
-                        <div className="text-5xl font-bold text-gray-900 tracking-tight font-mono">{formatTime24(currentTime)} <span className="text-xl">น.</span></div>
+                <div className="max-w-md mx-auto bg-white rounded-3xl shadow-floating border border-rose-200 overflow-hidden mt-6 relative">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-rose-500"></div>
+                    <div className="px-8 pt-10 pb-6 text-center border-b border-blue-50">
+                        <h2 className="text-xl font-bold text-rose-600 mb-2">ลงเวลาออกงาน</h2>
+                        <div className="text-6xl font-extrabold text-blue-950 tracking-tight font-mono drop-shadow-sm">{formatTime24(currentTime)} <span className="text-2xl">น.</span></div>
                     </div>
-                    <div className="p-6 space-y-6">
-                        {errorMsg && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium flex items-center gap-2"><i className="fa-solid fa-circle-exclamation"></i> {errorMsg}</div>}
+                    <div className="p-8 space-y-6">
+                        {errorMsg && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold flex items-start gap-3 border border-red-200"><i className="fa-solid fa-circle-exclamation mt-1"></i> <span>{errorMsg}</span></div>}
                         {!foundRecord ? (
                             <>
-                                <div className="space-y-4">
+                                <div className="space-y-5">
                                     <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">รหัสพนักงาน</label>
-                                        <input type="text" value={outEmpId} onChange={(e) => setOutEmpId(e.target.value.toUpperCase())} className="w-full p-3.5 border border-gray-200 rounded-xl bg-gray-50 outline-none font-medium focus:bg-white focus:border-rose-300 transition-colors" placeholder="เช่น EMP01" />
+                                        <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">รหัสพนักงาน</label>
+                                        <input type="text" value={outEmpId} onChange={(e) => setOutEmpId(e.target.value.toUpperCase())} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-lg focus:bg-white focus:border-rose-400 transition-colors placeholder:font-medium placeholder:text-blue-300" placeholder="เช่น EMP01" />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">วันที่เข้างาน</label>
-                                        <input type="date" value={outDate} onChange={(e) => setOutDate(e.target.value)} className="w-full p-3.5 border border-gray-200 rounded-xl bg-gray-50 outline-none font-medium focus:bg-white focus:border-rose-300 transition-colors text-sm" />
+                                        <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">วันที่เข้างาน</label>
+                                        <input type="date" value={outDate} onChange={(e) => setOutDate(e.target.value)} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-base focus:bg-white focus:border-rose-400 transition-colors" />
                                     </div>
                                 </div>
-                                <button onClick={searchRecord} className="w-full p-3.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl font-medium transition-colors">ค้นหาประวัติเข้างาน</button>
+                                <button onClick={searchRecord} className="w-full p-4 bg-rose-100 text-rose-800 hover:bg-rose-200 rounded-xl font-bold text-lg transition-colors shadow-sm">ค้นหาประวัติเข้างาน</button>
                             </>
                         ) : (
                             <div className="space-y-6 animate-in fade-in">
-                                <div className="bg-rose-50/50 border border-rose-100 p-4 rounded-xl relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-1 h-full bg-rose-400"></div>
-                                    <p className="font-semibold text-gray-900 ml-1">{foundRecord.empId} • {employees[foundRecord.empId]?.fname}</p>
-                                    <p className="text-xs text-gray-500 mt-1 ml-1"><i className="fa-regular fa-clock mr-1"></i> เข้างาน: {displaySafeTime(foundRecord.timeIn)} ({SHIFT_TYPES[foundRecord.shiftId]?.label})</p>
-                                    <p className="text-xs text-gray-500 mt-1 ml-1"><i className="fa-regular fa-calendar mr-1"></i> วันที่: {formatDisplayDate(foundRecord.date)}</p>
+                                <div className="bg-blue-50 border border-blue-200 p-5 rounded-2xl relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-rose-400"></div>
+                                    <p className="font-bold text-lg text-blue-950 ml-2">{foundRecord.empId} • {employees[foundRecord.empId]?.fname}</p>
+                                    <p className="text-sm font-semibold text-blue-700 mt-2 ml-2"><i className="fa-regular fa-clock mr-2 text-rose-500"></i> เข้างาน: {displaySafeTime(foundRecord.timeIn)} ({SHIFT_TYPES[foundRecord.shiftId]?.label})</p>
+                                    <p className="text-sm font-semibold text-blue-700 mt-1.5 ml-2"><i className="fa-regular fa-calendar mr-2 text-rose-500"></i> วันที่: {formatDisplayDate(foundRecord.date)}</p>
                                 </div>
-                                <div className="border border-dashed border-gray-300 rounded-2xl h-48 flex items-center justify-center bg-gray-50 overflow-hidden relative group">
+                                <div className="border-2 border-dashed border-blue-300 rounded-2xl h-56 flex items-center justify-center bg-blue-50 overflow-hidden relative group">
                                     {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
-                                    <button onClick={() => setCameraActive(true)} className="flex flex-col items-center text-gray-400 hover:text-rose-500 transition-colors">
-                                        <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center mb-2 shadow-sm group-hover:shadow transition-all"><i className="fa-solid fa-camera"></i></div>
-                                        <span className="text-xs font-medium">เปิดกล้องสแกนหน้า</span>
+                                    <button onClick={() => setCameraActive(true)} className="flex flex-col items-center text-blue-400 hover:text-rose-600 transition-colors">
+                                        <div className="w-14 h-14 rounded-full bg-white border-2 border-rose-200 flex items-center justify-center mb-3 shadow-md group-hover:shadow-lg transition-all"><i className="fa-solid fa-camera text-2xl"></i></div>
+                                        <span className="text-sm font-bold">เปิดกล้องสแกนหน้า</span>
                                     </button>}
                                 </div>
                                 {showEarlyWarning ? (
-                                    <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 text-center">
-                                        <p className="font-medium text-orange-800 mb-3 text-sm">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
-                                        <div className="flex gap-2">
-                                            <button onClick={processClockOut} className="flex-1 bg-orange-500 text-white rounded-lg py-2 text-sm font-medium">ยืนยันออก</button>
-                                            <button onClick={() => setShowEarlyWarning(false)} className="flex-1 bg-white border border-gray-200 text-gray-600 rounded-lg py-2 text-sm font-medium">ยกเลิก</button>
+                                    <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 text-center">
+                                        <p className="font-bold text-amber-900 mb-4 text-base">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
+                                        <div className="flex gap-3">
+                                            <button onClick={processClockOut} className="flex-1 bg-amber-600 text-white rounded-xl py-3 text-base font-bold shadow-sm">ยืนยันออก</button>
+                                            <button onClick={() => setShowEarlyWarning(false)} className="flex-1 bg-white border-2 border-blue-200 text-blue-800 rounded-xl py-3 text-base font-bold">ยกเลิก</button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <button onClick={handleClockOutAttempt} disabled={!cameraActive || isScanning} className={`w-full p-3.5 rounded-xl font-medium text-white transition-all ${cameraActive ? 'bg-rose-500 hover:bg-rose-600 shadow-sm' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                                    <button onClick={handleClockOutAttempt} disabled={!cameraActive || isScanning} className={`w-full p-4 rounded-xl font-bold text-lg text-white transition-all ${cameraActive ? 'bg-rose-600 hover:bg-rose-700 shadow-md' : 'bg-blue-200 text-white cursor-not-allowed'}`}>
                                         {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันออกงาน'}
                                     </button>
                                 )}
-                                <button onClick={() => setFoundRecord(null)} className="w-full text-xs text-gray-400 font-medium hover:text-gray-600 text-center uppercase tracking-wider">ค้นหาใหม่</button>
+                                <button onClick={() => setFoundRecord(null)} className="w-full text-sm text-blue-600 font-bold hover:text-blue-800 text-center uppercase tracking-wider mt-2">ค้นหาใหม่</button>
                             </div>
                         )}
                     </div>
@@ -727,48 +734,48 @@
             });
 
             return (
-                <div className="bg-white rounded-2xl shadow-minimal border border-blue-100 p-6 mt-2 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
-                    <h2 className="text-xl font-semibold text-blue-800 mb-6 mt-2">ประวัติการลงเวลา</h2>
-                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="bg-white rounded-3xl shadow-floating border border-blue-100 p-8 mt-4 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
+                    <h2 className="text-2xl font-bold text-blue-950 mb-8 mt-2">ประวัติการลงเวลา</h2>
+                    <div className="flex flex-col md:flex-row gap-5 mb-8">
                         <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">วันที่</label>
-                            <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="w-full p-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 outline-none focus:border-blue-300" />
+                            <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">วันที่</label>
+                            <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="w-full p-3.5 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 bg-blue-50/50 outline-none focus:bg-white focus:border-blue-500" />
                         </div>
                         <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">ค้นหาพนักงาน</label>
-                            <input type="text" placeholder="รหัส หรือ ชื่อ..." value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className="w-full p-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 outline-none focus:border-blue-300" />
+                            <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">ค้นหาพนักงาน</label>
+                            <input type="text" placeholder="รหัส หรือ ชื่อ..." value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className="w-full p-3.5 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 bg-blue-50/50 outline-none focus:bg-white focus:border-blue-500" />
                         </div>
                     </div>
-                    <div className="overflow-x-auto border border-gray-200 rounded-xl">
-                        <table className="min-w-full text-sm text-left whitespace-nowrap">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                    <div className="overflow-x-auto border-2 border-blue-100 rounded-2xl">
+                        <table className="min-w-full text-base text-left whitespace-nowrap">
+                            <thead className="bg-blue-100/50 border-b-2 border-blue-100">
                                 <tr>
-                                    <th className="px-6 py-3 font-medium text-gray-500">พนักงาน</th>
-                                    <th className="px-6 py-3 font-medium text-gray-500">แผนก</th>
-                                    <th className="px-6 py-3 font-medium text-gray-500">กะ</th>
-                                    <th className="px-6 py-3 font-medium text-gray-500 text-center">เข้า</th>
-                                    <th className="px-6 py-3 font-medium text-gray-500 text-center">ออก</th>
-                                    <th className="px-6 py-3 font-medium text-gray-500 text-center">สถานะ</th>
+                                    <th className="px-6 py-4 font-bold text-blue-900">พนักงาน</th>
+                                    <th className="px-6 py-4 font-bold text-blue-900">แผนก</th>
+                                    <th className="px-6 py-4 font-bold text-blue-900">กะ</th>
+                                    <th className="px-6 py-4 font-bold text-blue-900 text-center">เข้า</th>
+                                    <th className="px-6 py-4 font-bold text-blue-900 text-center">ออก</th>
+                                    <th className="px-6 py-4 font-bold text-blue-900 text-center">สถานะ</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-blue-50">
                                 {filteredRecords.map(r => {
                                     const emp = employees[r.empId];
                                     return (
-                                        <tr key={r.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-3"><span className="font-medium text-gray-900">{emp.fname}</span> <span className="text-gray-400 text-xs ml-1">({r.empId})</span></td>
-                                            <td className="px-6 py-3 text-gray-500 text-xs">{emp.dept}</td>
-                                            <td className="px-6 py-3 text-gray-600 text-xs">{SHIFT_TYPES[r.shiftId]?.label}</td>
-                                            <td className="px-6 py-3 text-center font-medium text-gray-900">{displaySafeTime(r.timeIn)}</td>
-                                            <td className="px-6 py-3 text-center font-medium text-gray-900">{displaySafeTime(r.timeOut)}</td>
-                                            <td className="px-6 py-3 text-center">
-                                                {r.isLate ? <span className="text-red-500 text-xs font-medium bg-red-50 px-2 py-1 rounded-full">สาย {r.lateMinutes} นาที</span> : <span className="text-green-500 text-xs font-medium bg-green-50 px-2 py-1 rounded-full">ปกติ</span>}
+                                        <tr key={r.id} className="hover:bg-blue-50 transition-colors">
+                                            <td className="px-6 py-4"><span className="font-bold text-blue-950">{emp.fname}</span> <span className="text-blue-600 text-sm ml-1 font-semibold">({r.empId})</span></td>
+                                            <td className="px-6 py-4 text-blue-800 text-sm font-semibold">{emp.dept}</td>
+                                            <td className="px-6 py-4 text-blue-800 text-sm font-semibold">{SHIFT_TYPES[r.shiftId]?.label}</td>
+                                            <td className="px-6 py-4 text-center font-bold text-blue-950">{displaySafeTime(r.timeIn)}</td>
+                                            <td className="px-6 py-4 text-center font-bold text-blue-950">{displaySafeTime(r.timeOut)}</td>
+                                            <td className="px-6 py-4 text-center">
+                                                {r.isLate ? <span className="text-red-700 text-sm font-bold bg-red-100 px-3 py-1.5 rounded-full border border-red-200">สาย {r.lateMinutes} นาที</span> : <span className="text-green-800 text-sm font-bold bg-green-100 px-3 py-1.5 rounded-full border border-green-200">ปกติ</span>}
                                             </td>
                                         </tr>
                                     );
                                 })}
-                                {filteredRecords.length === 0 && <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-400">ไม่พบประวัติในวันที่เลือก</td></tr>}
+                                {filteredRecords.length === 0 && <tr><td colSpan="6" className="px-6 py-10 text-center text-blue-500 font-medium text-lg">ไม่พบประวัติในวันที่เลือก</td></tr>}
                             </tbody>
                         </table>
                     </div>
@@ -777,13 +784,13 @@
         }
 
         const MapModal = ({ lat, lon, onClose }) => (
-            <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                <div className="bg-white p-1 rounded-2xl w-full max-w-lg shadow-floating overflow-hidden">
-                    <div className="flex justify-between items-center px-4 py-3 border-b border-gray-50">
-                        <h3 className="font-semibold text-gray-900 text-sm">พิกัดลงเวลา</h3>
-                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 transition-colors"><i className="fa-solid fa-xmark"></i></button>
+            <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <div className="bg-white p-1 rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200">
+                    <div className="flex justify-between items-center px-6 py-4 border-b border-blue-50">
+                        <h3 className="font-bold text-blue-950 text-lg">พิกัดลงเวลา</h3>
+                        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
                     </div>
-                    <iframe src={`https://maps.google.com/maps?q=${lat},${lon}&hl=th&z=17&output=embed`} width="100%" height="300" frameBorder="0" className="bg-gray-50" />
+                    <iframe src={`https://maps.google.com/maps?q=${lat},${lon}&hl=th&z=17&output=embed`} width="100%" height="350" frameBorder="0" className="bg-blue-50" />
                 </div>
             </div>
         );
@@ -791,30 +798,30 @@
         const PhotoModal = ({ record, employees, onClose }) => {
             const emp = employees[record.empId] || {};
             return (
-                <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white p-1 rounded-2xl w-full max-w-md shadow-floating overflow-hidden flex flex-col">
-                        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-50 shrink-0">
-                            <h3 className="font-semibold text-gray-900 text-sm">รูปสแกนใบหน้า</h3>
-                            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 transition-colors"><i className="fa-solid fa-xmark"></i></button>
+                <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white p-1 rounded-3xl w-full max-w-md shadow-floating overflow-hidden flex flex-col border border-blue-200">
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-blue-50 shrink-0">
+                            <h3 className="font-bold text-blue-950 text-lg">รูปสแกนใบหน้า</h3>
+                            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
                         </div>
-                        <div className="p-4 bg-gray-50 flex gap-4 h-64 overflow-hidden">
+                        <div className="p-6 bg-blue-50/50 flex gap-5 h-72 overflow-hidden">
                             {record.photoInUrl ? (
                                 <div className="flex-1 flex flex-col">
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-center">เข้างาน</p>
-                                    <iframe src={record.photoInUrl.replace('/view', '/preview')} className="w-full flex-1 border border-gray-200 rounded-xl bg-white" />
+                                    <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">เข้างาน</p>
+                                    <iframe src={record.photoInUrl.replace('/view', '/preview')} className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm" />
                                 </div>
-                            ) : <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-gray-200 rounded-xl bg-white"><i className="fa-regular fa-image text-gray-300 text-2xl"></i></div>}
+                            ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
                             
                             {record.photoOutUrl ? (
                                 <div className="flex-1 flex flex-col">
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-center">ออกงาน</p>
-                                    <iframe src={record.photoOutUrl.replace('/view', '/preview')} className="w-full flex-1 border border-gray-200 rounded-xl bg-white" />
+                                    <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">ออกงาน</p>
+                                    <iframe src={record.photoOutUrl.replace('/view', '/preview')} className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm" />
                                 </div>
-                            ) : <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-gray-200 rounded-xl bg-white"><i className="fa-regular fa-image text-gray-300 text-2xl"></i></div>}
+                            ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
                         </div>
-                        <div className="p-4 border-t border-gray-50 text-sm text-gray-600 shrink-0">
-                            <p><span className="font-medium text-gray-900">{emp.fname} {emp.lname}</span> ({record.empId})</p>
-                            <p className="text-xs mt-1 text-gray-500">วันที่: {formatDisplayDate(record.date)}</p>
+                        <div className="p-5 border-t border-blue-50 text-base text-blue-800 shrink-0 bg-white">
+                            <p><span className="font-bold text-blue-950 text-lg">{emp.fname} {emp.lname}</span> <span className="font-semibold text-blue-600">({record.empId})</span></p>
+                            <p className="text-sm mt-1.5 font-medium text-blue-700">วันที่: {formatDisplayDate(record.date)}</p>
                         </div>
                     </div>
                 </div>
@@ -896,7 +903,9 @@
                     const isFuture = dateStr > todayStr;
                     
                     if (dayRecords.length > 0) {
-                        shiftsByDay[day] = dayRecords.map(r => r.shiftId).join(', ');
+                        // 🟢 กรณีที่ 1: มีการสแกนลงเวลาจริง
+                        // ทำสัญลักษณ์ให้รู้ว่านี่คือ "เวลาจริง" (Actual)
+                        shiftsByDay[day] = { text: dayRecords.map(r => r.shiftId).join(', '), status: 'actual' };
                         empTotalCredit += dayRecords.reduce((sum, r) => sum + (r.credit || 0), 0);
                         empTotalLate += dayRecords.reduce((sum, r) => sum + (r.isLate ? Number(r.lateMinutes) : 0), 0);
                         
@@ -906,18 +915,34 @@
                             }
                         });
                     } else {
-                        shiftsByDay[day] = scheduledShifts.length > 0 ? scheduledShifts.join(', ') : '-';
-                        
+                        // ไม่มีสแกนลงเวลา ต้องเช็คว่าเป็นอนาคต, วันหยุด, หรือ ขาดงาน
+                        let scheduledText = scheduledShifts.length > 0 ? scheduledShifts.join(', ') : '-';
+                        let cellStatus = 'empty'; // ค่าเริ่มต้น
+
                         scheduledShifts.forEach(s => {
                             if (s) {
+                                // นับจำนวนเวรที่จัดไว้
                                 shiftCounts[s] = (shiftCounts[s] || 0) + 1; 
                             }
+                            
                             if(['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) {
+                                // 🟢 กรณีที่ 2: เป็นวันหยุดที่ได้เงิน (ได้เครดิตแน่ๆ)
                                 empTotalCredit += 1;
+                                cellStatus = 'leave';
                             } else if (isFuture && SHIFT_TYPES[s]) {
+                                // 🔮 กรณีที่ 3: เป็นวันทำงานในอนาคต (บวกเครดิตรอไว้ก่อน)
                                 empTotalCredit += SHIFT_TYPES[s].credit;
+                                cellStatus = 'future';
+                            } else if (!isFuture && SHIFT_TYPES[s]) {
+                                // 🚨 กรณีที่ 4: อดีตหรือวันนี้ มีกะงาน แต่ไม่มีบันทึกเวลาสแกน = ขาดงาน!
+                                // จะไม่บวก empTotalCredit ให้
+                                cellStatus = 'missing'; 
+                                // แอบเปลี่ยนข้อความให้ HR สะดุ้ง
+                                scheduledText = `${s} (ขาด)`; 
                             }
                         });
+                        
+                        shiftsByDay[day] = { text: scheduledText, status: cellStatus };
                     }
                 });
                 
@@ -1017,7 +1042,7 @@
                 
                 summaryMatrix.forEach(row => {
                     const rowData = [row.empId, `${row.fname} ${row.lname}`, row.dept];
-                    daysArray.forEach(day => rowData.push(row.shiftsByDay[day]));
+                    daysArray.forEach(day => rowData.push(row.shiftsByDay[day].text));
                     sortedShiftTypesUsed.forEach(type => rowData.push(row.shiftCounts[type] || 0));
                     rowData.push(row.empTotalCredit, localWorkDays, row.otShifts);
                     if (role === 'admin') rowData.push(row.empTotalLate);
@@ -1069,189 +1094,190 @@
                 link.click();
             };
 
-            const headerColor = role === 'supervisor' ? 'bg-amber-500' : 'bg-slate-800';
-            const iconColor = role === 'supervisor' ? 'text-amber-500' : 'text-slate-500';
-            const tabActiveColor = role === 'supervisor' ? 'border-amber-600 text-amber-700' : 'border-slate-900 text-slate-900';
+            const headerColor = role === 'supervisor' ? 'bg-amber-500' : 'bg-blue-900';
+            const iconColor = role === 'supervisor' ? 'text-amber-600' : 'text-blue-900';
+            const tabActiveColor = role === 'supervisor' ? 'border-amber-600 text-amber-700 bg-amber-50' : 'border-blue-900 text-blue-900 bg-blue-50';
 
             return (
-                <div className="bg-white rounded-2xl shadow-minimal border border-slate-200 mt-2 relative overflow-hidden">
-                    <div className={`absolute top-0 left-0 w-full h-1 ${headerColor}`}></div>
+                <div className="bg-white rounded-3xl shadow-floating border border-blue-100 mt-4 relative overflow-hidden">
+                    <div className={`absolute top-0 left-0 w-full h-2 ${headerColor}`}></div>
                     
-                    <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50/50">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-200 shadow-sm ${iconColor}`}>
-                                <i className={`fa-solid ${role === 'supervisor' ? 'fa-user-tie' : 'fa-shield-halved'}`}></i>
+                    <div className="flex justify-between items-center p-6 border-b-2 border-blue-50 bg-blue-50/30">
+                        <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-white border-2 border-blue-100 shadow-sm ${iconColor}`}>
+                                <i className={`fa-solid text-xl ${role === 'supervisor' ? 'fa-user-tie' : 'fa-shield-halved'}`}></i>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">{role === 'supervisor' ? 'โหมดหัวหน้างาน' : 'โหมดผู้ดูแลระบบ (Admin)'}</p>
-                                <p className="font-semibold text-gray-900">{user.fname} {user.lname} <span className="text-xs text-gray-500 font-normal ml-1">({user.id})</span></p>
+                                <p className="text-sm text-blue-800 font-bold uppercase tracking-wider">{role === 'supervisor' ? 'โหมดหัวหน้างาน' : 'โหมดผู้ดูแลระบบ (Admin)'}</p>
+                                <p className="font-bold text-xl text-blue-950 mt-0.5">{user.fname} {user.lname} <span className="text-base text-blue-600 font-semibold ml-1">({user.id})</span></p>
                             </div>
                         </div>
-                        <button onClick={onLogout} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium transition-colors"><i className="fa-solid fa-arrow-right-from-bracket mr-1.5"></i>ออกจากระบบ</button>
+                        <button onClick={onLogout} className="text-base px-4 py-2.5 rounded-xl border-2 border-blue-100 text-blue-800 hover:bg-blue-100 font-bold transition-colors shadow-sm"><i className="fa-solid fa-arrow-right-from-bracket mr-2"></i>ออกจากระบบ</button>
                     </div>
 
                     {selectedMapRecord && <MapModal lat={selectedMapRecord.lat} lon={selectedMapRecord.lon} onClose={() => setSelectedMapRecord(null)} />}
                     {selectedPhotoRecord && <PhotoModal record={selectedPhotoRecord} employees={employees} onClose={() => setSelectedPhotoRecord(null)} />}
                     
                     {editModalData && (
-                        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl w-full max-w-sm shadow-floating overflow-hidden">
-                                <div className="p-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                                    <h3 className="font-bold text-gray-900"><i className="fa-solid fa-pen text-blue-500 mr-2"></i>แก้ไขการลงเวลา</h3>
-                                    <button onClick={() => setEditModalData(null)} className="text-gray-400 hover:text-gray-600"><i className="fa-solid fa-xmark"></i></button>
+                        <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200">
+                                <div className="p-6 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
+                                    <h3 className="font-bold text-blue-950 text-xl"><i className="fa-solid fa-pen text-blue-600 mr-3"></i>แก้ไขการลงเวลา</h3>
+                                    <button onClick={() => setEditModalData(null)} className="text-blue-400 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-2xl"></i></button>
                                 </div>
-                                <div className="p-5 space-y-4">
-                                    <div className="text-sm bg-blue-50 text-blue-800 p-3 rounded-lg border border-blue-100">
-                                        <span className="font-bold">{editModalData.empId}</span> • {employees[editModalData.empId]?.fname} <br/>วันที่: {formatDisplayDate(editModalData.date)}
+                                <div className="p-8 space-y-5">
+                                    <div className="text-base bg-white text-blue-900 p-4 rounded-xl border-2 border-blue-100 shadow-sm">
+                                        <span className="font-extrabold text-blue-950">{editModalData.empId}</span> • {employees[editModalData.empId]?.fname} <br/>
+                                        <span className="mt-1 inline-block text-blue-700 font-semibold">วันที่: {formatDisplayDate(editModalData.date)}</span>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-1">กะการทำงาน</label>
-                                        <select value={editModalData.shiftId} onChange={(e) => setEditModalData({...editModalData, shiftId: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg outline-none text-sm bg-white">
+                                        <label className="block text-sm font-bold text-blue-800 mb-2">กะการทำงาน</label>
+                                        <select value={editModalData.shiftId} onChange={(e) => setEditModalData({...editModalData, shiftId: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 bg-white focus:border-blue-500">
                                             {getSortedShiftKeys(employees[editModalData.empId]?.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
                                         </select>
                                     </div>
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-4">
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-gray-500 mb-1">เวลาเข้า (HH:MM)</label>
-                                            <input type="time" value={editModalData.timeIn} onChange={(e) => setEditModalData({...editModalData, timeIn: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg outline-none text-sm" />
+                                            <label className="block text-sm font-bold text-blue-800 mb-2">เวลาเข้า (HH:MM)</label>
+                                            <input type="time" value={editModalData.timeIn} onChange={(e) => setEditModalData({...editModalData, timeIn: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 focus:border-blue-500" />
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-gray-500 mb-1">เวลาออก (HH:MM)</label>
-                                            <input type="time" value={editModalData.timeOut || ''} onChange={(e) => setEditModalData({...editModalData, timeOut: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg outline-none text-sm" />
+                                            <label className="block text-sm font-bold text-blue-800 mb-2">เวลาออก (HH:MM)</label>
+                                            <input type="time" value={editModalData.timeOut || ''} onChange={(e) => setEditModalData({...editModalData, timeOut: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 focus:border-blue-500" />
                                         </div>
                                     </div>
                                 </div>
-                                <div className="p-4 flex gap-3 bg-gray-50 border-t border-gray-100">
-                                    <button onClick={() => setEditModalData(null)} className="flex-1 p-2 bg-white border border-gray-300 text-gray-600 rounded-lg font-medium text-sm">ยกเลิก</button>
-                                    <button onClick={handleSaveEdit} disabled={isSaving} className="flex-1 p-2 bg-blue-600 text-white rounded-lg font-medium text-sm">{isSaving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}</button>
+                                <div className="p-5 flex gap-4 bg-blue-50/50 border-t border-blue-100">
+                                    <button onClick={() => setEditModalData(null)} className="flex-1 p-3.5 bg-white border-2 border-blue-200 text-blue-800 rounded-xl font-bold text-lg transition-colors hover:bg-blue-50">ยกเลิก</button>
+                                    <button onClick={handleSaveEdit} disabled={isSaving} className="flex-1 p-3.5 bg-blue-700 text-white rounded-xl font-bold text-lg transition-colors hover:bg-blue-800 shadow-md">{isSaving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {addModalData && (
-                        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl w-full max-w-sm shadow-floating overflow-hidden">
-                                <div className="p-5 border-b border-gray-100 bg-emerald-50 flex justify-between items-center">
-                                    <h3 className="font-bold text-emerald-900"><i className="fa-solid fa-plus-circle text-emerald-500 mr-2"></i>เพิ่มข้อมูลลงเวลาย้อนหลัง</h3>
-                                    <button onClick={() => setAddModalData(null)} className="text-gray-400 hover:text-gray-600"><i className="fa-solid fa-xmark"></i></button>
+                        <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200">
+                                <div className="p-6 border-b border-blue-100 bg-emerald-50 flex justify-between items-center">
+                                    <h3 className="font-bold text-emerald-900 text-xl"><i className="fa-solid fa-plus-circle text-emerald-600 mr-3"></i>เพิ่มข้อมูลลงเวลาย้อนหลัง</h3>
+                                    <button onClick={() => setAddModalData(null)} className="text-emerald-400 hover:text-emerald-700 transition-colors"><i className="fa-solid fa-xmark text-2xl"></i></button>
                                 </div>
-                                <div className="p-5 space-y-4">
-                                    <div className="flex gap-3">
+                                <div className="p-8 space-y-5">
+                                    <div className="flex gap-4">
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-gray-500 mb-1">รหัสพนักงาน</label>
-                                            <input type="text" placeholder="เช่น EMP01" value={addModalData.empId} onChange={(e) => setAddModalData({...addModalData, empId: e.target.value.toUpperCase()})} className="w-full p-2 border border-gray-300 rounded-lg outline-none text-sm" />
+                                            <label className="block text-sm font-bold text-blue-800 mb-2">รหัสพนักงาน</label>
+                                            <input type="text" placeholder="เช่น EMP01" value={addModalData.empId} onChange={(e) => setAddModalData({...addModalData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 focus:border-emerald-500" />
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-gray-500 mb-1">วันที่</label>
-                                            <input type="date" value={addModalData.date} onChange={(e) => setAddModalData({...addModalData, date: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg outline-none text-sm" />
+                                            <label className="block text-sm font-bold text-blue-800 mb-2">วันที่</label>
+                                            <input type="date" value={addModalData.date} onChange={(e) => setAddModalData({...addModalData, date: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 focus:border-emerald-500" />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-1">กะการทำงาน</label>
-                                        <select value={addModalData.shiftId} onChange={(e) => setAddModalData({...addModalData, shiftId: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg outline-none text-sm bg-white">
+                                        <label className="block text-sm font-bold text-blue-800 mb-2">กะการทำงาน</label>
+                                        <select value={addModalData.shiftId} onChange={(e) => setAddModalData({...addModalData, shiftId: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 bg-white focus:border-emerald-500">
                                             <option value="">-- เลือกกะ --</option>
                                             {getSortedShiftKeys(employees[addModalData.empId]?.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
                                         </select>
                                     </div>
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-4">
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-gray-500 mb-1">เวลาเข้า</label>
-                                            <input type="time" value={addModalData.timeIn} onChange={(e) => setAddModalData({...addModalData, timeIn: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg outline-none text-sm" />
+                                            <label className="block text-sm font-bold text-blue-800 mb-2">เวลาเข้า</label>
+                                            <input type="time" value={addModalData.timeIn} onChange={(e) => setAddModalData({...addModalData, timeIn: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 focus:border-emerald-500" />
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-gray-500 mb-1">เวลาออก (ปล่อยว่างได้)</label>
-                                            <input type="time" value={addModalData.timeOut} onChange={(e) => setAddModalData({...addModalData, timeOut: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg outline-none text-sm" />
+                                            <label className="block text-sm font-bold text-blue-800 mb-2">เวลาออก <span className="font-normal text-blue-500">(ถ้ามี)</span></label>
+                                            <input type="time" value={addModalData.timeOut} onChange={(e) => setAddModalData({...addModalData, timeOut: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 focus:border-emerald-500" />
                                         </div>
                                     </div>
                                 </div>
-                                <div className="p-4 flex gap-3 bg-gray-50 border-t border-gray-100">
-                                    <button onClick={() => setAddModalData(null)} className="flex-1 p-2 bg-white border border-gray-300 text-gray-600 rounded-lg font-medium text-sm">ยกเลิก</button>
-                                    <button onClick={handleSaveAdd} disabled={isSaving} className="flex-1 p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm">{isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}</button>
+                                <div className="p-5 flex gap-4 bg-emerald-50/50 border-t border-emerald-100">
+                                    <button onClick={() => setAddModalData(null)} className="flex-1 p-3.5 bg-white border-2 border-emerald-200 text-emerald-800 rounded-xl font-bold text-lg transition-colors hover:bg-emerald-50">ยกเลิก</button>
+                                    <button onClick={handleSaveAdd} disabled={isSaving} className="flex-1 p-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg transition-colors shadow-md">{isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}</button>
                                 </div>
                             </div>
                         </div>
                     )}
                     
                     {scheduleModalData && (
-                        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl w-full max-w-sm shadow-floating overflow-hidden">
-                                <div className="p-5 border-b border-gray-100 bg-blue-50 flex justify-between items-center">
-                                    <h3 className="font-bold text-blue-900"><i className="fa-solid fa-calendar-plus text-blue-500 mr-2"></i>จัดการเวร (ออโต้เซฟตอนบันทึก)</h3>
-                                    <button onClick={() => setScheduleModalData(null)} className="text-gray-400 hover:text-gray-600"><i className="fa-solid fa-xmark"></i></button>
+                        <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200">
+                                <div className="p-6 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
+                                    <h3 className="font-bold text-blue-900 text-xl"><i className="fa-solid fa-calendar-plus text-blue-600 mr-3"></i>จัดการเวร <span className="text-sm font-semibold text-blue-600 ml-1">(ออโต้เซฟตอนบันทึก)</span></h3>
+                                    <button onClick={() => setScheduleModalData(null)} className="text-blue-400 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-2xl"></i></button>
                                 </div>
-                                <div className="p-5 space-y-4">
-                                    <div className="text-sm bg-white text-gray-800">
-                                        พนักงาน: <span className="font-bold">{employees[scheduleModalData.empId]?.fname} {employees[scheduleModalData.empId]?.lname}</span> ({scheduleModalData.empId})<br/>
-                                        วันที่: <span className="font-bold text-blue-600">{formatDisplayDate(scheduleModalData.dateStr)}</span>
+                                <div className="p-8 space-y-5">
+                                    <div className="text-base bg-white text-blue-900 p-4 rounded-xl border-2 border-blue-100 shadow-sm">
+                                        พนักงาน: <span className="font-extrabold text-blue-950">{employees[scheduleModalData.empId]?.fname} {employees[scheduleModalData.empId]?.lname}</span> <span className="font-semibold text-blue-600">({scheduleModalData.empId})</span><br/>
+                                        <span className="mt-1 inline-block text-blue-700 font-semibold">วันที่: {formatDisplayDate(scheduleModalData.dateStr)}</span>
                                     </div>
                                     
-                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                    <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                                         {scheduleModalData.shifts.map((shift, index) => (
-                                            <div key={index} className="flex gap-2 items-center animate-in fade-in">
+                                            <div key={index} className="flex gap-3 items-center animate-in fade-in">
                                                 <select 
                                                     value={shift} 
                                                     onChange={(e) => handleUpdateScheduleShift(index, e.target.value)}
-                                                    className={`flex-1 p-2 border rounded-lg text-sm outline-none transition-colors ${shift ? 'border-gray-400 bg-white text-gray-900 font-medium' : 'border-gray-200 bg-gray-50 text-gray-500'}`}
+                                                    className={`flex-1 p-3.5 border-2 rounded-xl text-base outline-none transition-colors shadow-sm ${shift ? 'border-blue-400 bg-white text-blue-950 font-bold' : 'border-blue-100 bg-blue-50/50 text-blue-700 font-semibold'}`}
                                                 >
                                                     <option value="">-- ไม่ได้ระบุ --</option>
                                                     <optgroup label="กะการทำงาน (Work)">{getSortedShiftKeys(employees[scheduleModalData.empId]?.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}</optgroup>
                                                     <optgroup label="สถานะอื่นๆ (Leave/Off)">{['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(key => <option key={key} value={key}>{key}</option>)}</optgroup>
                                                 </select>
-                                                <button onClick={() => handleRemoveScheduleShift(index)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 w-9 h-9 rounded-lg transition-colors flex items-center justify-center shrink-0"><i className="fa-solid fa-xmark"></i></button>
+                                                <button onClick={() => handleRemoveScheduleShift(index)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 w-12 h-12 rounded-xl transition-colors flex items-center justify-center shrink-0 border border-red-100 shadow-sm"><i className="fa-solid fa-trash-can text-lg"></i></button>
                                             </div>
                                         ))}
-                                        {scheduleModalData.shifts.length === 0 && <div className="text-center py-4 text-gray-400 text-sm bg-gray-50 rounded-lg border border-dashed border-gray-200">ยังไม่มีการจัดกะเวรในวันนี้</div>}
+                                        {scheduleModalData.shifts.length === 0 && <div className="text-center py-6 text-blue-500 text-base font-semibold bg-blue-50/50 rounded-xl border-2 border-dashed border-blue-200">ยังไม่มีการจัดกะเวรในวันนี้</div>}
                                     </div>
-                                    <button onClick={handleAddScheduleShift} className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center w-full gap-2 bg-blue-50 px-3 py-2 rounded-lg transition-colors"><i className="fa-solid fa-plus"></i> เพิ่มกะเวร / สถานะใหม่</button>
+                                    <button onClick={handleAddScheduleShift} className="text-blue-700 hover:text-blue-900 text-base font-bold flex items-center justify-center w-full gap-2 bg-blue-100/50 hover:bg-blue-100 p-4 rounded-xl transition-colors shadow-sm border border-blue-200"><i className="fa-solid fa-plus text-lg"></i> เพิ่มกะเวร / สถานะใหม่</button>
                                 </div>
-                                <div className="p-4 flex gap-3 bg-gray-50 border-t border-gray-100">
-                                    <button onClick={() => setScheduleModalData(null)} className="flex-1 p-2 bg-white border border-gray-300 text-gray-600 rounded-lg font-medium text-sm">ยกเลิก</button>
-                                    <button onClick={handleSaveScheduleCell} className="flex-1 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm">บันทึกตารางเวร</button>
+                                <div className="p-5 flex gap-4 bg-blue-50/50 border-t border-blue-100">
+                                    <button onClick={() => setScheduleModalData(null)} className="flex-1 p-3.5 bg-white border-2 border-blue-200 text-blue-800 rounded-xl font-bold text-lg transition-colors hover:bg-blue-50">ยกเลิก</button>
+                                    <button onClick={handleSaveScheduleCell} className="flex-1 p-3.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold text-lg transition-colors shadow-md">บันทึกตารางเวร</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="flex border-b border-gray-100 overflow-x-auto no-scrollbar pt-2">
+                    <div className="flex border-b-2 border-blue-100 overflow-x-auto no-scrollbar pt-3 px-2">
                         {role === 'admin' && (
-                            <button onClick={() => setAdminTab('logs')} className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${adminTab === 'logs' ? `border-b-2 ${tabActiveColor}` : 'text-gray-400 hover:text-gray-600'}`}>ประวัติลงเวลาทั้งหมด</button>
+                            <button onClick={() => setAdminTab('logs')} className={`px-6 py-4 text-base font-bold whitespace-nowrap transition-colors rounded-t-xl ${adminTab === 'logs' ? `border-b-4 ${tabActiveColor}` : 'text-blue-600 hover:text-blue-900 hover:bg-blue-50'}`}>ประวัติลงเวลาทั้งหมด</button>
                         )}
-                        <button onClick={() => setAdminTab('summary')} className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${adminTab === 'summary' ? `border-b-2 ${tabActiveColor}` : 'text-gray-400 hover:text-gray-600'}`}>สรุปภาพรวมแผนก (เวร/OT)</button>
-                        <button onClick={() => setAdminTab('schedules')} className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${adminTab === 'schedules' ? `border-b-2 ${tabActiveColor}` : 'text-gray-400 hover:text-gray-600'}`}>จัดตารางเวรรายเดือน</button>
+                        <button onClick={() => setAdminTab('summary')} className={`px-6 py-4 text-base font-bold whitespace-nowrap transition-colors rounded-t-xl ${adminTab === 'summary' ? `border-b-4 ${tabActiveColor}` : 'text-blue-600 hover:text-blue-900 hover:bg-blue-50'}`}>สรุปภาพรวมแผนก (เวร/OT)</button>
+                        <button onClick={() => setAdminTab('schedules')} className={`px-6 py-4 text-base font-bold whitespace-nowrap transition-colors rounded-t-xl ${adminTab === 'schedules' ? `border-b-4 ${tabActiveColor}` : 'text-blue-600 hover:text-blue-900 hover:bg-blue-50'}`}>จัดตารางเวรรายเดือน</button>
                     </div>
 
-                    <div className="px-6 pt-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <div className="px-6 pt-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 bg-blue-50/50 p-6 rounded-2xl border border-blue-100 shadow-sm">
                             {adminTab === 'logs' ? (
                                 <>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">ตั้งแต่วันที่</label>
-                                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-2.5 border border-gray-200 rounded-lg text-sm outline-none bg-white" />
+                                        <label className="block text-sm font-bold text-blue-800 mb-2">ตั้งแต่วันที่</label>
+                                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-3 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 outline-none bg-white focus:border-blue-400" />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">ถึงวันที่</label>
-                                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full p-2.5 border border-gray-200 rounded-lg text-sm outline-none bg-white" />
+                                        <label className="block text-sm font-bold text-blue-800 mb-2">ถึงวันที่</label>
+                                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full p-3 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 outline-none bg-white focus:border-blue-400" />
                                     </div>
                                 </>
                             ) : (
                                 <div className="md:col-span-2">
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">ประจำเดือน</label>
-                                    <input type="month" value={matrixMonth} onChange={e => setMatrixMonth(e.target.value)} className="w-full p-2.5 border border-gray-200 rounded-lg text-sm outline-none bg-white" />
+                                    <label className="block text-sm font-bold text-blue-800 mb-2">ประจำเดือน</label>
+                                    <input type="month" value={matrixMonth} onChange={e => setMatrixMonth(e.target.value)} className="w-full p-3 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 outline-none bg-white focus:border-blue-400" />
                                 </div>
                             )}
                             
                             <div>
-                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">ค้นหารหัส/ชื่อ</label>
-                                <input type="text" placeholder="ค้นหา..." value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className="w-full p-2.5 border border-gray-200 rounded-lg text-sm outline-none bg-white" />
+                                <label className="block text-sm font-bold text-blue-800 mb-2">ค้นหารหัส/ชื่อ</label>
+                                <input type="text" placeholder="ค้นหา..." value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className="w-full p-3 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 outline-none bg-white focus:border-blue-400 placeholder:font-medium placeholder:text-blue-300" />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">แผนก {role === 'supervisor' && '(จำกัดสิทธิ์เฉพาะแผนกของคุณ)'}</label>
+                                <label className="block text-sm font-bold text-blue-800 mb-2">แผนก {role === 'supervisor' && '(จำกัดสิทธิ์)'}</label>
                                 <select 
                                     value={filterDept} 
                                     onChange={e => setFilterDept(e.target.value)} 
                                     disabled={role === 'supervisor'}
-                                    className={`w-full p-2.5 border border-gray-200 rounded-lg text-sm outline-none ${role === 'supervisor' ? 'bg-gray-200 text-gray-600 font-bold cursor-not-allowed' : 'bg-white'}`}
+                                    className={`w-full p-3 border-2 border-blue-100 rounded-xl text-base font-bold outline-none ${role === 'supervisor' ? 'bg-blue-100 text-blue-900 cursor-not-allowed' : 'bg-white text-blue-950 focus:border-blue-400'}`}
                                 >
                                     {role === 'admin' && <option value="">ทั้งหมด</option>}
                                     {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
@@ -1261,214 +1287,222 @@
                                 <button onClick={() => {
                                     setStartDate(''); setEndDate(''); setFilterEmp(''); setMatrixMonth(defaultMonth);
                                     if(role === 'admin') setFilterDept('');
-                                }} className="w-full p-2.5 bg-white border border-gray-200 text-gray-500 rounded-lg text-sm hover:bg-gray-50 transition-colors">ล้างตัวกรอง</button>
+                                }} className="w-full p-3 bg-white border-2 border-blue-200 text-blue-700 font-bold rounded-xl text-base hover:bg-blue-50 hover:text-blue-900 transition-colors shadow-sm"><i className="fa-solid fa-rotate-right mr-2"></i>ล้างตัวกรอง</button>
                             </div>
                         </div>
                     </div>
 
                     {adminTab === 'logs' && role === 'admin' ? (
-                        <div className="p-6 pt-4">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div className="p-6 pt-8">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 mb-8">
                                 <div>
-                                    <h2 className="text-lg font-semibold text-gray-900">รายการลงเวลาปฏิบัติงาน (ทั้งหมด)</h2>
-                                    <p className="text-sm text-gray-500 mt-1">พบข้อมูล {filteredRecords.length} รายการ • รวมมาสาย <span className="text-red-500 font-medium">{totalLateMinutes} นาที</span></p>
+                                    <h2 className="text-2xl font-bold text-blue-950">รายการลงเวลาปฏิบัติงาน (ทั้งหมด)</h2>
+                                    <p className="text-base font-medium text-blue-700 mt-2">พบข้อมูล <span className="font-bold text-blue-900">{filteredRecords.length}</span> รายการ • รวมมาสาย <span className="text-red-600 font-bold">{totalLateMinutes} นาที</span></p>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setAddModalData({empId:'', date:'', shiftId:'', timeIn:'', timeOut:''})} className="bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 px-4 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm"><i className="fa-solid fa-plus mr-2"></i>เพิ่มข้อมูล</button>
-                                    <button onClick={exportLogsToCSV} className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm"><i className="fa-solid fa-download mr-2"></i>ส่งออก CSV</button>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setAddModalData({empId:'', date:'', shiftId:'', timeIn:'', timeOut:''})} className="bg-emerald-100 border border-emerald-200 text-emerald-800 hover:bg-emerald-200 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm"><i className="fa-solid fa-plus mr-2"></i>เพิ่มข้อมูล</button>
+                                    <button onClick={exportLogsToCSV} className="bg-white border-2 border-blue-200 text-blue-800 hover:bg-blue-50 hover:text-blue-950 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm"><i className="fa-solid fa-download mr-2"></i>ส่งออก CSV</button>
                                 </div>
                             </div>
 
-                            <div className="overflow-x-auto border border-gray-200 rounded-xl">
-                                <table className="min-w-full text-sm text-left whitespace-nowrap">
-                                    <thead className="bg-gray-50 border-b border-gray-200">
+                            <div className="overflow-x-auto border-2 border-blue-100 rounded-2xl">
+                                <table className="min-w-full text-base text-left whitespace-nowrap">
+                                    <thead className="bg-blue-100/70 border-b-2 border-blue-200">
                                         <tr>
-                                            <th className="px-6 py-3 font-medium text-gray-500">วันที่</th>
-                                            <th className="px-6 py-3 font-medium text-gray-500">พนักงาน</th>
-                                            <th className="px-6 py-3 font-medium text-gray-500">กะ</th>
-                                            <th className="px-6 py-3 font-medium text-gray-500 text-center">เข้า</th>
-                                            <th className="px-6 py-3 font-medium text-gray-500 text-center">ออก</th>
-                                            <th className="px-6 py-3 font-medium text-gray-500 text-center">หลักฐาน</th>
-                                            <th className="px-6 py-3 font-medium text-gray-500 text-center">สาย</th>
-                                            <th className="px-6 py-3 font-medium text-gray-500 text-center">เครดิต</th>
-                                            <th className="px-6 py-3 font-medium text-gray-500 text-right">จัดการ</th>
+                                            <th className="px-6 py-4 font-bold text-blue-950">วันที่</th>
+                                            <th className="px-6 py-4 font-bold text-blue-950">พนักงาน</th>
+                                            <th className="px-6 py-4 font-bold text-blue-950">กะ</th>
+                                            <th className="px-6 py-4 font-bold text-blue-950 text-center">เข้า</th>
+                                            <th className="px-6 py-4 font-bold text-blue-950 text-center">ออก</th>
+                                            <th className="px-6 py-4 font-bold text-blue-950 text-center">หลักฐาน</th>
+                                            <th className="px-6 py-4 font-bold text-blue-950 text-center">สาย</th>
+                                            <th className="px-6 py-4 font-bold text-blue-950 text-center">เครดิต</th>
+                                            <th className="px-6 py-4 font-bold text-blue-950 text-right">จัดการ</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-blue-50 bg-white">
                                         {filteredRecords.map(r => {
                                             const emp = employees[r.empId] || {};
                                             return (
-                                                <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-6 py-3 text-gray-600">{formatDisplayDate(r.date)}</td>
-                                                    <td className="px-6 py-3"><span className="font-medium text-gray-900 block">{emp.fname} {emp.lname}</span><span className="text-[10px] text-gray-400 uppercase">{r.empId} • {emp.dept}</span></td>
-                                                    <td className="px-6 py-3 text-gray-600 text-xs">{SHIFT_TYPES[r.shiftId]?.label}</td>
-                                                    <td className="px-6 py-3 text-center font-medium">{displaySafeTime(r.timeIn)}</td>
-                                                    <td className="px-6 py-3 text-center font-medium">{displaySafeTime(r.timeOut)}</td>
-                                                    <td className="px-6 py-3 text-center">
-                                                        <div className="flex justify-center gap-2">
-                                                            {r.lat ? <button onClick={() => setSelectedMapRecord(r)} className="text-gray-400 hover:text-gray-800"><i className="fa-solid fa-location-dot"></i></button> : <span className="text-gray-200">-</span>}
-                                                            {(r.photoInUrl || r.photoOutUrl) ? <button onClick={() => setSelectedPhotoRecord(r)} className="text-gray-400 hover:text-gray-800"><i className="fa-solid fa-image"></i></button> : <span className="text-gray-200">-</span>}
+                                                <tr key={r.id} className="hover:bg-blue-50/50 transition-colors">
+                                                    <td className="px-6 py-4 font-semibold text-blue-900">{formatDisplayDate(r.date)}</td>
+                                                    <td className="px-6 py-4"><span className="font-bold text-blue-950 block">{emp.fname} {emp.lname}</span><span className="text-xs font-semibold text-blue-600 uppercase mt-0.5 block">{r.empId} • {emp.dept}</span></td>
+                                                    <td className="px-6 py-4 text-blue-800 font-semibold">{SHIFT_TYPES[r.shiftId]?.label}</td>
+                                                    <td className="px-6 py-4 text-center font-bold text-blue-950">{displaySafeTime(r.timeIn)}</td>
+                                                    <td className="px-6 py-4 text-center font-bold text-blue-950">{displaySafeTime(r.timeOut)}</td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <div className="flex justify-center gap-3">
+                                                            {r.lat ? <button onClick={() => setSelectedMapRecord(r)} className="text-blue-500 hover:text-blue-800 bg-blue-50 p-2 rounded-lg transition-colors"><i className="fa-solid fa-location-dot"></i></button> : <span className="text-blue-200">-</span>}
+                                                            {(r.photoInUrl || r.photoOutUrl) ? <button onClick={() => setSelectedPhotoRecord(r)} className="text-blue-500 hover:text-blue-800 bg-blue-50 p-2 rounded-lg transition-colors"><i className="fa-solid fa-image"></i></button> : <span className="text-blue-200">-</span>}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-3 text-center">{r.isLate ? <span className="text-red-500 font-medium text-xs">{r.lateMinutes} นาที</span> : '-'}</td>
-                                                    <td className="px-6 py-3 text-center font-medium">{r.credit}</td>
-                                                    <td className="px-6 py-3 text-right">
-                                                        <button onClick={() => setEditModalData({...r})} className="text-gray-400 hover:text-blue-600 mr-3 transition-colors"><i className="fa-solid fa-pen"></i></button>
-                                                        <button onClick={() => handleDelete(r.id)} className="text-gray-400 hover:text-red-600 transition-colors"><i className="fa-solid fa-trash"></i></button>
+                                                    <td className="px-6 py-4 text-center">{r.isLate ? <span className="text-red-700 font-bold bg-red-50 px-2 py-1 rounded-lg text-sm">{r.lateMinutes} นาที</span> : '-'}</td>
+                                                    <td className="px-6 py-4 text-center font-bold text-blue-900">{r.credit}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button onClick={() => setEditModalData({...r})} className="text-blue-500 hover:text-blue-800 bg-blue-50 p-2.5 rounded-lg mr-2 transition-colors"><i className="fa-solid fa-pen"></i></button>
+                                                        <button onClick={() => handleDelete(r.id)} className="text-red-500 hover:text-red-800 bg-red-50 p-2.5 rounded-lg transition-colors"><i className="fa-solid fa-trash"></i></button>
                                                     </td>
                                                 </tr>
                                             );
                                         })}
-                                        {filteredRecords.length === 0 && <tr><td colSpan="9" className="px-6 py-8 text-center text-gray-400">ไม่พบข้อมูล</td></tr>}
+                                        {filteredRecords.length === 0 && <tr><td colSpan="9" className="px-6 py-12 text-center text-blue-400 font-bold text-lg">ไม่พบข้อมูลในระบบ</td></tr>}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     ) : adminTab === 'summary' ? (
-                        <div className="p-6 pt-4">
-                            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+                        <div className="p-6 pt-8">
+                            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5 mb-8">
                                 <div>
-                                    <h2 className="text-lg font-semibold text-gray-900">สรุปภาพรวมรายบุคคล และการเบิก OT</h2>
-                                    <p className="text-sm text-gray-500 mt-1">ใช้ <span className="text-blue-600 font-bold">เวลาจริงในอดีต</span> + <span className="text-emerald-600 font-bold">ตารางเวรในอนาคต</span> (และรวมวันลา)</p>
+                                    <h2 className="text-2xl font-bold text-blue-950">สรุปภาพรวมรายบุคคล และการเบิก OT</h2>
+                                    <p className="text-base font-medium text-blue-700 mt-2">ใช้ <span className="text-blue-900 font-extrabold bg-blue-100 px-2 py-0.5 rounded">เวลาจริงในอดีต</span> + <span className="text-emerald-700 font-extrabold bg-emerald-100 px-2 py-0.5 rounded">ตารางเวรในอนาคต</span> (และรวมวันลา)</p>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <div className="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-2">
-                                        <label className="text-xs font-bold text-gray-500 uppercase">กำหนดวันทำการปกติ:</label>
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <div className="bg-blue-50 border-2 border-blue-200 px-4 py-2.5 rounded-xl flex items-center gap-3 shadow-sm">
+                                        <label className="text-sm font-bold text-blue-900 uppercase">กำหนดวันทำการปกติ:</label>
                                         <input 
                                             type="number" min="0" 
                                             value={localWorkDays} 
                                             onChange={e => setLocalWorkDays(Number(e.target.value))} 
                                             disabled={role !== 'admin'} 
-                                            className={`w-16 p-1 border rounded-md text-sm text-center outline-none font-bold ${role === 'admin' ? 'bg-white border-gray-300 text-blue-700 focus:border-blue-400' : 'bg-transparent border-transparent text-gray-700 cursor-not-allowed'}`} 
+                                            className={`w-20 p-1.5 border-2 rounded-lg text-base text-center outline-none font-extrabold ${role === 'admin' ? 'bg-white border-blue-300 text-blue-700 focus:border-blue-500' : 'bg-transparent border-transparent text-blue-900 cursor-not-allowed'}`} 
                                         />
-                                        <span className="text-xs text-gray-500">วัน</span>
+                                        <span className="text-sm font-bold text-blue-800">วัน</span>
                                         {role === 'admin' && localWorkDays !== settings?.standardWorkDays && (
-                                            <button onClick={handleSaveSettings} className="ml-2 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] rounded-lg shadow-sm font-medium transition-colors">บันทึก</button>
+                                            <button onClick={handleSaveSettings} className="ml-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-lg shadow-md font-bold transition-colors">บันทึก</button>
                                         )}
                                     </div>
-                                    <button onClick={exportSummaryToCSV} className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center"><i className="fa-solid fa-file-excel mr-2 text-green-600"></i>ส่งออกตารางสรุป</button>
+                                    <button onClick={exportSummaryToCSV} className="bg-white border-2 border-blue-200 text-blue-800 hover:bg-blue-50 hover:text-blue-950 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm flex items-center"><i className="fa-solid fa-file-excel mr-2 text-green-600 text-lg"></i>ส่งออกตารางสรุป</button>
                                 </div>
                             </div>
                             
-                            <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white">
-                                <table className="min-w-full text-sm text-left whitespace-nowrap">
-                                    <thead className="bg-gray-50 border-b border-gray-200">
+                            <div className="overflow-x-auto border-2 border-blue-200 rounded-2xl bg-white shadow-sm">
+                                <table className="min-w-full text-base text-left whitespace-nowrap">
+                                    <thead className="bg-blue-100/60 border-b-2 border-blue-200">
                                         <tr>
-                                            <th rowSpan="2" className="px-4 py-3 font-medium text-gray-500 sticky left-0 bg-gray-50 z-20 border-r border-gray-200 align-middle">พนักงาน</th>
-                                            {daysArray.map(day => <th key={day} rowSpan="2" className="px-1 py-3 font-medium text-gray-500 text-center min-w-[36px] align-middle">{day}</th>)}
+                                            <th rowSpan="2" className="px-5 py-4 font-bold text-blue-950 sticky left-0 bg-blue-100 z-20 border-r-2 border-blue-200 align-middle">พนักงาน</th>
+                                            {daysArray.map(day => <th key={day} rowSpan="2" className="px-2 py-4 font-extrabold text-blue-900 text-center min-w-[44px] align-middle">{day}</th>)}
                                             
-                                            <th colSpan={sortedShiftTypesUsed.length} className="px-2 py-1 font-bold text-indigo-800 text-center bg-indigo-50/70 border-l border-b border-indigo-200 border-r border-gray-200">จำนวนเวรแยกประเภท</th>
+                                            <th colSpan={sortedShiftTypesUsed.length} className="px-3 py-2 font-extrabold text-indigo-900 text-center bg-indigo-100/80 border-l-2 border-b-2 border-indigo-200 border-r-2 border-blue-200">จำนวนเวรแยกประเภท</th>
                                             
-                                            <th rowSpan="2" className="px-3 py-3 font-bold text-gray-700 text-center bg-gray-100 border-l border-gray-200 align-middle">รวมเวร</th>
-                                            <th rowSpan="2" className="px-3 py-3 font-bold text-gray-700 text-center bg-gray-100 align-middle">วันทำการ</th>
-                                            <th rowSpan="2" className="px-3 py-3 font-bold text-blue-700 text-center bg-blue-50 border-l border-blue-100 align-middle shadow-inner">เหลือ OT</th>
+                                            <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-950 text-center bg-blue-100/80 border-l-2 border-blue-200 align-middle">รวมเวร</th>
+                                            <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-950 text-center bg-blue-100/80 align-middle">วันทำการ</th>
+                                            <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-900 text-center bg-blue-200/50 border-l-2 border-blue-300 align-middle shadow-inner">เหลือ OT</th>
                                             
-                                            {role === 'admin' && <th rowSpan="2" className="px-3 py-3 font-bold text-red-600 text-center bg-red-50 border-l border-red-100 align-middle">รวมสาย</th>}
+                                            {role === 'admin' && <th rowSpan="2" className="px-4 py-4 font-extrabold text-red-800 text-center bg-red-100/80 border-l-2 border-red-200 align-middle">รวมสาย</th>}
                                         </tr>
                                         <tr>
                                             {sortedShiftTypesUsed.map(type => (
-                                                <th key={type} className="px-1 py-1 font-semibold text-indigo-700 text-center bg-indigo-50/70 border-x border-white text-[11px]">{type}</th>
+                                                <th key={type} className="px-2 py-2 font-bold text-indigo-800 text-center bg-indigo-100/80 border-x border-white text-xs">{type}</th>
                                             ))}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-blue-100">
                                         {summaryMatrix.map(row => (
-                                            <tr key={row.empId} className="hover:bg-gray-50 transition-colors group">
-                                                <td className="px-4 py-2 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-200">
-                                                    <p className="font-medium text-gray-900">{row.fname} {row.lname}</p>
-                                                    <p className="text-[10px] text-gray-400">{row.empId} • {row.dept}</p>
+                                            <tr key={row.empId} className="hover:bg-blue-50/80 transition-colors group">
+                                                <td className="px-5 py-3 sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r-2 border-blue-100">
+                                                    <p className="font-bold text-blue-950 text-base">{row.fname} {row.lname}</p>
+                                                    <p className="text-xs font-semibold text-blue-600 mt-0.5">{row.empId} • {row.dept}</p>
                                                 </td>
                                                 {daysArray.map(day => {
-                                                    const shift = row.shiftsByDay[day];
-                                                    const isNonWork = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(shift);
-                                                    return <td key={day} className={`px-0.5 py-2 text-center text-[10px] font-medium border-r border-gray-50 ${shift && shift !== '-' ? (isNonWork ? 'text-orange-600 bg-orange-50/50' : 'text-blue-700 bg-blue-50/50') : 'text-gray-300'}`}>{shift}</td>
+                                                    const shiftObj = row.shiftsByDay[day];
+                                                    const shift = shiftObj.text;
+                                                    const status = shiftObj.status;
+                                                    
+                                                    // ตกแต่งสีตาม Status ที่วิเคราะห์มา
+                                                    let cellStyle = 'text-blue-300'; // empty
+                                                    if (status === 'actual') cellStyle = 'text-blue-800 bg-blue-50/50';
+                                                    if (status === 'leave') cellStyle = 'text-amber-700 bg-amber-50/50';
+                                                    if (status === 'future') cellStyle = 'text-blue-400 bg-blue-50/20 italic';
+                                                    if (status === 'missing') cellStyle = 'text-red-700 bg-red-100 font-extrabold border-2 border-red-300 shadow-inner'; // แดงเด่นชัด!
+
+                                                    return <td key={day} className={`px-1 py-3 text-center text-xs font-bold border-r border-blue-50 ${cellStyle}`}>{shift}</td>
                                                 })}
                                                 
                                                 {sortedShiftTypesUsed.map(type => (
-                                                    <td key={type} className="px-2 py-2 text-center font-bold text-indigo-700 bg-indigo-50/20 border-x border-gray-100">
+                                                    <td key={type} className="px-2 py-3 text-center font-bold text-indigo-900 bg-indigo-50/30 border-x border-blue-50">
                                                         {row.shiftCounts[type] || 0}
                                                     </td>
                                                 ))}
 
-                                                <td className="px-3 py-2 text-center font-bold text-gray-800 bg-gray-50 border-l border-gray-200">{row.empTotalCredit}</td>
-                                                <td className="px-3 py-2 text-center font-medium text-gray-500 bg-gray-50">{localWorkDays}</td>
-                                                <td className="px-3 py-2 text-center font-bold text-blue-700 bg-blue-50/50 border-l border-blue-100">{row.otShifts > 0 ? `+${row.otShifts}` : row.otShifts}</td>
-                                                {role === 'admin' && <td className="px-3 py-2 text-center font-medium text-red-500 bg-red-50/50 border-l border-red-100">{row.empTotalLate > 0 ? `${row.empTotalLate} น.` : '-'}</td>}
+                                                <td className="px-4 py-3 text-center font-extrabold text-blue-950 bg-blue-50/50 border-l-2 border-blue-100">{row.empTotalCredit}</td>
+                                                <td className="px-4 py-3 text-center font-bold text-blue-700 bg-blue-50/50">{localWorkDays}</td>
+                                                <td className="px-4 py-3 text-center font-extrabold text-blue-800 bg-blue-100/40 border-l-2 border-blue-200">{row.otShifts > 0 ? `+${row.otShifts}` : row.otShifts}</td>
+                                                {role === 'admin' && <td className="px-4 py-3 text-center font-bold text-red-700 bg-red-50/50 border-l-2 border-red-100">{row.empTotalLate > 0 ? `${row.empTotalLate} น.` : '-'}</td>}
                                             </tr>
                                         ))}
                                         {summaryMatrix.length === 0 && (
-                                            <tr><td colSpan={daysArray.length + sortedShiftTypesUsed.length + 6} className="px-6 py-8 text-center text-gray-400">กรุณาเลือกตัวกรองด้านบน</td></tr>
+                                            <tr><td colSpan={daysArray.length + sortedShiftTypesUsed.length + 6} className="px-6 py-12 text-center text-blue-400 font-bold text-lg">กรุณาเลือกตัวกรองด้านบน</td></tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     ) : (
-                        <div className="p-6 pt-4">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div className="p-6 pt-8">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 mb-8">
                                 <div>
-                                    <h2 className="text-lg font-semibold text-gray-900">จัดการตารางเวรล่วงหน้า (รายเดือน)</h2>
-                                    <p className="text-sm text-gray-500 mt-1">คลิกที่ช่องวันที่ในตารางเพื่อ <strong>จัดเวร</strong> หรือระบุวันหยุดของพนักงาน</p>
+                                    <h2 className="text-2xl font-bold text-blue-950">จัดการตารางเวรล่วงหน้า (รายเดือน)</h2>
+                                    <p className="text-base font-medium text-blue-700 mt-2">คลิกที่ช่องวันที่ในตารางเพื่อ <strong className="text-blue-900 bg-blue-100 px-2 py-0.5 rounded">จัดเวร</strong> หรือระบุวันหยุดของพนักงาน</p>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button onClick={exportScheduleToCSV} className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center"><i className="fa-solid fa-file-excel mr-2 text-green-600"></i>ส่งออกตารางเวร (Excel)</button>
+                                <div className="flex gap-3">
+                                    <button onClick={exportScheduleToCSV} className="bg-white border-2 border-blue-200 text-blue-800 hover:bg-blue-50 hover:text-blue-950 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm flex items-center"><i className="fa-solid fa-file-excel mr-2 text-green-600 text-lg"></i>ส่งออกตารางเวร (Excel)</button>
                                 </div>
                             </div>
                             {filterDept ? (
-                                <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-sm">
-                                    <table className="min-w-full text-sm text-left whitespace-nowrap select-none">
-                                        <thead className="bg-blue-50 border-b border-blue-100">
+                                <div className="overflow-x-auto border-2 border-blue-200 rounded-2xl bg-white shadow-md">
+                                    <table className="min-w-full text-base text-left whitespace-nowrap select-none">
+                                        <thead className="bg-blue-100/80 border-b-2 border-blue-200">
                                             <tr>
-                                                <th rowSpan="2" className="px-4 py-3 font-semibold text-blue-900 sticky left-0 bg-blue-50 z-10 border-r border-blue-100 align-middle">พนักงาน</th>
-                                                {daysArray.map(day => <th key={day} rowSpan="2" className="px-1 py-3 font-semibold text-blue-900 text-center min-w-[40px] align-middle">{day}</th>)}
+                                                <th rowSpan="2" className="px-5 py-4 font-bold text-blue-950 sticky left-0 bg-blue-100 z-10 border-r-2 border-blue-200 align-middle">พนักงาน</th>
+                                                {daysArray.map(day => <th key={day} rowSpan="2" className="px-1 py-4 font-extrabold text-blue-900 text-center min-w-[44px] align-middle">{day}</th>)}
                                                 
-                                                <th colSpan={sortedShiftTypesUsed.length} className="px-2 py-1 font-bold text-indigo-800 text-center bg-indigo-50/50 border-l border-b border-indigo-200 border-r border-blue-100">จำนวนเวรแยกประเภท</th>
+                                                <th colSpan={sortedShiftTypesUsed.length} className="px-3 py-2 font-extrabold text-indigo-900 text-center bg-indigo-100/80 border-l-2 border-b-2 border-indigo-200 border-r-2 border-blue-200">จำนวนเวรแยกประเภท</th>
                                                 
-                                                <th rowSpan="2" className="px-3 py-3 font-bold text-gray-700 text-center bg-gray-100 border-l border-gray-200 align-middle">รวมเวร</th>
-                                                <th rowSpan="2" className="px-3 py-3 font-bold text-blue-700 text-center bg-blue-100/50 border-l border-blue-100 align-middle shadow-inner">เหลือ OT</th>
+                                                <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-950 text-center bg-blue-100 border-l-2 border-blue-200 align-middle">รวมเวร</th>
+                                                <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-900 text-center bg-blue-200/50 border-l-2 border-blue-300 align-middle shadow-inner">เหลือ OT</th>
                                             </tr>
                                             <tr>
                                                 {sortedShiftTypesUsed.map(type => (
-                                                    <th key={type} className="px-1 py-1 font-semibold text-indigo-700 text-center bg-indigo-50/50 border-x border-white text-[11px]">{type}</th>
+                                                    <th key={type} className="px-2 py-2 font-bold text-indigo-800 text-center bg-indigo-100/80 border-x border-white text-xs">{type}</th>
                                                 ))}
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-blue-100">
                                             {summaryMatrix.map(row => {
                                                 const empId = row.empId;
                                                 const emp = employees[empId];
                                                 return (
-                                                    <tr key={empId} className="hover:bg-blue-50/50 transition-colors group">
-                                                        <td className="px-4 py-2 sticky left-0 bg-white group-hover:bg-blue-50/50 z-10 border-r border-gray-200">
-                                                            <p className="font-medium text-gray-900">{emp.fname} {emp.lname}</p>
-                                                            <p className="text-[10px] text-gray-500">{emp.level}</p>
+                                                    <tr key={empId} className="hover:bg-blue-50/80 transition-colors group">
+                                                        <td className="px-5 py-3 sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r-2 border-blue-100">
+                                                            <p className="font-bold text-blue-950 text-base">{emp.fname} {emp.lname}</p>
+                                                            <p className="text-xs font-semibold text-blue-600 mt-0.5">{emp.level}</p>
                                                         </td>
                                                         {daysArray.map(day => {
                                                             const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                                                             const shifts = schedules[dateStr]?.[empId] || [];
                                                             const hasShifts = shifts.length > 0;
                                                             return (
-                                                                <td key={day} onClick={() => openScheduleModal(empId, dateStr)} className={`px-1 py-2 text-center text-[10px] font-medium border-x border-gray-50 cursor-pointer transition-colors hover:ring-2 hover:ring-blue-400 hover:ring-inset ${hasShifts ? 'bg-blue-50/30 text-blue-800' : 'text-gray-300 hover:bg-gray-50'}`}>
+                                                                <td key={day} onClick={() => openScheduleModal(empId, dateStr)} className={`px-1 py-3 text-center text-xs font-bold border-x border-blue-50 cursor-pointer transition-colors hover:ring-2 hover:ring-blue-500 hover:ring-inset ${hasShifts ? 'bg-blue-100/50 text-blue-900' : 'text-blue-300 hover:bg-blue-50'}`}>
                                                                     {hasShifts ? shifts.join(', ') : '+'}
                                                                 </td>
                                                             );
                                                         })}
                                                         
-                                                        {/* ตารางสรุปต่อท้ายในหน้าจัดเวร */}
                                                         {sortedShiftTypesUsed.map(type => (
-                                                            <td key={type} className="px-2 py-2 text-center font-bold text-indigo-700 bg-indigo-50/20 border-x border-gray-100">
+                                                            <td key={type} className="px-2 py-3 text-center font-bold text-indigo-900 bg-indigo-50/30 border-x border-blue-50">
                                                                 {row.shiftCounts[type] || 0}
                                                             </td>
                                                         ))}
-                                                        <td className="px-3 py-2 text-center font-bold text-gray-800 bg-gray-50 border-l border-gray-200">{row.empTotalCredit}</td>
-                                                        <td className="px-3 py-2 text-center font-bold text-blue-700 bg-blue-50/50 border-l border-blue-100">{row.otShifts > 0 ? `+${row.otShifts}` : row.otShifts}</td>
+                                                        <td className="px-4 py-3 text-center font-extrabold text-blue-950 bg-blue-50/50 border-l-2 border-blue-100">{row.empTotalCredit}</td>
+                                                        <td className="px-4 py-3 text-center font-extrabold text-blue-800 bg-blue-100/40 border-l-2 border-blue-200">{row.otShifts > 0 ? `+${row.otShifts}` : row.otShifts}</td>
                                                     </tr>
                                                 );
                                             })}
                                         </tbody>
                                     </table>
                                 </div>
-                            ) : <div className="text-center py-16 text-gray-400 border border-dashed border-gray-200 rounded-xl bg-gray-50"><i className="fa-solid fa-calendar-day text-3xl mb-3 text-gray-300"></i><p className="text-sm">กรุณาเลือก <strong>แผนก</strong> จากแถบด้านบน เพื่อเริ่มจัดการตารางเวร</p></div>}
+                            ) : <div className="text-center py-16 text-blue-400 border-2 border-dashed border-blue-200 rounded-2xl bg-blue-50/50"><i className="fa-solid fa-calendar-day text-5xl mb-4 text-blue-300"></i><p className="text-lg font-bold text-blue-700">กรุณาเลือก <strong className="text-blue-900">แผนก</strong> จากแถบด้านบน เพื่อเริ่มจัดการตารางเวร</p></div>}
                         </div>
                     )}
                 </div>
