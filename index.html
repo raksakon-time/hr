@@ -69,16 +69,24 @@
 
         // 🌟 ตั้งค่ากะประจำแผนก
         const DEPT_SHIFTS = {
-            "OPD": ['ช', 'ช7', 'ช83', 'ช917'],
-            "IPD": ['ช', 'บ', 'ด', 'ช12', 'บ12'],
-            "ห้องยา": ['ช', 'ช83', 'บ', 'ด'],
-            "ห้องปฏิบัติการทางการแพทย์": ['ช', 'บ', 'ด', 'ช6', 'ช7'],
-            "เอกซเรย์": ['ช', 'ช7', 'บ', 'ด'],
-            "OR-LR": ['ช', 'ช7', 'ชบ7', 'บ', 'ด'],
-            "HR-IT": ['ช', 'ช83'],
+            "HR-IT": ['ช7', 'ช'],
             "บัญชี": ['ช', 'ช83'],
-            "การเงินผู้ป่วย-สิทธิประโยชน์": ['ช', 'บ', 'ด'],
-            "ADMIN": ['ช', 'ช83']
+            "การเงินผู้ป่วย-สิทธิประโยชน์": ['ช', 'ชบ'],
+            "OPD": ['ช6', 'ช7', 'ช21', 'ช', 'ชบ', 'ช9', 'บ', 'ด', 'บ4'],
+            "IPD": ['ช', 'บ', 'ด', 'ชบ', 'บด'],
+            "ห้องยา": ['ช', 'บ', 'ด', 'ชบ', 'บด', 'ช20'],
+            "ห้องปฏิบัติการทางการแพทย์": ['ช', 'ช7', 'ชบ7', 'บ15', 'ช20', 'ช719'],
+            "เอกซเรย์": ['ช', 'ชบ', 'ช7'],
+            "OR-LR": ['ช'],
+            "แม่บ้าน": ['ช7', 'ชบ7', 'บ15'],
+            "ซักฟอก": ['ช'],
+            "หน่วยจ่ายกลาง": ['ช', 'ช716', 'ช7'],
+            "โภชนาการ": ['ช6', 'ช', 'ช616', 'ช618'],
+            "เปล-ยานยนต์": ['ช', 'ชบ', 'บ'],
+            "ช่าง": ['ช'],
+            "เวชระเบียน": ['ช7', 'ช', 'ช20', 'ชบ', 'ช917', 'บ', 'ด'],
+            "ส่งเสริมสุขภาพ": ['ช7', 'ช'],
+            "ADMIN": ['ช', 'ช83'] // แผนก Admin ใส่เผื่อไว้ครับ
         };
 
         const SHIFT_TYPES = {
@@ -87,9 +95,9 @@
             'ช618': { start: '06:00', end: '18:00', credit: 1.5, label: '06.00 - 18.00 (ช618)' },
             'ช619': { start: '06:00', end: '19:00', credit: 1.625, label: '06.00 - 19.00 (ช619)' },
             'ช6': { start: '06:00', end: '14:00', credit: 1, label: '06.00 - 14.00 (ช6)' },
+            'ช716': { start: '07:00', end: '16:00', credit: 1.125, label: '07.00 - 16.00 (ช716)' }, // 🌟 เพิ่มให้สำหรับหน่วยจ่ายกลาง
             'ช719': { start: '07:00', end: '19:00', credit: 1.5, label: '07.00 - 19.00 (ช719)' },
             'ช7': { start: '07:00', end: '15:00', credit: 1, label: '07.00 - 15.00 (ช7)' },
-            'ช716': { start: '07:00', end: '16:00', credit: 1.125, label: '07.00 - 16.00 (ช716)' },
             'ช21': { start: '07:00', end: '21:00', credit: 1.75, label: '07.00 - 21.00 (ช21)' },
             'ชบ7': { start: '07:00', end: '23:00', credit: 2, label: '07.00 - 23.00 (ชบ7)' },
             'ช': { start: '08:00', end: '16:00', credit: 1, label: '08.00 - 16.00 (ช)' },
@@ -107,10 +115,10 @@
         const getSortedShiftKeys = (deptName) => {
             let keys = Object.keys(SHIFT_TYPES);
             
-            // ปิดการกรองกะตามแผนกชั่วคราว เพื่อให้ทุกแผนกเห็นกะทั้งหมด
-            // if (deptName && DEPT_SHIFTS[deptName]) {
-            //     keys = keys.filter(k => DEPT_SHIFTS[deptName].includes(k));
-            // }
+            // 🌟 เปิดการกรองกะตามแผนก ให้ทำงานเต็มรูปแบบ
+            if (deptName && DEPT_SHIFTS[deptName]) {
+                keys = keys.filter(k => DEPT_SHIFTS[deptName].includes(k));
+            }
             
             return keys.sort((a, b) => {
                 const startCmp = SHIFT_TYPES[a].start.localeCompare(SHIFT_TYPES[b].start);
@@ -1380,7 +1388,7 @@
                             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5 mb-8">
                                 <div>
                                     <h2 className="text-2xl font-bold text-blue-950">สรุปภาพรวมรายบุคคล และการเบิก OT</h2>
-                                    <p className="text-base font-medium text-blue-700 mt-2">ใช้ <span className="text-blue-900 font-extrabold bg-blue-100 px-2 py-0.5 rounded">เวลาจริงในอดีต</span> + <span className="text-emerald-700 font-extrabold bg-emerald-100 px-2 py-0.5 rounded">ตารางเวรในอนาคต</span> (ถ้าขาดงานในอดีต จะถูกหักออก)</p>
+                                    <p className="text-base font-medium text-blue-700 mt-2">ใช้ <span className="text-blue-900 font-extrabold bg-blue-100 px-2 py-0.5 rounded">เวลาจริงในอดีต</span> + <span className="text-emerald-700 font-extrabold bg-emerald-100 px-2 py-0.5 rounded">ตารางเวรในอนาคต</span> (และรวมวันลา)</p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-4">
                                     <div className="bg-blue-50 border-2 border-blue-200 px-4 py-2.5 rounded-xl flex items-center gap-3 shadow-sm">
@@ -1438,7 +1446,7 @@
                                                     if (status === 'actual') cellStyle = 'text-blue-800 bg-blue-50/50';
                                                     if (status === 'leave') cellStyle = 'text-amber-700 bg-amber-50/50';
                                                     if (status === 'future') cellStyle = 'text-blue-400 bg-blue-50/20 italic';
-                                                    if (status === 'missing') cellStyle = 'text-red-700 bg-red-100 font-extrabold border-2 border-red-300 shadow-inner'; // แดงเด่นชัด!
+                                                    if (status === 'missing') cellStyle = 'text-red-700 bg-red-100 font-extrabold border-2 border-red-300 shadow-inner';
 
                                                     return <td key={day} className={`px-1 py-3 text-center text-xs font-bold border-r border-blue-50 ${cellStyle}`}>{shift}</td>
                                                 })}
@@ -1495,7 +1503,7 @@
                                         <tbody className="divide-y divide-blue-100">
                                             {matrixEmployees.map(empId => {
                                                 const emp = employees[empId];
-                                                const plannedData = plannedMatrix.find(p => p.empId === empId); // 🌟 ใช้ Planned Matrix สำหรับคำนวณสรุป
+                                                const plannedData = plannedMatrix.find(p => p.empId === empId);
                                                 return (
                                                     <tr key={empId} className="hover:bg-blue-50/80 transition-colors group">
                                                         <td className="px-5 py-3 sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r-2 border-blue-100">
