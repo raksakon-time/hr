@@ -66,7 +66,7 @@
             "ADMIN"
         ];
 
-        // 🌟 ตั้งค่ากะประจำแผนก ตามที่อัปเดตล่าสุด (ซ่อนแผนกที่ไม่ตรง)
+        // 🌟 ตั้งค่ากะประจำแผนก ตามที่อัปเดตล่าสุด
         const DEPT_SHIFTS = {
             "HR-IT": ['ช7', 'ช'],
             "บัญชี": ['ช', 'ช83'],
@@ -114,7 +114,7 @@
         const getSortedShiftKeys = (deptName) => {
             let keys = Object.keys(SHIFT_TYPES);
             
-            // กรองกะตามแผนก
+            // 🌟 เปิดการกรองกะตามแผนกแล้ว!
             if (deptName && DEPT_SHIFTS[deptName]) {
                 keys = keys.filter(k => DEPT_SHIFTS[deptName].includes(k));
             }
@@ -459,16 +459,14 @@
                 const activeRecord = records.find(r => r.empId === upperEmpId && (r.date === todayStr || (currentTime.getHours() <= 8 && r.date === formatDateForInput(new Date(currentTime.getTime() - 86400000)))) && !r.timeOut);
                 if (activeRecord) { setErrorMsg(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[activeRecord.shiftId]?.label || activeRecord.shiftId}"`); return; }
 
-                const schedObj = schedules[todayStr]?.[upperEmpId];
-                let scheduledShifts = schedObj?.shifts || (Array.isArray(schedObj) ? schedObj : []);
+                let scheduledShifts = schedules[todayStr]?.[upperEmpId] || [];
                 
                 // 🔮 ยืดหยุ่น: ถ้าล็อกอินช่วง 00:00 - 03:59 ให้ดึงตารางของเมื่อวานมาพิจารณาด้วย
                 if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
                     const yesterday = new Date(currentTime);
                     yesterday.setDate(yesterday.getDate() - 1);
                     const yesterdayStr = formatDateForInput(yesterday);
-                    const yestObj = schedules[yesterdayStr]?.[upperEmpId];
-                    const yesterdayShifts = yestObj?.shifts || (Array.isArray(yestObj) ? yestObj : []);
+                    const yesterdayShifts = schedules[yesterdayStr]?.[upperEmpId] || [];
                     if (yesterdayShifts.length > 0) scheduledShifts = yesterdayShifts;
                 }
 
@@ -491,16 +489,14 @@
                 
                 const todayStr = formatDateForInput(currentTime);
                 let targetDate = todayStr; 
-                const schedObjToday = schedules[todayStr]?.[loggedInEmp.id];
-                let scheduledShifts = schedObjToday?.shifts || (Array.isArray(schedObjToday) ? schedObjToday : []);
+                let scheduledShifts = schedules[todayStr]?.[loggedInEmp.id] || [];
                 
                 // 🔮 ระบบยืดหยุ่น: ถ้าเข้างาน 00:00 - 03:59 แล้วเช็คเวรวันนี้ไม่เจอ ให้ถอยไปดูเมื่อวาน
                 if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
                     const yesterday = new Date(currentTime);
                     yesterday.setDate(yesterday.getDate() - 1);
                     const yesterdayStr = formatDateForInput(yesterday);
-                    const yestObj = schedules[yesterdayStr]?.[loggedInEmp.id];
-                    const yesterdayShifts = yestObj?.shifts || (Array.isArray(yestObj) ? yestObj : []);
+                    const yesterdayShifts = schedules[yesterdayStr]?.[loggedInEmp.id] || [];
                     
                     // ถ้าพบว่าเมื่อวานมีกะตรงกับที่กำลังจะสแกน ให้สลับไปบันทึกของเมื่อวาน (เช่น เวร ดึก)
                     if (yesterdayShifts.includes(selectedShift)) {
@@ -511,14 +507,15 @@
                 
                 const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s));
                 
-                // 🌟 ระบบป้องกัน (BLOCK) การลงเวลา
+                // บล็อกกะผิด หรือไม่มีเวร
                 if (validScheduledShifts.length > 0 && !validScheduledShifts.includes(selectedShift)) {
-                    setErrorMsg(`ไม่อนุญาต: กะที่เลือกไม่ตรงกับตารางเวร กรุณาติดต่อหัวหน้างาน`);
+                    setErrorMsg(`ไม่อนุญาต: กะที่เลือกไม่ตรงกับตารางเวร`);
                     setIsScanning(false); setCameraActive(false);
                     return; 
                 }
+                
                 if (validScheduledShifts.length === 0) {
-                    setErrorMsg(`ไม่อนุญาต: ไม่พบตารางเวรของคุณในระบบ กรุณาติดต่อหัวหน้างาน`);
+                    setErrorMsg(`ไม่อนุญาต: ไม่พบตารางเวรของคุณในระบบ`);
                     setIsScanning(false); setCameraActive(false);
                     return; 
                 }
@@ -921,7 +918,6 @@
                 return true;
             });
 
-            // Dual-Brain Matrix
             const summaryMatrix = matrixEmployees.map(empId => {
                 const empRecords = records.filter(r => r.empId === empId && r.date.startsWith(matrixMonth));
                 const shiftsByDay = {};
@@ -937,14 +933,12 @@
                 daysArray.forEach(day => {
                     const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const dayRecords = empRecords.filter(r => r.date === dateStr);
-                    
-                    // รับออบเจกต์ตารางเวรแบบใหม่
-                    const schedObj = schedules[dateStr]?.[empId];
-                    const scheduledShifts = schedObj?.shifts || (Array.isArray(schedObj) ? schedObj : []);
+                    const scheduledShifts = schedules[dateStr]?.[empId] || [];
 
                     let shiftDisplay = '-';
                     let isAbsent = false;
 
+                    // 🌟 แยกสมองกล: หน้าจัดเวร VS หน้าแอดมิน
                     if (role === 'supervisor') {
                         // 1. หัวหน้างาน (จัดเวร): ดูตามที่แพลนไว้ 100% ไม่สนการสแกน
                         if (scheduledShifts.length > 0) {
@@ -958,27 +952,29 @@
                     } else {
                         // 2. แอดมิน (HR): ดูตามสแกนจริง + แจ้งเตือนคนขาด + อะลุ่มอล่วยวันนี้
                         if (dayRecords.length > 0) {
+                            // มาสแกนจริง
                             shiftDisplay = dayRecords.map(r => r.shiftId).join(', ');
                             empTotalCredit += dayRecords.reduce((sum, r) => sum + (r.credit || 0), 0);
                             empTotalLate += dayRecords.reduce((sum, r) => sum + (r.isLate ? Number(r.lateMinutes) : 0), 0);
                             dayRecords.forEach(r => { if (r.shiftId) shiftCounts[r.shiftId] = (shiftCounts[r.shiftId] || 0) + 1; });
                         } else if (scheduledShifts.length > 0) {
+                            // มีตาราง แต่ไม่มีสแกน
                             if (dateStr < todayStr) {
-                                // อดีต: ขาดงาน
+                                // อดีต: ขาดงาน (หักเงิน/โชว์สีแดง)
                                 isAbsent = true;
                                 shiftDisplay = scheduledShifts.map(s => `${s} (ขาด)`).join(', ');
                                 scheduledShifts.forEach(s => {
                                     if (['Vac', 'พักร้อน', 'ป่วย', 'ลา', 'Off'].includes(s)) {
                                         shiftCounts[s] = (shiftCounts[s] || 0) + 1;
                                         if (['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) empTotalCredit += 1;
-                                        isAbsent = false; 
+                                        isAbsent = false; // ยกเว้นวันลา ไม่ขาด
                                         shiftDisplay = scheduledShifts.join(', ');
                                     } else {
                                         shiftCounts['ขาด'] = (shiftCounts['ขาด'] || 0) + 1;
                                     }
                                 });
                             } else {
-                                // วันนี้/อนาคต: ให้เครดิตรอไว้
+                                // วันนี้/อนาคต: ให้เครดิตรอไว้ (Grace Period)
                                 shiftDisplay = scheduledShifts.join(', ');
                                 scheduledShifts.forEach(s => {
                                     if (s) shiftCounts[s] = (shiftCounts[s] || 0) + 1;
@@ -1101,12 +1097,7 @@
                 link.click();
             };
             
-            // 🌟 แก้ไขระบบจัดการ Modal Schedule รองรับโครงสร้างข้อมูลแบบใหม่ (ประวัติการแก้ไข)
-            const openScheduleModal = (empId, dateStr) => {
-                const schedObj = schedules[dateStr]?.[empId];
-                const shifts = schedObj?.shifts || (Array.isArray(schedObj) ? schedObj : []);
-                setScheduleModalData({ empId, dateStr, shifts: [...shifts] });
-            };
+            const openScheduleModal = (empId, dateStr) => setScheduleModalData({ empId, dateStr, shifts: [...(schedules[dateStr]?.[empId] || [])] });
             const handleUpdateScheduleShift = (index, val) => { const newShifts = [...scheduleModalData.shifts]; newShifts[index] = val; setScheduleModalData({...scheduleModalData, shifts: newShifts}); };
             const handleAddScheduleShift = () => setScheduleModalData({...scheduleModalData, shifts: [...scheduleModalData.shifts, '']});
             const handleRemoveScheduleShift = (index) => { const newShifts = [...scheduleModalData.shifts]; newShifts.splice(index, 1); setScheduleModalData({...scheduleModalData, shifts: newShifts}); };
@@ -1117,24 +1108,12 @@
                 
                 const newSchedules = { ...schedules };
                 if (!newSchedules[dateStr]) newSchedules[dateStr] = {};
-                // อัปเดต State ล่วงหน้าพร้อมจุดสีส้ม
-                newSchedules[dateStr][empId] = {
-                    shifts: filteredShifts,
-                    isEdited: true,
-                    editedBy: user.id
-                };
+                newSchedules[dateStr][empId] = filteredShifts;
                 
                 setSchedules(newSchedules);
                 setScheduleModalData(null);
 
-                // ส่งชื่อและไอดีคนแก้ไปให้หลังบ้าน
-                await sendToGoogleSheet('saveSchedule', { 
-                    date: dateStr, 
-                    empId: empId, 
-                    shifts: filteredShifts,
-                    editorId: user.id,
-                    editorName: `${user.fname} ${user.lname}`
-                });
+                await sendToGoogleSheet('saveSchedule', { date: dateStr, empId: empId, shifts: filteredShifts });
             };
 
             const exportScheduleToCSV = () => {
@@ -1145,8 +1124,7 @@
                     const rowData = [empId, `${emp.fname} ${emp.lname}`, emp.dept];
                     daysArray.forEach(day => {
                         const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const schedObj = schedules[dateStr]?.[empId];
-                        const shifts = schedObj?.shifts || (Array.isArray(schedObj) ? schedObj : []);
+                        const shifts = schedules[dateStr]?.[empId] || [];
                         rowData.push(shifts.join(', ') || '-');
                     });
                     csvContent += `"${rowData.join('","')}"\n`;
@@ -1350,7 +1328,7 @@
                                 <button onClick={() => {
                                     setStartDate(''); setEndDate(''); setFilterEmp(''); setMatrixMonth(defaultMonth);
                                     if(role === 'admin') setFilterDept('');
-                                }} className="w-full p-3 bg-white border-2 border-blue-200 text-blue-700 font-bold rounded-xl text-base hover:bg-blue-50 hover:text-blue-900 transition-colors shadow-sm"><i className="fa-solid fa-rotate-right mr-2"></i>ล้างตัวกรอง</button>
+                                }} className="w-full p-3 bg-white border-2 border-blue-200 text-blue-700 font-bold rounded-xl text-base hover:bg-blue-50 hover:text-blue-900 transition-colors shadow-sm"><i className="fa-solid fa-rotate-right mr-2">ล้างตัวกรอง</i></button>
                             </div>
                         </div>
                     </div>
@@ -1472,6 +1450,7 @@
                                                     const shift = shiftObj.display;
                                                     const isNonWork = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(shift);
                                                     
+                                                    // ตรวจสอบความผิดปกติ (ไม่มาสแกน)
                                                     if (shiftObj.isAbsent) {
                                                         return <td key={day} className="px-1 py-3 text-center text-xs font-bold border-r border-red-200 text-red-700 bg-red-50 ring-1 ring-inset ring-red-400">{shift}</td>
                                                     }
@@ -1540,16 +1519,10 @@
                                                         </td>
                                                         {daysArray.map(day => {
                                                             const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                                                            const schedObj = schedules[dateStr]?.[empId];
-                                                            const shifts = schedObj?.shifts || (Array.isArray(schedObj) ? schedObj : []);
-                                                            const isEdited = schedObj?.isEdited;
-                                                            const editedBy = schedObj?.editedBy;
+                                                            const shifts = schedules[dateStr]?.[empId] || [];
                                                             const hasShifts = shifts.length > 0;
-                                                            
                                                             return (
-                                                                <td key={day} onClick={() => openScheduleModal(empId, dateStr)} title={isEdited ? `แก้ไขล่าสุดโดย: ${editedBy}` : ''} className={`px-1 py-3 text-center text-xs font-bold border-x border-blue-50 cursor-pointer transition-colors hover:ring-2 hover:ring-blue-500 hover:ring-inset relative ${hasShifts ? 'bg-blue-100/50 text-blue-900' : 'text-blue-300 hover:bg-blue-50'}`}>
-                                                                    {/* 🌟 จุดสีส้มแจ้งเตือนการแก้ไข */}
-                                                                    {isEdited && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full shadow-sm" title={`แก้ไขล่าสุดโดย: ${editedBy}`}></div>}
+                                                                <td key={day} onClick={() => openScheduleModal(empId, dateStr)} className={`px-1 py-3 text-center text-xs font-bold border-x border-blue-50 cursor-pointer transition-colors hover:ring-2 hover:ring-blue-500 hover:ring-inset ${hasShifts ? 'bg-blue-100/50 text-blue-900' : 'text-blue-300 hover:bg-blue-50'}`}>
                                                                     {hasShifts ? shifts.join(', ') : '+'}
                                                                 </td>
                                                             );
