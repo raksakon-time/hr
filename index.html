@@ -38,7 +38,6 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        /* ปรับ Base Font ให้อ่านง่ายและเปลี่ยนสีข้อความหลักให้เป็นกรมท่า/น้ำเงินเข้ม */
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased; color: #0f172a; font-size: 16px; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -67,7 +66,7 @@
             "ADMIN"
         ];
 
-        // 🌟 ตั้งค่ากะประจำแผนก
+        // 🌟 ตั้งค่ากะประจำแผนก ตามที่อัปเดตล่าสุด
         const DEPT_SHIFTS = {
             "HR-IT": ['ช7', 'ช'],
             "บัญชี": ['ช', 'ช83'],
@@ -86,7 +85,7 @@
             "ช่าง": ['ช'],
             "เวชระเบียน": ['ช7', 'ช', 'ช20', 'ชบ', 'ช917', 'บ', 'ด'],
             "ส่งเสริมสุขภาพ": ['ช7', 'ช'],
-            "ADMIN": ['ช', 'ช83'] // แผนก Admin ใส่เผื่อไว้ครับ
+            "ADMIN": ['ช', 'ช83']
         };
 
         const SHIFT_TYPES = {
@@ -95,7 +94,7 @@
             'ช618': { start: '06:00', end: '18:00', credit: 1.5, label: '06.00 - 18.00 (ช618)' },
             'ช619': { start: '06:00', end: '19:00', credit: 1.625, label: '06.00 - 19.00 (ช619)' },
             'ช6': { start: '06:00', end: '14:00', credit: 1, label: '06.00 - 14.00 (ช6)' },
-            'ช716': { start: '07:00', end: '16:00', credit: 1.125, label: '07.00 - 16.00 (ช716)' }, // 🌟 เพิ่มให้สำหรับหน่วยจ่ายกลาง
+            'ช716': { start: '07:00', end: '16:00', credit: 1.125, label: '07.00 - 16.00 (ช716)' },
             'ช719': { start: '07:00', end: '19:00', credit: 1.5, label: '07.00 - 19.00 (ช719)' },
             'ช7': { start: '07:00', end: '15:00', credit: 1, label: '07.00 - 15.00 (ช7)' },
             'ช21': { start: '07:00', end: '21:00', credit: 1.75, label: '07.00 - 21.00 (ช21)' },
@@ -115,7 +114,7 @@
         const getSortedShiftKeys = (deptName) => {
             let keys = Object.keys(SHIFT_TYPES);
             
-            // 🌟 เปิดการกรองกะตามแผนก ให้ทำงานเต็มรูปแบบ
+            // 🌟 เปิดการกรองกะตามแผนกแล้ว!
             if (deptName && DEPT_SHIFTS[deptName]) {
                 keys = keys.filter(k => DEPT_SHIFTS[deptName].includes(k));
             }
@@ -455,11 +454,22 @@
                 const upperEmpId = empId.trim().toUpperCase();
                 if (!employees[upperEmpId]) { setErrorMsg(`ไม่พบรหัสพนักงาน ${upperEmpId}`); return; }
                 
-                const today = formatDateForInput(currentTime);
-                const activeRecord = records.find(r => r.empId === upperEmpId && r.date === today && !r.timeOut);
-                if (activeRecord) { setErrorMsg(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[activeRecord.shiftId].label}"`); return; }
+                const todayStr = formatDateForInput(currentTime);
+                // ดักจับคนค้างออกเวร โดยรองรับกะข้ามวัน (00:00-08:00)
+                const activeRecord = records.find(r => r.empId === upperEmpId && (r.date === todayStr || (currentTime.getHours() <= 8 && r.date === formatDateForInput(new Date(currentTime.getTime() - 86400000)))) && !r.timeOut);
+                if (activeRecord) { setErrorMsg(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[activeRecord.shiftId]?.label || activeRecord.shiftId}"`); return; }
 
-                const scheduledShifts = schedules[today]?.[upperEmpId] || [];
+                let scheduledShifts = schedules[todayStr]?.[upperEmpId] || [];
+                
+                // 🔮 ยืดหยุ่น: ถ้าล็อกอินช่วง 00:00 - 03:59 ให้ดึงตารางของเมื่อวานมาพิจารณาด้วย
+                if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
+                    const yesterday = new Date(currentTime);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayStr = formatDateForInput(yesterday);
+                    const yesterdayShifts = schedules[yesterdayStr]?.[upperEmpId] || [];
+                    if (yesterdayShifts.length > 0) scheduledShifts = yesterdayShifts;
+                }
+
                 const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s));
                 
                 if(validScheduledShifts.length > 0) {
@@ -477,25 +487,38 @@
             const handleClockIn = async () => {
                 setErrorMsg(''); setIsScanning(true);
                 
-                // --- 🌟 เริ่มระบบป้องกัน (BLOCK) การลงเวลา ---
-                const today = formatDateForInput(currentTime);
-                const scheduledShifts = schedules[today]?.[loggedInEmp.id] || [];
+                const todayStr = formatDateForInput(currentTime);
+                let targetDate = todayStr; 
+                let scheduledShifts = schedules[todayStr]?.[loggedInEmp.id] || [];
+                
+                // 🔮 ระบบยืดหยุ่น: ถ้าเข้างาน 00:00 - 03:59 แล้วเช็คเวรวันนี้ไม่เจอ ให้ถอยไปดูเมื่อวาน
+                if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
+                    const yesterday = new Date(currentTime);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayStr = formatDateForInput(yesterday);
+                    const yesterdayShifts = schedules[yesterdayStr]?.[loggedInEmp.id] || [];
+                    
+                    // ถ้าพบว่าเมื่อวานมีกะตรงกับที่กำลังจะสแกน ให้สลับไปบันทึกของเมื่อวาน (เช่น เวร ดึก)
+                    if (yesterdayShifts.includes(selectedShift)) {
+                        scheduledShifts = yesterdayShifts;
+                        targetDate = yesterdayStr; // 🌟 บันทึกลงวันที่ของเมื่อวาน!
+                    }
+                }
+                
                 const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s));
                 
-                // กรณีที่ 1: มีตารางเวร แต่กะที่เลือกไม่ตรงกับตาราง
+                // บล็อกกะผิด หรือไม่มีเวร
                 if (validScheduledShifts.length > 0 && !validScheduledShifts.includes(selectedShift)) {
-                    setErrorMsg(`ไม่อนุญาต: กะที่เลือกไม่ตรงกับตารางเวร กรุณาติดต่อหัวหน้างาน/HR`);
+                    setErrorMsg(`ไม่อนุญาต: กะที่เลือกไม่ตรงกับตารางเวร`);
                     setIsScanning(false); setCameraActive(false);
-                    return; // ⛔️ หยุดการทำงานและบล็อกการส่งข้อมูลทันที
+                    return; 
                 }
                 
-                // กรณีที่ 2: ไม่มีตารางเวรในวันนี้เลย
                 if (validScheduledShifts.length === 0) {
-                    setErrorMsg(`ไม่อนุญาต: ไม่พบตารางเวรของคุณในวันนี้ กรุณาติดต่อหัวหน้างาน/HR`);
+                    setErrorMsg(`ไม่อนุญาต: ไม่พบตารางเวรของคุณในระบบ`);
                     setIsScanning(false); setCameraActive(false);
-                    return; // ⛔️ หยุดการทำงานและบล็อกการส่งข้อมูลทันที
+                    return; 
                 }
-                // --- 🌟 สิ้นสุดระบบป้องกัน ---
 
                 const photoBase64 = captureImage(videoRef.current);
                 const shiftData = SHIFT_TYPES[selectedShift];
@@ -508,7 +531,7 @@
                 const timeInStr = formatTime24(currentTime);
 
                 const newRecord = {
-                    id: Date.now().toString(), date: formatDateForInput(currentTime),
+                    id: Date.now().toString(), date: targetDate, // 🌟 ใช้ targetDate
                     empId: loggedInEmp.id, shiftId: selectedShift, timeIn: timeInStr,
                     timeOut: null, isLate: isLate, lateMinutes: lateMinutes, credit: shiftData.credit,
                     lat: currentLocation?.lat, lon: currentLocation?.lon, photoBase64: photoBase64
@@ -532,6 +555,7 @@
                         <div className="inline-flex items-center gap-2 text-base font-bold text-emerald-800 bg-white px-4 py-2 rounded-xl border border-emerald-200 shadow-sm">
                             <i className="fa-solid fa-calendar-day"></i> กะ: {result.shiftName}
                         </div>
+                        <p className="text-sm font-semibold text-emerald-600 mt-3">บันทึกลงวันที่: {formatDisplayDate(result.date)}</p>
                     </div>
                     {result.isLate && (
                         <div className="mb-8 inline-flex items-center gap-2 bg-red-100 text-red-800 px-5 py-2.5 rounded-full text-base font-bold">
@@ -685,6 +709,7 @@
                                     <div>
                                         <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">วันที่เข้างาน</label>
                                         <input type="date" value={outDate} onChange={(e) => setOutDate(e.target.value)} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-base focus:bg-white focus:border-rose-400 transition-colors" />
+                                        <p className="text-xs text-blue-500 font-bold mt-1.5 ml-1"><i className="fa-solid fa-circle-info mr-1"></i> หากออกเวรดึก (ด/ชบ) ให้เปลี่ยนวันที่เป็นของเมื่อวาน</p>
                                     </div>
                                 </div>
                                 <button onClick={searchRecord} className="w-full p-4 bg-rose-100 text-rose-800 hover:bg-rose-200 rounded-xl font-bold text-lg transition-colors shadow-sm">ค้นหาประวัติเข้างาน</button>
@@ -893,92 +918,83 @@
                 return true;
             });
 
-            // วันที่ปัจจุบันสำหรับใช้แยก อดีต (คำนวณสแกน) กับ วันนี้+อนาคต (บวกเครดิตรอ)
-            const todayY = now.getFullYear();
-            const todayM = String(now.getMonth() + 1).padStart(2, '0');
-            const todayD = String(now.getDate()).padStart(2, '0');
-            const todayStr = `${todayY}-${todayM}-${todayD}`;
-
-            // 🌟 1. สมองกลที่ 1: Actual Matrix (ใช้สำหรับหน้า HR - หักลบคนขาด แต่ให้โอกาสของวันนี้)
-            const actualMatrix = matrixEmployees.map(empId => {
+            const summaryMatrix = matrixEmployees.map(empId => {
                 const empRecords = records.filter(r => r.empId === empId && r.date.startsWith(matrixMonth));
                 const shiftsByDay = {};
                 const shiftCounts = {};
                 let empTotalCredit = 0;
                 let empTotalLate = 0;
 
+                const todayY = now.getFullYear();
+                const todayM = String(now.getMonth() + 1).padStart(2, '0');
+                const todayD = String(now.getDate()).padStart(2, '0');
+                const todayStr = `${todayY}-${todayM}-${todayD}`;
+
                 daysArray.forEach(day => {
                     const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const dayRecords = empRecords.filter(r => r.date === dateStr);
                     const scheduledShifts = schedules[dateStr]?.[empId] || [];
-                    
-                    if (dayRecords.length > 0) {
-                        shiftsByDay[day] = { text: dayRecords.map(r => r.shiftId).join(', '), status: 'actual' };
-                        empTotalCredit += dayRecords.reduce((sum, r) => sum + (r.credit || 0), 0);
-                        empTotalLate += dayRecords.reduce((sum, r) => sum + (r.isLate ? Number(r.lateMinutes) : 0), 0);
-                        
-                        dayRecords.forEach(r => {
-                            if(r.shiftId) shiftCounts[r.shiftId] = (shiftCounts[r.shiftId] || 0) + 1;
-                        });
-                    } else {
-                        let scheduledText = scheduledShifts.length > 0 ? scheduledShifts.join(', ') : '-';
-                        let cellStatus = 'empty';
 
-                        scheduledShifts.forEach(s => {
-                            if (s) shiftCounts[s] = (shiftCounts[s] || 0) + 1; 
-                            
-                            if(['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) {
-                                empTotalCredit += 1;
-                                cellStatus = 'leave';
-                            } else if (SHIFT_TYPES[s]) {
-                                // 🌟 เงื่อนไขใหม่: ถ้าเป็น "วันนี้" หรือ "วันในอนาคต" ให้นับเครดิตรอไว้เลย ไม่หักทิ้ง!
-                                if (dateStr >= todayStr) {
-                                    empTotalCredit += SHIFT_TYPES[s].credit;
-                                    cellStatus = 'future';
-                                } else {
-                                    // 🚨 ถ้าเป็น "วันในอดีต (ข้ามวันมาแล้ว)" และไม่มีสแกน ถึงจะนับเป็น "ขาดงาน" จริงๆ
-                                    cellStatus = 'missing'; 
-                                    scheduledText = `${s} (ขาด)`; 
-                                }
+                    let shiftDisplay = '-';
+                    let isAbsent = false;
+
+                    // 🌟 แยกสมองกล: หน้าจัดเวร VS หน้าแอดมิน
+                    if (role === 'supervisor') {
+                        // 1. หัวหน้างาน (จัดเวร): ดูตามที่แพลนไว้ 100% ไม่สนการสแกน
+                        if (scheduledShifts.length > 0) {
+                            shiftDisplay = scheduledShifts.join(', ');
+                            scheduledShifts.forEach(s => {
+                                if (s) shiftCounts[s] = (shiftCounts[s] || 0) + 1;
+                                if (SHIFT_TYPES[s]) empTotalCredit += SHIFT_TYPES[s].credit;
+                                else if (['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) empTotalCredit += 1;
+                            });
+                        }
+                    } else {
+                        // 2. แอดมิน (HR): ดูตามสแกนจริง + แจ้งเตือนคนขาด + อะลุ่มอล่วยวันนี้
+                        if (dayRecords.length > 0) {
+                            // มาสแกนจริง
+                            shiftDisplay = dayRecords.map(r => r.shiftId).join(', ');
+                            empTotalCredit += dayRecords.reduce((sum, r) => sum + (r.credit || 0), 0);
+                            empTotalLate += dayRecords.reduce((sum, r) => sum + (r.isLate ? Number(r.lateMinutes) : 0), 0);
+                            dayRecords.forEach(r => { if (r.shiftId) shiftCounts[r.shiftId] = (shiftCounts[r.shiftId] || 0) + 1; });
+                        } else if (scheduledShifts.length > 0) {
+                            // มีตาราง แต่ไม่มีสแกน
+                            if (dateStr < todayStr) {
+                                // อดีต: ขาดงาน (หักเงิน/โชว์สีแดง)
+                                isAbsent = true;
+                                shiftDisplay = scheduledShifts.map(s => `${s} (ขาด)`).join(', ');
+                                scheduledShifts.forEach(s => {
+                                    if (['Vac', 'พักร้อน', 'ป่วย', 'ลา', 'Off'].includes(s)) {
+                                        shiftCounts[s] = (shiftCounts[s] || 0) + 1;
+                                        if (['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) empTotalCredit += 1;
+                                        isAbsent = false; // ยกเว้นวันลา ไม่ขาด
+                                        shiftDisplay = scheduledShifts.join(', ');
+                                    } else {
+                                        shiftCounts['ขาด'] = (shiftCounts['ขาด'] || 0) + 1;
+                                    }
+                                });
+                            } else {
+                                // วันนี้/อนาคต: ให้เครดิตรอไว้ (Grace Period)
+                                shiftDisplay = scheduledShifts.join(', ');
+                                scheduledShifts.forEach(s => {
+                                    if (s) shiftCounts[s] = (shiftCounts[s] || 0) + 1;
+                                    if (SHIFT_TYPES[s]) empTotalCredit += SHIFT_TYPES[s].credit;
+                                    else if (['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) empTotalCredit += 1;
+                                });
                             }
-                        });
-                        shiftsByDay[day] = { text: scheduledText, status: cellStatus };
+                        }
                     }
+                    shiftsByDay[day] = { display: shiftDisplay, isAbsent: isAbsent };
                 });
                 
                 const otShifts = empTotalCredit - localWorkDays;
                 return { empId, fname: employees[empId].fname, lname: employees[empId].lname, dept: employees[empId].dept, shiftsByDay, empTotalCredit, empTotalLate, otShifts, shiftCounts };
             });
 
-            // 🌟 2. สมองกลที่ 2: Planned Matrix (ใช้สำหรับหน้าหัวหน้า - นับตามตารางเพียวๆ 100%)
-            const plannedMatrix = matrixEmployees.map(empId => {
-                const shiftCounts = {};
-                let empTotalCredit = 0;
-
-                daysArray.forEach(day => {
-                    const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const scheduledShifts = schedules[dateStr]?.[empId] || [];
-                    
-                    scheduledShifts.forEach(s => {
-                        if (s) {
-                            shiftCounts[s] = (shiftCounts[s] || 0) + 1;
-                            if(['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) {
-                                empTotalCredit += 1; // ลาก็ได้เงิน
-                            } else if (SHIFT_TYPES[s]) {
-                                empTotalCredit += SHIFT_TYPES[s].credit; // กะทำงานก็นับเครดิตตามตารางเลย ไม่ดูวันเวลา
-                            }
-                        }
-                    });
-                });
-                const otShifts = empTotalCredit - localWorkDays;
-                return { empId, empTotalCredit, otShifts, shiftCounts };
-            });
-
-            // รวมชื่อประเภทกะทั้งหมด จากทั้ง 2 Matrix มาสร้างเป็น Header
             const allShiftTypesUsed = new Set();
-            actualMatrix.forEach(emp => Object.keys(emp.shiftCounts).forEach(type => allShiftTypesUsed.add(type)));
-            plannedMatrix.forEach(emp => Object.keys(emp.shiftCounts).forEach(type => allShiftTypesUsed.add(type)));
-            
+            summaryMatrix.forEach(emp => {
+                Object.keys(emp.shiftCounts).forEach(type => allShiftTypesUsed.add(type));
+            });
             const sortedShiftTypesUsed = Array.from(allShiftTypesUsed).sort((a, b) => {
                 const nonWorkA = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(a);
                 const nonWorkB = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(b);
@@ -1055,7 +1071,7 @@
             };
 
             const exportSummaryToCSV = () => {
-                if(actualMatrix.length === 0) return alert("ไม่มีข้อมูลสรุปสำหรับส่งออก");
+                if(summaryMatrix.length === 0) return alert("ไม่มีข้อมูลสรุปสำหรับส่งออก");
                 let csvContent = "\uFEFF"; 
                 
                 const headers = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'แผนก', ...daysArray];
@@ -1065,10 +1081,9 @@
 
                 csvContent += headers.join(',') + '\n';
                 
-                // ใช้ actualMatrix (HR Logic) สำหรับหน้าสรุป
-                actualMatrix.forEach(row => {
+                summaryMatrix.forEach(row => {
                     const rowData = [row.empId, `${row.fname} ${row.lname}`, row.dept];
-                    daysArray.forEach(day => rowData.push(row.shiftsByDay[day].text));
+                    daysArray.forEach(day => rowData.push(row.shiftsByDay[day].display));
                     sortedShiftTypesUsed.forEach(type => rowData.push(row.shiftCounts[type] || 0));
                     rowData.push(row.empTotalCredit, localWorkDays, row.otShifts);
                     if (role === 'admin') rowData.push(row.empTotalLate);
@@ -1104,8 +1119,6 @@
             const exportScheduleToCSV = () => {
                 if(matrixEmployees.length === 0) return alert("ไม่มีข้อมูลพนักงานสำหรับส่งออก");
                 let csvContent = "\uFEFFรหัสพนักงาน,ชื่อ-สกุล,แผนก," + daysArray.join(',') + "\n";
-                
-                // ใช้ plannedMatrix (Supervisor Logic) สำหรับหน้าจัดเวร
                 matrixEmployees.forEach(empId => {
                     const emp = employees[empId];
                     const rowData = [empId, `${emp.fname} ${emp.lname}`, emp.dept];
@@ -1114,11 +1127,6 @@
                         const shifts = schedules[dateStr]?.[empId] || [];
                         rowData.push(shifts.join(', ') || '-');
                     });
-                    
-                    const pData = plannedMatrix.find(p => p.empId === empId);
-                    sortedShiftTypesUsed.forEach(type => rowData.push(pData?.shiftCounts[type] || 0));
-                    rowData.push(pData?.empTotalCredit || 0, localWorkDays, pData?.otShifts || 0);
-
                     csvContent += `"${rowData.join('","')}"\n`;
                 });
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1320,7 +1328,7 @@
                                 <button onClick={() => {
                                     setStartDate(''); setEndDate(''); setFilterEmp(''); setMatrixMonth(defaultMonth);
                                     if(role === 'admin') setFilterDept('');
-                                }} className="w-full p-3 bg-white border-2 border-blue-200 text-blue-700 font-bold rounded-xl text-base hover:bg-blue-50 hover:text-blue-900 transition-colors shadow-sm"><i className="fa-solid fa-rotate-right mr-2"></i>ล้างตัวกรอง</button>
+                                }} className="w-full p-3 bg-white border-2 border-blue-200 text-blue-700 font-bold rounded-xl text-base hover:bg-blue-50 hover:text-blue-900 transition-colors shadow-sm"><i className="fa-solid fa-rotate-right mr-2">ล้างตัวกรอง</i></button>
                             </div>
                         </div>
                     </div>
@@ -1431,7 +1439,7 @@
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-blue-100">
-                                        {actualMatrix.map(row => (
+                                        {summaryMatrix.map(row => (
                                             <tr key={row.empId} className="hover:bg-blue-50/80 transition-colors group">
                                                 <td className="px-5 py-3 sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r-2 border-blue-100">
                                                     <p className="font-bold text-blue-950 text-base">{row.fname} {row.lname}</p>
@@ -1439,16 +1447,15 @@
                                                 </td>
                                                 {daysArray.map(day => {
                                                     const shiftObj = row.shiftsByDay[day];
-                                                    const shift = shiftObj.text;
-                                                    const status = shiftObj.status;
+                                                    const shift = shiftObj.display;
+                                                    const isNonWork = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(shift);
                                                     
-                                                    let cellStyle = 'text-blue-300';
-                                                    if (status === 'actual') cellStyle = 'text-blue-800 bg-blue-50/50';
-                                                    if (status === 'leave') cellStyle = 'text-amber-700 bg-amber-50/50';
-                                                    if (status === 'future') cellStyle = 'text-blue-400 bg-blue-50/20 italic';
-                                                    if (status === 'missing') cellStyle = 'text-red-700 bg-red-100 font-extrabold border-2 border-red-300 shadow-inner';
-
-                                                    return <td key={day} className={`px-1 py-3 text-center text-xs font-bold border-r border-blue-50 ${cellStyle}`}>{shift}</td>
+                                                    // ตรวจสอบความผิดปกติ (ไม่มาสแกน)
+                                                    if (shiftObj.isAbsent) {
+                                                        return <td key={day} className="px-1 py-3 text-center text-xs font-bold border-r border-red-200 text-red-700 bg-red-50 ring-1 ring-inset ring-red-400">{shift}</td>
+                                                    }
+                                                    
+                                                    return <td key={day} className={`px-1 py-3 text-center text-xs font-bold border-r border-blue-50 ${shift && shift !== '-' ? (isNonWork ? 'text-amber-700 bg-amber-50/50' : 'text-blue-800 bg-blue-50/50') : 'text-blue-300'}`}>{shift}</td>
                                                 })}
                                                 
                                                 {sortedShiftTypesUsed.map(type => (
@@ -1463,7 +1470,7 @@
                                                 {role === 'admin' && <td className="px-4 py-3 text-center font-bold text-red-700 bg-red-50/50 border-l-2 border-red-100">{row.empTotalLate > 0 ? `${row.empTotalLate} น.` : '-'}</td>}
                                             </tr>
                                         ))}
-                                        {actualMatrix.length === 0 && (
+                                        {summaryMatrix.length === 0 && (
                                             <tr><td colSpan={daysArray.length + sortedShiftTypesUsed.length + 6} className="px-6 py-12 text-center text-blue-400 font-bold text-lg">กรุณาเลือกตัวกรองด้านบน</td></tr>
                                         )}
                                     </tbody>
@@ -1475,7 +1482,7 @@
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 mb-8">
                                 <div>
                                     <h2 className="text-2xl font-bold text-blue-950">จัดการตารางเวรล่วงหน้า (รายเดือน)</h2>
-                                    <p className="text-base font-medium text-blue-700 mt-2">คลิกที่ช่องวันที่ในตารางเพื่อ <strong className="text-blue-900 bg-blue-100 px-2 py-0.5 rounded">จัดเวร</strong> (ยอดสรุปจะคำนวณตามแผนที่จัดไว้ 100%)</p>
+                                    <p className="text-base font-medium text-blue-700 mt-2">คลิกที่ช่องวันที่ในตารางเพื่อ <strong className="text-blue-900 bg-blue-100 px-2 py-0.5 rounded">จัดเวร</strong> หรือระบุวันหยุดของพนักงาน</p>
                                 </div>
                                 <div className="flex gap-3">
                                     <button onClick={exportScheduleToCSV} className="bg-white border-2 border-blue-200 text-blue-800 hover:bg-blue-50 hover:text-blue-950 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm flex items-center"><i className="fa-solid fa-file-excel mr-2 text-green-600 text-lg"></i>ส่งออกตารางเวร (Excel)</button>
@@ -1489,7 +1496,7 @@
                                                 <th rowSpan="2" className="px-5 py-4 font-bold text-blue-950 sticky left-0 bg-blue-100 z-10 border-r-2 border-blue-200 align-middle">พนักงาน</th>
                                                 {daysArray.map(day => <th key={day} rowSpan="2" className="px-1 py-4 font-extrabold text-blue-900 text-center min-w-[44px] align-middle">{day}</th>)}
                                                 
-                                                <th colSpan={sortedShiftTypesUsed.length} className="px-3 py-2 font-extrabold text-indigo-900 text-center bg-indigo-100/80 border-l-2 border-b-2 border-indigo-200 border-r-2 border-blue-200">จำนวนเวรแยกประเภท (ตามแผน)</th>
+                                                <th colSpan={sortedShiftTypesUsed.length} className="px-3 py-2 font-extrabold text-indigo-900 text-center bg-indigo-100/80 border-l-2 border-b-2 border-indigo-200 border-r-2 border-blue-200">จำนวนเวรแยกประเภท</th>
                                                 
                                                 <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-950 text-center bg-blue-100 border-l-2 border-blue-200 align-middle">รวมเวร</th>
                                                 <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-900 text-center bg-blue-200/50 border-l-2 border-blue-300 align-middle shadow-inner">เหลือ OT</th>
@@ -1501,9 +1508,9 @@
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-blue-100">
-                                            {matrixEmployees.map(empId => {
+                                            {summaryMatrix.map(row => {
+                                                const empId = row.empId;
                                                 const emp = employees[empId];
-                                                const plannedData = plannedMatrix.find(p => p.empId === empId);
                                                 return (
                                                     <tr key={empId} className="hover:bg-blue-50/80 transition-colors group">
                                                         <td className="px-5 py-3 sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r-2 border-blue-100">
@@ -1523,11 +1530,11 @@
                                                         
                                                         {sortedShiftTypesUsed.map(type => (
                                                             <td key={type} className="px-2 py-3 text-center font-bold text-indigo-900 bg-indigo-50/30 border-x border-blue-50">
-                                                                {plannedData?.shiftCounts[type] || 0}
+                                                                {row.shiftCounts[type] || 0}
                                                             </td>
                                                         ))}
-                                                        <td className="px-4 py-3 text-center font-extrabold text-blue-950 bg-blue-50/50 border-l-2 border-blue-100">{plannedData?.empTotalCredit || 0}</td>
-                                                        <td className="px-4 py-3 text-center font-extrabold text-blue-800 bg-blue-100/40 border-l-2 border-blue-200">{plannedData?.otShifts > 0 ? `+${plannedData.otShifts}` : (plannedData?.otShifts || 0)}</td>
+                                                        <td className="px-4 py-3 text-center font-extrabold text-blue-950 bg-blue-50/50 border-l-2 border-blue-100">{row.empTotalCredit}</td>
+                                                        <td className="px-4 py-3 text-center font-extrabold text-blue-800 bg-blue-100/40 border-l-2 border-blue-200">{row.otShifts > 0 ? `+${row.otShifts}` : row.otShifts}</td>
                                                     </tr>
                                                 );
                                             })}
