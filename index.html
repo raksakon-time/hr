@@ -282,7 +282,7 @@
         }
 
         function RegisterView({ employees, setEmployees, setActiveTab, sendToGoogleSheet }) {
-            const [formData, setFormData] = useState({ empId: '', fname: '', lname: '', dept: 'OPD', level: 'พนักงาน' });
+            const [formData, setFormData] = useState({ empId: '', fname: '', lname: '', dept: 'OPD', level: 'พนักงาน', password: '' });
             const [isSubmitting, setIsSubmitting] = useState(false);
 
             const handleSubmit = async (e) => {
@@ -344,6 +344,10 @@
                                 </select>
                             </div>
                         </div>
+                        <div>
+                            <label className="block text-sm font-bold text-blue-800 mb-1.5">รหัสผ่าน <span className="text-blue-500 font-normal">(ใส่หรือไม่ใส่ก็ได้ / สำหรับหัวหน้า)</span></label>
+                            <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base" placeholder="ตั้งรหัสผ่านสำหรับเข้าสู่ระบบ" />
+                        </div>
                         <button type="submit" disabled={isSubmitting} className="w-full p-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-lg transition-colors mt-6 shadow-md">
                             {isSubmitting ? 'กำลังบันทึก...' : 'ลงทะเบียน'}
                         </button>
@@ -354,14 +358,27 @@
 
         function AdminLoginView({ employees, onLogin, onCancel }) {
             const [adminId, setAdminId] = useState('');
+            const [password, setPassword] = useState('');
             const [errorMsg, setErrorMsg] = useState('');
 
             const handleLogin = () => {
                 const id = adminId.trim().toUpperCase();
                 if (!id) { setErrorMsg('กรุณากรอกรหัสประจำตัว'); return; }
                 const emp = employees[id];
-                if (emp && emp.dept === 'ADMIN') onLogin({ id, ...emp });
-                else setErrorMsg('รหัสนี้ไม่มีสิทธิ์เข้าถึง (สงวนสิทธิ์เฉพาะแผนก ADMIN)');
+                
+                if (!emp || emp.dept !== 'ADMIN') {
+                    setErrorMsg('รหัสนี้ไม่มีสิทธิ์เข้าถึง (สงวนสิทธิ์เฉพาะแผนก ADMIN)');
+                    return;
+                }
+                
+                // 🌟 ตรวจสอบรหัสผ่าน
+                const sheetPassword = emp.password || '';
+                if (sheetPassword !== '' && password !== sheetPassword) {
+                    setErrorMsg('รหัสผ่านไม่ถูกต้อง');
+                    return;
+                }
+                
+                onLogin({ id, ...emp });
             };
 
             return (
@@ -370,7 +387,8 @@
                     <h2 className="text-2xl font-bold text-blue-950">ผู้ดูแลระบบ (Admin)</h2>
                     <p className="text-base text-blue-700 mt-2 mb-8 font-medium">เข้าสู่ระบบเพื่อจัดการข้อมูล</p>
                     {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">{errorMsg}</div>}
-                    <input type="text" placeholder="รหัสพนักงาน ADMIN" value={adminId} onChange={e => setAdminId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-blue-500 transition-colors" />
+                    <input type="text" placeholder="รหัสพนักงาน ADMIN" value={adminId} onChange={e => setAdminId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-3 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-blue-500 transition-colors" />
+                    <input type="password" placeholder="รหัสผ่าน (ถ้ามี)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-blue-500 transition-colors" />
                     <button onClick={handleLogin} className="w-full p-4 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold text-lg transition-colors mb-3 shadow-md">เข้าสู่ระบบ</button>
                     <button onClick={onCancel} className="w-full p-3 text-base text-blue-600 font-bold hover:text-blue-800 transition-colors">ยกเลิก</button>
                 </div>
@@ -379,14 +397,27 @@
 
         function SupervisorLoginView({ employees, onLogin, onCancel }) {
             const [superId, setSuperId] = useState('');
+            const [password, setPassword] = useState('');
             const [errorMsg, setErrorMsg] = useState('');
 
             const handleLogin = () => {
                 const id = superId.trim().toUpperCase();
                 if (!id) { setErrorMsg('กรุณากรอกรหัสประจำตัว'); return; }
                 const emp = employees[id];
-                if (emp && emp.level === 'หัวหน้า') onLogin({ id, ...emp });
-                else setErrorMsg('รหัสนี้ไม่มีสิทธิ์เข้าถึง (สงวนสิทธิ์เฉพาะผู้ใช้งานระดับ "หัวหน้า")');
+                
+                if (!emp || emp.level !== 'หัวหน้า') {
+                    setErrorMsg('รหัสนี้ไม่มีสิทธิ์เข้าถึง (สงวนสิทธิ์เฉพาะผู้ใช้งานระดับ "หัวหน้า")');
+                    return;
+                }
+                
+                // 🌟 ตรวจสอบรหัสผ่าน
+                const sheetPassword = emp.password || '';
+                if (sheetPassword !== '' && password !== sheetPassword) {
+                    setErrorMsg('รหัสผ่านไม่ถูกต้อง');
+                    return;
+                }
+                
+                onLogin({ id, ...emp });
             };
 
             return (
@@ -395,7 +426,8 @@
                     <h2 className="text-2xl font-bold text-blue-950">พื้นที่หัวหน้างาน (Supervisor)</h2>
                     <p className="text-base text-blue-700 mt-2 mb-8 font-medium">เข้าสู่ระบบเพื่อจัดการตารางเวรและสรุปผล</p>
                     {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">{errorMsg}</div>}
-                    <input type="text" placeholder="รหัสพนักงานของหัวหน้า" value={superId} onChange={e => setSuperId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-amber-100 rounded-xl bg-amber-50/30 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-amber-400 transition-colors" />
+                    <input type="text" placeholder="รหัสพนักงานของหัวหน้า" value={superId} onChange={e => setSuperId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-3 border-2 border-amber-100 rounded-xl bg-amber-50/30 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-amber-400 transition-colors" />
+                    <input type="password" placeholder="รหัสผ่าน (ถ้ามี)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-amber-100 rounded-xl bg-amber-50/30 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-amber-400 transition-colors" />
                     <button onClick={handleLogin} className="w-full p-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-lg transition-colors mb-3 shadow-md">เข้าสู่ระบบ</button>
                     <button onClick={onCancel} className="w-full p-3 text-base text-blue-600 font-bold hover:text-blue-800 transition-colors">ยกเลิก</button>
                 </div>
