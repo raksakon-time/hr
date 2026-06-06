@@ -41,7 +41,7 @@
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased; color: #0f172a; font-size: 16px; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        input:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px white inset !important; }
+        .input-autofill-fix:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px white inset !important; }
         select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%231e3a8a' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
     </style>
 </head>
@@ -182,7 +182,7 @@
             const [employees, setEmployees] = useState({});
             const [schedules, setSchedules] = useState({});
             const [isLoading, setIsLoading] = useState(true);
-            const [settings, setSettings] = useState({ standardWorkDays: 22 });
+            const [settings, setSettings] = useState({ standardWorkDays: {} });
             
             const [loggedInAdmin, setLoggedInAdmin] = useState(null);
             const [loggedInSupervisor, setLoggedInSupervisor] = useState(null);
@@ -267,7 +267,7 @@
                         
                         {activeTab === 'supervisor' && (
                             loggedInSupervisor ? 
-                            <ReportView role="supervisor" user={loggedInSupervisor} onLogout={() => setLoggedInSupervisor(null)} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} /> : 
+                            <ReportView role="supervisor" user={loggedInSupervisor} onLogout={() => setLoggedInSupervisor(null)} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} /> : 
                             <SupervisorLoginView employees={employees} onLogin={(user) => setLoggedInSupervisor(user)} onCancel={() => setActiveTab('in')} />
                         )}
 
@@ -317,16 +317,16 @@
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
                             <label className="block text-sm font-bold text-blue-800 mb-1.5">รหัสพนักงาน (ID)</label>
-                            <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base" placeholder="เช่น EMP01" />
+                            <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base input-autofill-fix" placeholder="เช่น EMP01" />
                         </div>
                         <div className="flex flex-col sm:flex-row gap-5">
                             <div className="flex-1">
                                 <label className="block text-sm font-bold text-blue-800 mb-1.5">ชื่อ</label>
-                                <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base" />
+                                <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base input-autofill-fix" />
                             </div>
                             <div className="flex-1">
                                 <label className="block text-sm font-bold text-blue-800 mb-1.5">นามสกุล</label>
-                                <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base" />
+                                <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base input-autofill-fix" />
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-5">
@@ -346,7 +346,7 @@
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-blue-800 mb-1.5">รหัสผ่าน <span className="text-blue-500 font-normal">(ใส่หรือไม่ใส่ก็ได้ / สำหรับหัวหน้า)</span></label>
-                            <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base" placeholder="ตั้งรหัสผ่านสำหรับเข้าสู่ระบบ" />
+                            <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base input-autofill-fix" placeholder="ตั้งรหัสผ่านสำหรับเข้าสู่ระบบ" />
                         </div>
                         <button type="submit" disabled={isSubmitting} className="w-full p-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-lg transition-colors mt-6 shadow-md">
                             {isSubmitting ? 'กำลังบันทึก...' : 'ลงทะเบียน'}
@@ -371,7 +371,6 @@
                     return;
                 }
                 
-                // ตรวจสอบรหัสผ่าน
                 const sheetPassword = emp.password || '';
                 if (sheetPassword !== '' && password !== sheetPassword) {
                     setErrorMsg('รหัสผ่านไม่ถูกต้อง');
@@ -387,8 +386,8 @@
                     <h2 className="text-2xl font-bold text-blue-950">ผู้ดูแลระบบ (Admin)</h2>
                     <p className="text-base text-blue-700 mt-2 mb-8 font-medium">เข้าสู่ระบบเพื่อจัดการข้อมูล</p>
                     {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">{errorMsg}</div>}
-                    <input type="text" placeholder="รหัสพนักงาน ADMIN" value={adminId} onChange={e => setAdminId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-3 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-blue-500 transition-colors" />
-                    <input type="password" placeholder="รหัสผ่าน (ถ้ามี)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-blue-500 transition-colors" />
+                    <input type="text" placeholder="รหัสพนักงาน ADMIN" value={adminId} onChange={e => setAdminId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-3 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-blue-500 transition-colors input-autofill-fix" />
+                    <input type="password" placeholder="รหัสผ่าน (ถ้ามี)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-blue-500 transition-colors input-autofill-fix" />
                     <button onClick={handleLogin} className="w-full p-4 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold text-lg transition-colors mb-3 shadow-md">เข้าสู่ระบบ</button>
                     <button onClick={onCancel} className="w-full p-3 text-base text-blue-600 font-bold hover:text-blue-800 transition-colors">ยกเลิก</button>
                 </div>
@@ -410,7 +409,6 @@
                     return;
                 }
                 
-                // ตรวจสอบรหัสผ่าน
                 const sheetPassword = emp.password || '';
                 if (sheetPassword !== '' && password !== sheetPassword) {
                     setErrorMsg('รหัสผ่านไม่ถูกต้อง');
@@ -426,8 +424,8 @@
                     <h2 className="text-2xl font-bold text-blue-950">พื้นที่หัวหน้างาน (Supervisor)</h2>
                     <p className="text-base text-blue-700 mt-2 mb-8 font-medium">เข้าสู่ระบบเพื่อจัดการตารางเวรและสรุปผล</p>
                     {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">{errorMsg}</div>}
-                    <input type="text" placeholder="รหัสพนักงานของหัวหน้า" value={superId} onChange={e => setSuperId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-3 border-2 border-amber-100 rounded-xl bg-amber-50/30 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-amber-400 transition-colors" />
-                    <input type="password" placeholder="รหัสผ่าน (ถ้ามี)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-amber-100 rounded-xl bg-amber-50/30 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-amber-400 transition-colors" />
+                    <input type="text" placeholder="รหัสพนักงานของหัวหน้า" value={superId} onChange={e => setSuperId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-3 border-2 border-amber-100 rounded-xl bg-amber-50/30 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-amber-400 transition-colors input-autofill-fix" />
+                    <input type="password" placeholder="รหัสผ่าน (ถ้ามี)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-amber-100 rounded-xl bg-amber-50/30 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-amber-400 transition-colors input-autofill-fix" />
                     <button onClick={handleLogin} className="w-full p-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-lg transition-colors mb-3 shadow-md">เข้าสู่ระบบ</button>
                     <button onClick={onCancel} className="w-full p-3 text-base text-blue-600 font-bold hover:text-blue-800 transition-colors">ยกเลิก</button>
                 </div>
@@ -490,11 +488,9 @@
                 const activeRecord = records.find(r => r.empId === upperEmpId && (r.date === todayStr || (currentTime.getHours() <= 8 && r.date === formatDateForInput(new Date(currentTime.getTime() - 86400000)))) && !r.timeOut);
                 if (activeRecord) { setErrorMsg(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[activeRecord.shiftId]?.label || activeRecord.shiftId}"`); return; }
 
-                // 🌟 แก้ไขบั๊ก Object Parsing
                 const schedObjToday = schedules[todayStr]?.[upperEmpId];
                 let scheduledShifts = schedObjToday?.shifts || (Array.isArray(schedObjToday) ? schedObjToday : []);
                 
-                // 🔮 ยืดหยุ่น: ถ้าล็อกอินช่วง 00:00 - 03:59 ให้ดึงตารางของเมื่อวานมาพิจารณาด้วย
                 if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
                     const yesterday = new Date(currentTime);
                     yesterday.setDate(yesterday.getDate() - 1);
@@ -525,11 +521,9 @@
                 const todayStr = formatDateForInput(currentTime);
                 let targetDate = todayStr; 
                 
-                // 🌟 แก้ไขบั๊ก Object Parsing
                 const schedObjToday = schedules[todayStr]?.[loggedInEmp.id];
                 let scheduledShifts = schedObjToday?.shifts || (Array.isArray(schedObjToday) ? schedObjToday : []);
                 
-                // 🔮 ระบบยืดหยุ่น: ถ้าเข้างาน 00:00 - 03:59 แล้วเช็คเวรวันนี้ไม่เจอ ให้ถอยไปดูเมื่อวาน
                 if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
                     const yesterday = new Date(currentTime);
                     yesterday.setDate(yesterday.getDate() - 1);
@@ -538,16 +532,14 @@
                     const yestObj = schedules[yesterdayStr]?.[loggedInEmp.id];
                     const yesterdayShifts = yestObj?.shifts || (Array.isArray(yestObj) ? yestObj : []);
                     
-                    // ถ้าพบว่าเมื่อวานมีกะตรงกับที่กำลังจะสแกน ให้สลับไปบันทึกของเมื่อวาน (เช่น เวร ดึก)
                     if (yesterdayShifts.includes(selectedShift)) {
                         scheduledShifts = yesterdayShifts;
-                        targetDate = yesterdayStr; // 🌟 บันทึกลงวันที่ของเมื่อวาน!
+                        targetDate = yesterdayStr; 
                     }
                 }
                 
                 const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s));
                 
-                // บล็อกกะผิด หรือไม่มีเวร
                 if (validScheduledShifts.length > 0 && !validScheduledShifts.includes(selectedShift)) {
                     setErrorMsg(`ไม่อนุญาต: กะที่เลือกไม่ตรงกับตารางเวร`);
                     setIsScanning(false); setCameraActive(false);
@@ -571,7 +563,7 @@
                 const timeInStr = formatTime24(currentTime);
 
                 const newRecord = {
-                    id: Date.now().toString(), date: targetDate, // 🌟 ใช้ targetDate
+                    id: Date.now().toString(), date: targetDate,
                     empId: loggedInEmp.id, shiftId: selectedShift, timeIn: timeInStr,
                     timeOut: null, isLate: isLate, lateMinutes: lateMinutes, credit: shiftData.credit,
                     lat: currentLocation?.lat, lon: currentLocation?.lon, photoBase64: photoBase64
@@ -593,12 +585,12 @@
                         <p className="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-2">เวลาเข้างาน</p>
                         <p className="text-5xl font-extrabold text-emerald-700 tracking-tight mb-4">{displaySafeTime(result.timeIn)}</p>
                         <div className="inline-flex items-center gap-2 text-base font-bold text-emerald-800 bg-white px-4 py-2 rounded-xl border border-emerald-200 shadow-sm">
-                            <i className="fa-solid fa-calendar-day"></i> กะ: {result.shiftName}
+                            <i className="fa-solid fa-calendar-day text-emerald-500"></i> กะ: {result.shiftName}
                         </div>
                         <p className="text-sm font-semibold text-emerald-600 mt-3">บันทึกลงวันที่: {formatDisplayDate(result.date)}</p>
                     </div>
                     {result.isLate && (
-                        <div className="mb-8 inline-flex items-center gap-2 bg-red-100 text-red-800 px-5 py-2.5 rounded-full text-base font-bold">
+                        <div className="mb-8 inline-flex items-center gap-2 bg-red-100 text-red-800 px-5 py-2.5 rounded-full text-base font-bold border border-red-200">
                             <i className="fa-regular fa-clock"></i> สาย {result.lateMinutes} นาที
                         </div>
                     )}
@@ -619,7 +611,7 @@
                             <>
                                 <div>
                                     <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">รหัสพนักงาน</label>
-                                    <input type="text" value={empId} onChange={(e) => setEmpId(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-lg focus:bg-white focus:border-emerald-500 transition-colors placeholder:font-medium placeholder:text-blue-300" placeholder="กรอกรหัสพนักงาน" />
+                                    <input type="text" value={empId} onChange={(e) => setEmpId(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-lg focus:bg-white focus:border-emerald-500 transition-colors placeholder:font-medium placeholder:text-blue-300 input-autofill-fix" placeholder="กรอกรหัสพนักงาน" />
                                 </div>
                                 <button onClick={handleLogin} className="w-full p-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg transition-colors shadow-md">ตรวจสอบข้อมูล</button>
                             </>
@@ -744,7 +736,7 @@
                                 <div className="space-y-5">
                                     <div>
                                         <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">รหัสพนักงาน</label>
-                                        <input type="text" value={outEmpId} onChange={(e) => setOutEmpId(e.target.value.toUpperCase())} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-lg focus:bg-white focus:border-rose-400 transition-colors placeholder:font-medium placeholder:text-blue-300" placeholder="เช่น EMP01" />
+                                        <input type="text" value={outEmpId} onChange={(e) => setOutEmpId(e.target.value.toUpperCase())} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-lg focus:bg-white focus:border-rose-400 transition-colors placeholder:font-medium placeholder:text-blue-300 input-autofill-fix" placeholder="เช่น EMP01" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">วันที่เข้างาน</label>
@@ -914,8 +906,15 @@
             const [filterDept, setFilterDept] = useState(defaultDept);
             const [filterEmp, setFilterEmp] = useState('');
             
-            const [localWorkDays, setLocalWorkDays] = useState(settings?.standardWorkDays || 22);
-            useEffect(() => { if(settings) setLocalWorkDays(settings.standardWorkDays); }, [settings]);
+            // 🌟 คำนวณวันทำงานเฉพาะของเดือนที่เลือก
+            const [localWorkDays, setLocalWorkDays] = useState(22);
+            useEffect(() => {
+                if (settings && settings.standardWorkDays && settings.standardWorkDays[matrixMonth]) {
+                    setLocalWorkDays(parseInt(settings.standardWorkDays[matrixMonth]));
+                } else {
+                    setLocalWorkDays(22);
+                }
+            }, [settings, matrixMonth]);
             
             const [selectedMapRecord, setSelectedMapRecord] = useState(null);
             const [selectedPhotoRecord, setSelectedPhotoRecord] = useState(null);
@@ -958,6 +957,7 @@
                 return true;
             });
 
+            // 🌟 สมองกล: ระบบตารางไฮบริด (ชิปสี)
             const summaryMatrix = matrixEmployees.map(empId => {
                 const empRecords = records.filter(r => r.empId === empId && r.date.startsWith(matrixMonth));
                 const shiftsByDay = {};
@@ -974,17 +974,14 @@
                     const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const dayRecords = empRecords.filter(r => r.date === dateStr);
                     
-                    // 🌟 แก้บั๊กโครงสร้าง Object/Array ให้ดึงกะมานับได้แม่นยำ
                     const schedObj = schedules[dateStr]?.[empId];
                     const scheduledShifts = schedObj?.shifts || (Array.isArray(schedObj) ? schedObj : []);
 
                     let shiftDisplay = '-';
                     let isAbsent = false;
-                    let uiElements = []; // 🌟 เพิ่มตัวแปรสำหรับวาด UI ชิปแยกสี
+                    let uiElements = []; 
 
-                    // 🌟 แยกสมองกลการคำนวณตาม "แท็บ (adminTab)"
                     if (adminTab === 'schedules') {
-                        // 1. หน้าจัดตารางเวร: ดูตามที่แพลนไว้ 100% ไม่สนการสแกน
                         if (scheduledShifts.length > 0) {
                             shiftDisplay = scheduledShifts.join(', ');
                             scheduledShifts.forEach(s => {
@@ -995,12 +992,11 @@
                         }
                         shiftsByDay[day] = { display: shiftDisplay, isAbsent: false, uiElements: [] };
                     } else {
-                        // 2. หน้าสรุปภาพรวม (Hybrid): ดึงทั้งสแกนจริง และ ตารางล่วงหน้ามาผสานกัน
+                        // Hybrid Logic (สรุปภาพรวม)
                         const workedShifts = dayRecords.map(r => r.shiftId).filter(Boolean);
                         const pendingShifts = scheduledShifts.filter(s => s && !workedShifts.includes(s));
                         let displayArr = [];
 
-                        // A. คิดกะที่สแกนจริง (อดีต หรือ วันนี้)
                         workedShifts.forEach(s => {
                             shiftCounts[s] = (shiftCounts[s] || 0) + 1;
                             displayArr.push(s);
@@ -1009,9 +1005,7 @@
                         empTotalCredit += dayRecords.reduce((sum, r) => sum + (r.credit || 0), 0);
                         empTotalLate += dayRecords.reduce((sum, r) => sum + (r.isLate ? Number(r.lateMinutes) : 0), 0);
 
-                        // B. คิดกะที่เหลือในตาราง (รอสแกน หรือ ขาด)
                         if (dateStr < todayStr) {
-                            // อดีต: ถ้ามีกะค้างแปลว่า "ขาด" (หรือลา)
                             pendingShifts.forEach(s => {
                                 if (['Vac', 'พักร้อน', 'ป่วย', 'ลา', 'Off'].includes(s)) {
                                     shiftCounts[s] = (shiftCounts[s] || 0) + 1;
@@ -1026,12 +1020,10 @@
                                 }
                             });
                         } else {
-                            // วันนี้ และ อนาคต: ถือว่า "รอสแกน" (Pending) ให้เครดิตล่วงหน้า (สีอ่อนลง)
                             pendingShifts.forEach(s => {
                                 shiftCounts[s] = (shiftCounts[s] || 0) + 1;
                                 if (SHIFT_TYPES[s]) empTotalCredit += SHIFT_TYPES[s].credit;
                                 else if (['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) empTotalCredit += 1;
-                                
                                 displayArr.push(s);
                                 uiElements.push({ shift: s, type: 'pending' });
                             });
@@ -1041,9 +1033,9 @@
                         shiftsByDay[day] = { display: shiftDisplay, isAbsent: isAbsent, uiElements: uiElements };
                     }
                 });
-                
+
                 const otShifts = empTotalCredit - localWorkDays;
-                return { empId, fname: employees[empId].fname, lname: employees[empId].lname, dept: employees[empId].dept, shiftsByDay, empTotalCredit, empTotalLate, otShifts, shiftCounts };
+                return { empId, fname: employees[empId].fname, lname: employees[empId].lname, dept: employees[empId].dept, level: employees[empId].level, shiftsByDay, empTotalCredit, empTotalLate, otShifts, shiftCounts };
             });
 
             const allShiftTypesUsed = new Set();
@@ -1058,11 +1050,15 @@
                 return a.localeCompare(b);
             });
 
+            // 🌟 บันทึกการตั้งค่าแยกตามเดือน
             const handleSaveSettings = async () => {
-                const res = await sendToGoogleSheet('saveSettings', { standardWorkDays: localWorkDays });
+                const res = await sendToGoogleSheet('saveSettings', { 
+                    standardWorkDays: localWorkDays,
+                    monthYear: matrixMonth
+                });
                 if(res.status === 'success') {
-                    setSettings({...settings, standardWorkDays: localWorkDays});
-                    alert('อัปเดตวันทำการปกติเรียบร้อย ระบบเปลี่ยนให้ทุกคนเห็นตรงกันแล้ว');
+                    setSettings({...settings, standardWorkDays: { ...settings.standardWorkDays, [matrixMonth]: localWorkDays }});
+                    alert(`อัปเดตวันทำการปกติของเดือน ${matrixMonth} เรียบร้อย ระบบเปลี่ยนให้ทุกคนเห็นตรงกันแล้ว`);
                 }
             };
 
@@ -1169,7 +1165,6 @@
                 const newSchedules = { ...schedules };
                 if (!newSchedules[dateStr]) newSchedules[dateStr] = {};
                 
-                // 🌟 อัปเดต Object ใน Local ให้สมบูรณ์แบบ
                 newSchedules[dateStr][empId] = {
                     shifts: filteredShifts,
                     isEdited: true,
@@ -1482,7 +1477,7 @@
                                             className={`w-20 p-1.5 border-2 rounded-lg text-base text-center outline-none font-extrabold ${role === 'admin' ? 'bg-white border-blue-300 text-blue-700 focus:border-blue-500' : 'bg-transparent border-transparent text-blue-900 cursor-not-allowed'}`} 
                                         />
                                         <span className="text-sm font-bold text-blue-800">วัน</span>
-                                        {role === 'admin' && localWorkDays !== settings?.standardWorkDays && (
+                                        {role === 'admin' && localWorkDays !== (settings?.standardWorkDays?.[matrixMonth] || 22) && (
                                             <button onClick={handleSaveSettings} className="ml-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-lg shadow-md font-bold transition-colors">บันทึก</button>
                                         )}
                                     </div>
@@ -1548,7 +1543,6 @@
                                                         {row.shiftCounts[type] || 0}
                                                     </td>
                                                 ))}
-
                                                 <td className="px-4 py-3 text-center font-extrabold text-blue-950 bg-blue-50/50 border-l-2 border-blue-100">{row.empTotalCredit}</td>
                                                 <td className="px-4 py-3 text-center font-bold text-blue-700 bg-blue-50/50">{localWorkDays}</td>
                                                 <td className="px-4 py-3 text-center font-extrabold text-blue-800 bg-blue-100/40 border-l-2 border-blue-200">{row.otShifts > 0 ? `+${row.otShifts}` : row.otShifts}</td>
