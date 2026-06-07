@@ -73,7 +73,7 @@
         const { useState, useEffect, useRef } = React;
 
         // ==========================================
-        // ⚠️ ใส่ URL ของ Apps Script และพิกัดตรงนี้ ⚠️
+        // ⚠️ การตั้งค่า URL และพิกัด
         // ==========================================
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec"; 
         const HOSPITAL_LAT = 17.162383247325145;
@@ -192,7 +192,55 @@
         };
 
         // ==========================================
-        // Main App Container
+        // Modals
+        // ==========================================
+        const MapModal = ({ lat, lon, onClose }) => (
+            <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <div className="bg-white p-1 rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200">
+                    <div className="flex justify-between items-center px-6 py-4 border-b border-blue-50">
+                        <h3 className="font-bold text-blue-950 text-lg">พิกัดลงเวลา</h3>
+                        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
+                    </div>
+                    <iframe src={`https://maps.google.com/maps?q=${lat},${lon}&hl=th&z=17&output=embed`} width="100%" height="350" frameBorder="0" className="bg-blue-50" />
+                </div>
+            </div>
+        );
+
+        const PhotoModal = ({ record, employees, onClose }) => {
+            const emp = employees[record.empId] || {};
+            return (
+                <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white p-1 rounded-3xl w-full max-w-md shadow-floating overflow-hidden flex flex-col border border-blue-200">
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-blue-50 shrink-0">
+                            <h3 className="font-bold text-blue-950 text-lg">รูปสแกนใบหน้า</h3>
+                            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <div className="p-6 bg-blue-50/50 flex gap-5 h-72 overflow-hidden">
+                            {record.photoInUrl ? (
+                                <div className="flex-1 flex flex-col">
+                                    <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">เข้างาน</p>
+                                    <iframe src={record.photoInUrl.replace('/view', '/preview')} className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm" />
+                                </div>
+                            ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
+                            
+                            {record.photoOutUrl ? (
+                                <div className="flex-1 flex flex-col">
+                                    <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">ออกงาน</p>
+                                    <iframe src={record.photoOutUrl.replace('/view', '/preview')} className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm" />
+                                </div>
+                            ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
+                        </div>
+                        <div className="p-5 border-t border-blue-50 text-base text-blue-800 shrink-0 bg-white">
+                            <p><span className="font-bold text-blue-950 text-lg">{emp.fname} {emp.lname}</span> <span className="font-semibold text-blue-600">({record.empId})</span></p>
+                            <p className="text-sm mt-1.5 font-medium text-blue-700">วันที่: {formatDisplayDate(record.date)}</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // Main App Container (Modern Single Entry)
         // ==========================================
         function App() {
             const [currentUser, setCurrentUser] = useState(null); // null = ไม่ได้ล็อกอิน
@@ -212,9 +260,6 @@
 
             useEffect(() => {
                 const fetchInitialData = async () => {
-                    if (GAS_URL.includes("ใส่_URL_ลงท้ายด้วย_EXEC_ของท่านที่นี่")) {
-                        setIsLoading(false); return;
-                    }
                     const res = await sendToGoogleSheet('getInitialData');
                     if (res.status === 'success') {
                         setEmployees(res.data.employees || {});
@@ -243,54 +288,53 @@
             if (isLoading) return (
                 <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
                     <i className="fa-solid fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i>
-                    <h2 className="text-xl font-bold text-blue-900">กำลังดึงข้อมูลระบบ...</h2>
+                    <h2 className="text-xl font-bold text-blue-900 mt-4">กำลังเชื่อมต่อฐานข้อมูล...</h2>
                 </div>
             );
 
-            // Routing
+            // 1. หน้าลงทะเบียน (เมื่อผู้ใช้กดสมัครใหม่)
             if (!currentUser && activeTab === 'register') {
                 return <RegisterView employees={employees} setEmployees={setEmployees} onCancel={() => setActiveTab('home')} sendToGoogleSheet={sendToGoogleSheet} />;
             }
 
+            // 2. หน้าเข้าสู่ระบบ (หน้าแรกสุด)
             if (!currentUser) {
                 return <UnifiedLoginView employees={employees} onLogin={(user) => setCurrentUser(user)} onRegisterClick={() => setActiveTab('register')} />;
             }
 
-            // User is logged in -> Dashboard
+            // 3. หน้า Dashboard (เมื่อล็อกอินสำเร็จ)
             const isManager = currentUser.level === 'หัวหน้า' || currentUser.dept === 'ADMIN';
             const role = currentUser.dept === 'ADMIN' ? 'admin' : (currentUser.level === 'หัวหน้า' ? 'supervisor' : 'employee');
-            
-            // Avatar URL generator
             const avatarUrl = `https://ui-avatars.com/api/?name=${currentUser.fname}+${currentUser.lname}&background=1e3a8a&color=fff&size=150&font-size=0.33`;
 
             return (
-                <div className="min-h-screen flex flex-col bg-slate-100">
-                    {/* Header / Profile Area */}
+                <div className="min-h-screen flex flex-col bg-slate-100 pb-20">
+                    {/* ส่วน Header (โปรไฟล์) */}
                     <div className="bg-blue-950 text-white rounded-b-[2.5rem] shadow-floating pb-8 pt-10 px-6 relative print-hide">
-                        <button onClick={handleLogout} className="absolute top-6 right-6 text-blue-200 hover:text-white transition-colors">
-                            <i className="fa-solid fa-arrow-right-from-bracket text-xl"></i> ออกจากระบบ
+                        <button onClick={handleLogout} className="absolute top-6 right-6 text-blue-200 hover:text-white transition-colors flex items-center">
+                            <i className="fa-solid fa-arrow-right-from-bracket text-xl mr-2"></i> ออกจากระบบ
                         </button>
                         <div className="text-center">
                             <div className="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-lg mb-4">
                                 <img src={avatarUrl} alt="Profile" className="w-full h-full rounded-full object-cover" />
                             </div>
                             <h2 className="text-2xl font-bold">{currentUser.fname} {currentUser.lname}</h2>
-                            <p className="text-blue-200 text-sm mt-1 font-semibold tracking-wide">
-                                <i className="fa-regular fa-id-badge mr-1.5"></i>{currentUser.id} &nbsp;|&nbsp; 
-                                <i className="fa-solid fa-briefcase mr-1.5 ml-2"></i>{currentUser.dept} 
-                                {isManager && <span className="ml-2 bg-amber-500 text-white px-2 py-0.5 rounded text-xs"><i className="fa-solid fa-star mr-1"></i>{role === 'admin' ? 'แอดมิน' : 'หัวหน้า'}</span>}
+                            <p className="text-blue-200 text-sm mt-1 font-semibold tracking-wide flex items-center justify-center flex-wrap gap-3">
+                                <span><i className="fa-regular fa-id-badge mr-1.5"></i>{currentUser.id}</span>
+                                <span><i className="fa-solid fa-briefcase mr-1.5"></i>{currentUser.dept}</span> 
+                                {isManager && <span className="bg-amber-500 text-white px-2 py-0.5 rounded text-xs"><i className="fa-solid fa-star mr-1"></i>{role === 'admin' ? 'แอดมิน' : 'หัวหน้า'}</span>}
                             </p>
                         </div>
                     </div>
 
-                    {/* Main Content Area */}
-                    <main className="flex-grow w-full max-w-7xl mx-auto -mt-6 z-10 px-4 sm:px-6 lg:px-8 pb-24">
+                    {/* ส่วนพื้นที่ใช้งาน (Main Area) */}
+                    <main className="flex-grow w-full max-w-7xl mx-auto -mt-6 z-10 px-4 sm:px-6 lg:px-8">
                         {activeTab === 'home' && <ActionPanelView currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} />}
                         {activeTab === 'history' && <MyHistoryView currentUser={currentUser} records={records} formatDateForInput={formatDateForInput} currentTime={currentTime} />}
                         {activeTab === 'manager' && isManager && <ReportView role={role} user={currentUser} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} />}
                     </main>
 
-                    {/* Bottom Navigation */}
+                    {/* เมนูด้านล่าง (Bottom Navigation) */}
                     <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe print-hide bottom-nav-hide z-50">
                         <div className="max-w-md mx-auto flex justify-around p-2">
                             <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'home' ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
@@ -314,7 +358,7 @@
         }
 
         // ==========================================
-        // Unified Login & Register Views
+        // Views: เข้าสู่ระบบ (Login)
         // ==========================================
         function UnifiedLoginView({ employees, onLogin, onRegisterClick }) {
             const [empId, setEmpId] = useState('');
@@ -333,18 +377,15 @@
 
                 const sheetPassword = emp.password || '';
                 
-                // ถ้าระบบมีรหัสผ่าน (หัวหน้า/แอดมิน) ให้โชว์ช่องใส่รหัสผ่านก่อน
                 if (sheetPassword !== '' && !needsPassword) {
                     setNeedsPassword(true);
                     return;
                 }
 
-                // ถ้าบังคับใส่รหัสผ่าน แล้วรหัสไม่ตรง
                 if (needsPassword && password !== sheetPassword) {
                     return setErrorMsg('รหัสผ่านไม่ถูกต้อง');
                 }
 
-                // สำเร็จ
                 onLogin({ id, ...emp });
             };
 
@@ -403,84 +444,12 @@
             );
         }
 
-        function RegisterView({ employees, setEmployees, onCancel, sendToGoogleSheet }) {
-            const [formData, setFormData] = useState({ empId: '', fname: '', lname: '', dept: 'OPD', level: 'พนักงาน', password: '' });
-            const [isSubmitting, setIsSubmitting] = useState(false);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if (!formData.empId.trim() || !formData.fname.trim() || !formData.lname.trim()) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
-                const upperEmpId = formData.empId.trim().toUpperCase();
-                if (employees[upperEmpId]) return alert("รหัสพนักงานนี้มีอยู่ในระบบแล้ว");
-
-                setIsSubmitting(true);
-                const res = await sendToGoogleSheet('register', { ...formData, empId: upperEmpId });
-                if (res.status === 'success') {
-                    alert("ลงทะเบียนสำเร็จ");
-                    setEmployees({ ...employees, [upperEmpId]: { ...formData } });
-                    onCancel(); 
-                }
-                setIsSubmitting(false);
-            };
-
-            return (
-                <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-                    <div className="max-w-lg w-full bg-white rounded-[2rem] shadow-floating border border-slate-100 p-8 sm:p-10">
-                        <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-2xl font-bold text-blue-950">ลงทะเบียนพนักงาน</h2>
-                            <button onClick={onCancel} className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><i className="fa-solid fa-xmark text-xl"></i></button>
-                        </div>
-                        
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1.5">รหัสพนักงาน (ID)</label>
-                                <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" placeholder="เช่น EMP01" />
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="flex-1">
-                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">ชื่อ</label>
-                                    <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" />
-                                </div>
-                                <div className="flex-1">
-                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">นามสกุล</label>
-                                    <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" />
-                                </div>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="flex-1">
-                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">แผนก</label>
-                                    <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base">
-                                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                                    </select>
-                                </div>
-                                <div className="flex-1">
-                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">ระดับ</label>
-                                    <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base">
-                                        <option value="พนักงาน">พนักงาน</option>
-                                        <option value="หัวหน้า">หัวหน้า</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1.5">รหัสผ่าน <span className="text-blue-500 font-normal">(ใส่หรือไม่ใส่ก็ได้ / สำหรับหัวหน้า)</span></label>
-                                <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" placeholder="ตั้งรหัสผ่านสำหรับเข้าสู่ระบบ" />
-                            </div>
-                            <button type="submit" disabled={isSubmitting} className="w-full p-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold text-lg transition-colors mt-6 shadow-md">
-                                {isSubmitting ? 'กำลังบันทึก...' : 'ลงทะเบียน'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            );
-        }
-
         // ==========================================
-        // Dashboard Components (Clock In/Out Actions)
+        // Views: เลือกสถานะ เข้า หรือ ออกงาน
         // ==========================================
         function ActionPanelView({ currentUser, currentTime, records, setRecords, schedules, formatDateForInput, sendToGoogleSheet }) {
-            const [actionType, setActionType] = useState(null); // 'in' or 'out' or null
+            const [actionType, setActionType] = useState(null); 
 
-            // ถ้าไม่ได้กดปุ่ม ให้แสดงหน้าจอเลือก Action
             if (!actionType) {
                 return (
                     <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-minimal text-center border border-slate-100 max-w-lg mx-auto">
@@ -505,10 +474,9 @@
                 );
             }
 
-            // ถ้าย่อยมาที่ In หรือ Out ก็แสดง View ย่อย
             return (
                 <div className="max-w-md mx-auto">
-                    <button onClick={() => setActionType(null)} className="mb-4 text-slate-500 font-bold hover:text-slate-800 flex items-center bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200">
+                    <button onClick={() => setActionType(null)} className="mb-4 text-slate-500 font-bold hover:text-slate-800 flex items-center bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200 transition-colors">
                         <i className="fa-solid fa-arrow-left mr-2"></i> ย้อนกลับ
                     </button>
                     {actionType === 'in' && <ClockInModule currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} onDone={() => setActionType(null)} />}
@@ -517,7 +485,9 @@
             );
         }
 
-        // --- Clock In Module (No Emp ID Input Needed) ---
+        // ==========================================
+        // Views: ฟังก์ชันหน้าสแกนเข้างาน (ปรับปรุง GPS)
+        // ==========================================
         function ClockInModule({ currentUser, currentTime, records, setRecords, schedules, formatDateForInput, sendToGoogleSheet, onDone }) {
             const [selectedShift, setSelectedShift] = useState('ช');
             const [locationStatus, setLocationStatus] = useState('checking'); 
@@ -538,10 +508,12 @@
                         .then(stream => { if (videoRef.current) videoRef.current.srcObject = stream; })
                         .catch(() => { setErrorMsg("ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาต"); setCameraActive(false); });
                 } else {
-                    if (videoRef.current && videoRef.current.srcObject) videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+                    const stream = videoRef.current?.srcObject;
+                    if (stream) stream.getTracks().forEach(track => track.stop());
                 }
                 return () => {
-                     if (videoRef.current && videoRef.current.srcObject) videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+                     const stream = videoRef.current?.srcObject;
+                     if (stream) stream.getTracks().forEach(track => track.stop());
                 }
             }, [cameraActive, result]);
 
@@ -554,18 +526,49 @@
                 return R * c * 1000; 
             };
 
+            // 🌟 ปรับปรุงระบบค้นหาพิกัดให้เสถียรขึ้น มีการแจ้งเตือนหากค้าง
             const checkLocation = () => {
                 setLocationStatus('checking');
-                if (!navigator.geolocation) { setErrorMsg("เบราว์เซอร์ไม่รองรับ GPS"); setLocationStatus('error'); return; }
+                setErrorMsg('');
+                
+                if (!navigator.geolocation) { 
+                    setErrorMsg("เบราว์เซอร์ไม่รองรับ GPS"); 
+                    setLocationStatus('error'); 
+                    return; 
+                }
+
+                // 🚨 Fallback Timeout: ดักจับกรณีที่ GPS ไม่ยอมตอบสนองเกิน 15 วินาที
+                const fallbackTimeout = setTimeout(() => {
+                    setErrorMsg("GPS ไม่ตอบสนอง กรุณาตรวจสอบการตั้งค่าตำแหน่ง หรือลองสลับเน็ต");
+                    setLocationStatus('error');
+                }, 15000);
+
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        const lat = position.coords.latitude; const lon = position.coords.longitude;
+                        clearTimeout(fallbackTimeout);
+                        const lat = position.coords.latitude; 
+                        const lon = position.coords.longitude;
                         setCurrentLocation({ lat, lon });
                         const dist = getDistance(lat, lon, HOSPITAL_LAT, HOSPITAL_LON);
-                        if (dist <= ALLOWED_RADIUS) setLocationStatus('ok');
-                        else { setErrorMsg(`อยู่นอกพื้นที่ รพ. (${Math.round(dist)}ม.)`); setLocationStatus('error'); }
+                        
+                        if (dist <= ALLOWED_RADIUS) {
+                            setLocationStatus('ok');
+                            setErrorMsg('');
+                        } else { 
+                            setErrorMsg(`อยู่นอกพื้นที่ รพ. (${Math.round(dist)}ม.)`); 
+                            setLocationStatus('error'); 
+                        }
                     },
-                    (err) => { setErrorMsg("โปรดอนุญาตให้เข้าถึงตำแหน่ง (GPS)"); setLocationStatus('error'); },
+                    (err) => { 
+                        clearTimeout(fallbackTimeout);
+                        console.warn("GPS Error:", err);
+                        let msg = "ไม่สามารถระบุตำแหน่งได้";
+                        if (err.code === 1) msg = "กรุณากดอนุญาตให้เบราว์เซอร์เข้าถึงตำแหน่ง (Location)";
+                        if (err.code === 2) msg = "สัญญาณ GPS ขัดข้อง หรือมือถือปิด GPS ไว้";
+                        if (err.code === 3) msg = "หมดเวลาการค้นหาพิกัด (Timeout)";
+                        setErrorMsg(msg); 
+                        setLocationStatus('error'); 
+                    },
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
             };
@@ -576,6 +579,7 @@
                 
                 if (activeRecord) { 
                     setErrorMsg(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[activeRecord.shiftId]?.label || activeRecord.shiftId}" กรุณาลงเวลาออกก่อน`); 
+                    setLocationStatus('error'); // หยุดหมุน
                     return; 
                 }
 
@@ -690,7 +694,9 @@
                         </div>
                         
                         <div className={`p-4 rounded-2xl flex items-center gap-3 text-sm font-bold border-2 ${locationStatus === 'ok' ? 'bg-green-50 border-green-200 text-green-800' : locationStatus === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
-                            {locationStatus === 'ok' ? <><i className="fa-solid fa-location-dot text-lg"></i> พิกัดถูกต้อง (ใน รพ.)</> : locationStatus === 'error' ? <><i className="fa-solid fa-location-xmark text-lg"></i> พิกัดอยู่นอกพื้นที่ <button onClick={checkLocation} className="ml-auto underline font-black text-red-800">ลองใหม่</button></> : <><i className="fa-solid fa-spinner fa-spin text-lg"></i> กำลังตรวจสอบพิกัด...</>}
+                            {locationStatus === 'ok' ? <><i className="fa-solid fa-location-dot text-lg"></i> พิกัดถูกต้อง (ใน รพ.)</> : locationStatus === 'error' ? <><i className="fa-solid fa-location-xmark text-lg"></i> พิกัดอยู่นอกพื้นที่ 
+                                <button onClick={checkLocation} className="ml-auto bg-red-100 px-3 py-1 rounded text-red-800 font-bold hover:bg-red-200 shadow-sm transition-colors">ลองใหม่</button></> 
+                                : <><i className="fa-solid fa-spinner fa-spin text-lg"></i> กำลังตรวจสอบพิกัด...</>}
                         </div>
                         
                         <div className="border-2 border-dashed border-slate-200 rounded-2xl h-64 flex items-center justify-center bg-slate-50 overflow-hidden relative group">
@@ -709,7 +715,9 @@
             );
         }
 
-        // --- Clock Out Module (No Emp ID Input Needed) ---
+        // ==========================================
+        // Views: ฟังก์ชันหน้าสแกนออกงาน
+        // ==========================================
         function ClockOutModule({ currentUser, currentTime, records, setRecords, formatDateForInput, sendToGoogleSheet, onDone }) {
             const [outDate, setOutDate] = useState(formatDateForInput(currentTime));
             const [foundRecord, setFoundRecord] = useState(null);
@@ -730,10 +738,13 @@
                     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
                         .then(stream => { if (videoRef.current) videoRef.current.srcObject = stream; })
                         .catch(() => { setErrorMsg("ไม่สามารถเข้าถึงกล้องได้"); setCameraActive(false); });
-                } else if (videoRef.current && videoRef.current.srcObject) videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-                
+                } else {
+                    const stream = videoRef.current?.srcObject;
+                    if (stream) stream.getTracks().forEach(track => track.stop());
+                }
                 return () => {
-                     if (videoRef.current && videoRef.current.srcObject) videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+                     const stream = videoRef.current?.srcObject;
+                     if (stream) stream.getTracks().forEach(track => track.stop());
                 }
             }, [cameraActive, successResult]);
 
@@ -853,7 +864,7 @@
         }
 
         // ==========================================
-        // My History View (For Logged In User)
+        // Views: ประวัติส่วนตัวพนักงาน
         // ==========================================
         function MyHistoryView({ currentUser, records, formatDateForInput, currentTime }) {
             const [filterMonth, setFilterMonth] = useState(`${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, '0')}`);
@@ -865,8 +876,8 @@
 
             return (
                 <div className="max-w-2xl mx-auto space-y-6">
-                    <div className="bg-white rounded-3xl p-6 shadow-minimal border border-slate-100 flex flex-wrap gap-4 items-center justify-between">
-                        <h2 className="text-xl font-bold text-slate-800">ประวัติของฉัน</h2>
+                    <div className="bg-white rounded-3xl p-6 shadow-minimal border border-slate-100 flex flex-wrap gap-4 items-center justify-between mt-6">
+                        <h2 className="text-xl font-bold text-slate-800">ประวัติการลงเวลา</h2>
                         <input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="p-3 border-2 border-slate-200 rounded-xl bg-slate-50 font-bold text-slate-700 outline-none focus:border-blue-500" />
                     </div>
 
@@ -912,7 +923,7 @@
         }
 
         // ==========================================
-        // Manager / Admin View (Existing Logic Kept intact, styled as Dashboard tab)
+        // Views: พื้นที่จัดการของแอดมิน / หัวหน้างาน (Admin/Supervisor)
         // ==========================================
         function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
             const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs'); 
@@ -1234,7 +1245,7 @@
             const tabInactiveColor = 'text-slate-500 hover:text-slate-800 hover:bg-white/50 rounded-xl';
 
             return (
-                <div className="bg-white rounded-3xl shadow-minimal border border-slate-100 mt-4 relative overflow-hidden print-container">
+                <div className="bg-white rounded-3xl shadow-minimal border border-slate-100 mt-4 relative overflow-hidden print-container mb-12">
                     
                     {/* 🌟 หัวกระดาษสำหรับตอนสั่งพิมพ์ */}
                     <div className="hidden print-show text-center mb-4 pb-2 border-b-2 border-slate-200">
