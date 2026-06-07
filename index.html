@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ระบบลงเวลา รพ.รักษ์สกล</title>
     
     <!-- นำเข้า Google Fonts: Sarabun -->
@@ -38,7 +38,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased; color: #0f172a; font-size: 16px; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; -webkit-font-smoothing: antialiased; color: #0f172a; font-size: 16px; margin: 0; padding: 0;}
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .input-autofill-fix:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px white inset !important; }
@@ -49,7 +49,7 @@
         
         @media print {
             body { font-size: 10pt; background: white; color: black; margin: 0; padding: 0; }
-            nav, .print-hide { display: none !important; }
+            nav, .print-hide, .bottom-nav-hide { display: none !important; }
             .print-show { display: block !important; }
             main.max-w-7xl { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
             .print-container { width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; max-width: none !important; border-radius: 0 !important; }
@@ -78,7 +78,7 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec"; 
         const HOSPITAL_LAT = 17.162383247325145;
         const HOSPITAL_LON = 104.14513206230059;
-        const ALLOWED_RADIUS = 100; // ระยะที่ยอมรับได้ (เมตร)
+        const ALLOWED_RADIUS = 100;
 
         const DEPARTMENTS = [
             "HR-IT", "บัญชี", "การเงินผู้ป่วย-สิทธิประโยชน์", "OPD", "IPD", "ห้องยา",
@@ -87,7 +87,6 @@
             "ADMIN"
         ];
 
-        // 🌟 ตั้งค่ากะประจำแผนก ตามที่อัปเดตล่าสุด
         const DEPT_SHIFTS = {
             "HR-IT": ['ช7', 'ช'],
             "บัญชี": ['ช', 'ช83'],
@@ -192,17 +191,19 @@
             return timeStr + ' น.';
         };
 
+        // ==========================================
+        // Main App Container
+        // ==========================================
         function App() {
-            const [activeTab, setActiveTab] = useState('in');
+            const [currentUser, setCurrentUser] = useState(null); // null = ไม่ได้ล็อกอิน
+            const [activeTab, setActiveTab] = useState('home'); // login, register, home, history, manager
+            
             const [currentTime, setCurrentTime] = useState(new Date());
             const [records, setRecords] = useState([]);
             const [employees, setEmployees] = useState({});
             const [schedules, setSchedules] = useState({});
             const [isLoading, setIsLoading] = useState(true);
             const [settings, setSettings] = useState({ standardWorkDays: {} });
-            
-            const [loggedInAdmin, setLoggedInAdmin] = useState(null);
-            const [loggedInSupervisor, setLoggedInSupervisor] = useState(null);
 
             useEffect(() => {
                 const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -234,73 +235,175 @@
                 return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
             };
 
-            const getNavClass = (tabName) => {
-                const isActive = activeTab === tabName;
-                let activeStyle = 'bg-blue-950 text-white shadow-md font-bold';
-                if (isActive) {
-                    if (tabName === 'in') activeStyle = 'bg-emerald-600 text-white shadow-md font-bold';
-                    else if (tabName === 'out') activeStyle = 'bg-rose-600 text-white shadow-md font-bold';
-                    else if (tabName === 'dailyReport') activeStyle = 'bg-blue-700 text-white shadow-md font-bold';
-                    else if (tabName === 'register') activeStyle = 'bg-violet-700 text-white shadow-md font-bold';
-                    else if (tabName === 'supervisor') activeStyle = 'bg-amber-600 text-white shadow-md font-bold';
-                    else if (tabName === 'report') activeStyle = 'bg-slate-800 text-white shadow-md font-bold';
-                }
-                return `px-4 py-2.5 text-sm sm:text-base rounded-full flex items-center gap-2 transition-all font-semibold whitespace-nowrap ${isActive ? activeStyle : 'text-blue-800 hover:text-blue-950 hover:bg-blue-50'}`;
+            const handleLogout = () => {
+                setCurrentUser(null);
+                setActiveTab('home');
             };
 
             if (isLoading) return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-blue-50">
+                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
                     <i className="fa-solid fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i>
                     <h2 className="text-xl font-bold text-blue-900">กำลังดึงข้อมูลระบบ...</h2>
                 </div>
             );
 
-            return (
-                <div className="min-h-screen flex flex-col">
-                    <nav className="bg-white border-b-2 border-blue-100 sticky top-0 z-50 shadow-sm print-hide">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                            <div className="flex justify-between items-center h-20 overflow-x-auto no-scrollbar">
-                                <div className="font-bold text-xl tracking-tight flex items-center gap-3 whitespace-nowrap mr-6 text-blue-950">
-                                    <div className="bg-blue-900 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"><i className="fa-solid fa-hospital-user text-white text-lg"></i></div>รักษ์สกล
-                                </div>
-                                <div className="flex space-x-1.5">
-                                    <button onClick={() => setActiveTab('in')} className={getNavClass('in')}><i className="fa-solid fa-arrow-right-to-bracket text-lg"></i> <span className="hidden sm:inline">เข้างาน</span></button>
-                                    <button onClick={() => setActiveTab('out')} className={getNavClass('out')}><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i> <span className="hidden sm:inline">ออกงาน</span></button>
-                                    <button onClick={() => setActiveTab('dailyReport')} className={getNavClass('dailyReport')}><i className="fa-regular fa-calendar-check text-lg"></i> <span className="hidden sm:inline">ประวัติ</span></button>
-                                    <button onClick={() => setActiveTab('register')} className={getNavClass('register')}><i className="fa-solid fa-user-plus text-lg"></i> <span className="hidden sm:inline">ลงทะเบียน</span></button>
-                                    <div className="w-0.5 h-8 bg-blue-200 mx-2 self-center rounded-full"></div>
-                                    <button onClick={() => setActiveTab('supervisor')} className={getNavClass('supervisor')}><i className="fa-solid fa-user-tie text-lg"></i> <span>หัวหน้า</span></button>
-                                    <button onClick={() => setActiveTab('report')} className={getNavClass('report')}><i className="fa-solid fa-shield-halved text-lg"></i> <span className="hidden sm:inline">แอดมิน</span></button>
-                                </div>
-                            </div>
-                        </div>
-                    </nav>
-                    <main className="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-                        {activeTab === 'register' && <RegisterView employees={employees} setEmployees={setEmployees} setActiveTab={setActiveTab} sendToGoogleSheet={sendToGoogleSheet} />}
-                        {activeTab === 'in' && <ClockInView currentTime={currentTime} records={records} setRecords={setRecords} formatDateForInput={formatDateForInput} employees={employees} schedules={schedules} sendToGoogleSheet={sendToGoogleSheet} />}
-                        {activeTab === 'out' && <ClockOutView currentTime={currentTime} records={records} setRecords={setRecords} formatDateForInput={formatDateForInput} employees={employees} sendToGoogleSheet={sendToGoogleSheet} />}
-                        {activeTab === 'dailyReport' && <DailyReportView records={records} employees={employees} formatDateForInput={formatDateForInput} currentTime={currentTime} />}
-                        
-                        {activeTab === 'supervisor' && (
-                            loggedInSupervisor ? 
-                            <ReportView role="supervisor" user={loggedInSupervisor} onLogout={() => setLoggedInSupervisor(null)} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} /> : 
-                            <SupervisorLoginView employees={employees} onLogin={(user) => setLoggedInSupervisor(user)} onCancel={() => setActiveTab('in')} />
-                        )}
+            // Routing
+            if (!currentUser && activeTab === 'register') {
+                return <RegisterView employees={employees} setEmployees={setEmployees} onCancel={() => setActiveTab('home')} sendToGoogleSheet={sendToGoogleSheet} />;
+            }
 
-                        {activeTab === 'report' && (
-                            loggedInAdmin ? 
-                            <ReportView role="admin" user={loggedInAdmin} onLogout={() => setLoggedInAdmin(null)} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} /> : 
-                            <AdminLoginView employees={employees} onLogin={(user) => setLoggedInAdmin(user)} onCancel={() => setActiveTab('in')} />
-                        )}
+            if (!currentUser) {
+                return <UnifiedLoginView employees={employees} onLogin={(user) => setCurrentUser(user)} onRegisterClick={() => setActiveTab('register')} />;
+            }
+
+            // User is logged in -> Dashboard
+            const isManager = currentUser.level === 'หัวหน้า' || currentUser.dept === 'ADMIN';
+            const role = currentUser.dept === 'ADMIN' ? 'admin' : (currentUser.level === 'หัวหน้า' ? 'supervisor' : 'employee');
+            
+            // Avatar URL generator
+            const avatarUrl = `https://ui-avatars.com/api/?name=${currentUser.fname}+${currentUser.lname}&background=1e3a8a&color=fff&size=150&font-size=0.33`;
+
+            return (
+                <div className="min-h-screen flex flex-col bg-slate-100">
+                    {/* Header / Profile Area */}
+                    <div className="bg-blue-950 text-white rounded-b-[2.5rem] shadow-floating pb-8 pt-10 px-6 relative print-hide">
+                        <button onClick={handleLogout} className="absolute top-6 right-6 text-blue-200 hover:text-white transition-colors">
+                            <i className="fa-solid fa-arrow-right-from-bracket text-xl"></i> ออกจากระบบ
+                        </button>
+                        <div className="text-center">
+                            <div className="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-lg mb-4">
+                                <img src={avatarUrl} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                            </div>
+                            <h2 className="text-2xl font-bold">{currentUser.fname} {currentUser.lname}</h2>
+                            <p className="text-blue-200 text-sm mt-1 font-semibold tracking-wide">
+                                <i className="fa-regular fa-id-badge mr-1.5"></i>{currentUser.id} &nbsp;|&nbsp; 
+                                <i className="fa-solid fa-briefcase mr-1.5 ml-2"></i>{currentUser.dept} 
+                                {isManager && <span className="ml-2 bg-amber-500 text-white px-2 py-0.5 rounded text-xs"><i className="fa-solid fa-star mr-1"></i>{role === 'admin' ? 'แอดมิน' : 'หัวหน้า'}</span>}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Main Content Area */}
+                    <main className="flex-grow w-full max-w-7xl mx-auto -mt-6 z-10 px-4 sm:px-6 lg:px-8 pb-24">
+                        {activeTab === 'home' && <ActionPanelView currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} />}
+                        {activeTab === 'history' && <MyHistoryView currentUser={currentUser} records={records} formatDateForInput={formatDateForInput} currentTime={currentTime} />}
+                        {activeTab === 'manager' && isManager && <ReportView role={role} user={currentUser} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} />}
                     </main>
+
+                    {/* Bottom Navigation */}
+                    <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe print-hide bottom-nav-hide z-50">
+                        <div className="max-w-md mx-auto flex justify-around p-2">
+                            <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'home' ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
+                                <i className={`fa-solid fa-clock text-2xl mb-1 transition-transform ${activeTab === 'home' ? 'scale-110' : ''}`}></i>
+                                <span className="text-xs font-bold">ลงเวลา</span>
+                            </button>
+                            <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'history' ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
+                                <i className={`fa-solid fa-clock-rotate-left text-2xl mb-1 transition-transform ${activeTab === 'history' ? 'scale-110' : ''}`}></i>
+                                <span className="text-xs font-bold">ประวัติฉัน</span>
+                            </button>
+                            {isManager && (
+                                <button onClick={() => setActiveTab('manager')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'manager' ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
+                                    <i className={`fa-solid fa-chart-pie text-2xl mb-1 transition-transform ${activeTab === 'manager' ? 'scale-110' : ''}`}></i>
+                                    <span className="text-xs font-bold">จัดการทีม</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
             );
         }
 
         // ==========================================
-        // Views Component (Login, Register, Clock In/Out)
+        // Unified Login & Register Views
         // ==========================================
-        function RegisterView({ employees, setEmployees, setActiveTab, sendToGoogleSheet }) {
+        function UnifiedLoginView({ employees, onLogin, onRegisterClick }) {
+            const [empId, setEmpId] = useState('');
+            const [password, setPassword] = useState('');
+            const [needsPassword, setNeedsPassword] = useState(false);
+            const [errorMsg, setErrorMsg] = useState('');
+
+            const handleNext = (e) => {
+                e?.preventDefault();
+                setErrorMsg('');
+                const id = empId.trim().toUpperCase();
+                if (!id) return setErrorMsg('กรุณากรอกรหัสพนักงาน');
+                
+                const emp = employees[id];
+                if (!emp) return setErrorMsg('ไม่พบรหัสพนักงานนี้ในระบบ');
+
+                const sheetPassword = emp.password || '';
+                
+                // ถ้าระบบมีรหัสผ่าน (หัวหน้า/แอดมิน) ให้โชว์ช่องใส่รหัสผ่านก่อน
+                if (sheetPassword !== '' && !needsPassword) {
+                    setNeedsPassword(true);
+                    return;
+                }
+
+                // ถ้าบังคับใส่รหัสผ่าน แล้วรหัสไม่ตรง
+                if (needsPassword && password !== sheetPassword) {
+                    return setErrorMsg('รหัสผ่านไม่ถูกต้อง');
+                }
+
+                // สำเร็จ
+                onLogin({ id, ...emp });
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+                    <div className="w-full max-w-md bg-white rounded-[2rem] shadow-floating border border-white/50 p-8 sm:p-10 text-center relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
+                        <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border-4 border-white">
+                            <i className="fa-solid fa-hospital-user text-4xl text-blue-700"></i>
+                        </div>
+                        <h1 className="text-3xl font-extrabold text-blue-950 tracking-tight">รักษ์สกล Time</h1>
+                        <p className="text-blue-500 font-medium mt-2 mb-8">ระบบจัดการเวลาปฏิบัติงาน</p>
+
+                        {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200 animate-fade-in"><i className="fa-solid fa-circle-exclamation mr-2"></i>{errorMsg}</div>}
+
+                        <form onSubmit={handleNext} className="space-y-4">
+                            {!needsPassword ? (
+                                <div>
+                                    <input 
+                                        type="text" placeholder="รหัสพนักงาน (เช่น EMP01)" 
+                                        value={empId} onChange={e => setEmpId(e.target.value.toUpperCase())} 
+                                        className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none text-center tracking-wide font-extrabold text-blue-950 text-xl focus:bg-white focus:border-blue-500 transition-all placeholder:font-medium placeholder:text-slate-400 input-autofill-fix" 
+                                    />
+                                    <button type="submit" className="w-full mt-6 p-4 bg-blue-700 hover:bg-blue-800 text-white rounded-2xl font-bold text-lg transition-colors shadow-[0_8px_20px_-6px_rgba(29,78,216,0.5)]">
+                                        เข้าสู่ระบบ
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="animate-fade-in">
+                                    <p className="text-sm font-bold text-slate-600 mb-4">สวัสดี, {employees[empId.toUpperCase()]?.fname} กรุณาใส่รหัสผ่าน</p>
+                                    <input 
+                                        type="password" placeholder="รหัสผ่านของคุณ" 
+                                        value={password} onChange={e => setPassword(e.target.value)} 
+                                        className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none text-center tracking-widest font-extrabold text-blue-950 text-xl focus:bg-white focus:border-blue-500 transition-all placeholder:font-medium placeholder:text-slate-400 input-autofill-fix" 
+                                        autoFocus
+                                    />
+                                    <div className="flex gap-3 mt-6">
+                                        <button type="button" onClick={() => {setNeedsPassword(false); setPassword('');}} className="w-1/3 p-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-lg transition-colors">กลับ</button>
+                                        <button type="submit" className="w-2/3 p-4 bg-blue-700 hover:bg-blue-800 text-white rounded-2xl font-bold text-lg transition-colors shadow-[0_8px_20px_-6px_rgba(29,78,216,0.5)]">
+                                            ยืนยัน
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </form>
+                        
+                        {!needsPassword && (
+                            <div className="mt-8 border-t border-slate-100 pt-6">
+                                <p className="text-sm text-slate-500 font-medium">
+                                    พนักงานใหม่ยังไม่มีรหัส? <button onClick={onRegisterClick} className="text-blue-600 font-bold hover:underline ml-1">ลงทะเบียนที่นี่</button>
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function RegisterView({ employees, setEmployees, onCancel, sendToGoogleSheet }) {
             const [formData, setFormData] = useState({ empId: '', fname: '', lname: '', dept: 'OPD', level: 'พนักงาน', password: '' });
             const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -315,124 +418,107 @@
                 if (res.status === 'success') {
                     alert("ลงทะเบียนสำเร็จ");
                     setEmployees({ ...employees, [upperEmpId]: { ...formData } });
-                    setActiveTab('in'); 
+                    onCancel(); 
                 }
                 setIsSubmitting(false);
             };
 
             return (
-                <div className="max-w-lg mx-auto bg-white rounded-3xl shadow-floating border border-blue-100 p-8 sm:p-10 mt-6">
-                    <div className="text-center mb-8">
-                        <div className="w-20 h-20 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i className="fa-solid fa-user-plus text-3xl text-violet-600"></i>
+                <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+                    <div className="max-w-lg w-full bg-white rounded-[2rem] shadow-floating border border-slate-100 p-8 sm:p-10">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-2xl font-bold text-blue-950">ลงทะเบียนพนักงาน</h2>
+                            <button onClick={onCancel} className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><i className="fa-solid fa-xmark text-xl"></i></button>
                         </div>
-                        <h2 className="text-2xl font-bold text-blue-950">ลงทะเบียนพนักงานใหม่</h2>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1.5">รหัสพนักงาน (ID)</label>
+                                <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" placeholder="เช่น EMP01" />
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">ชื่อ</label>
+                                    <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">นามสกุล</label>
+                                    <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" />
+                                </div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">แผนก</label>
+                                    <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base">
+                                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">ระดับ</label>
+                                    <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base">
+                                        <option value="พนักงาน">พนักงาน</option>
+                                        <option value="หัวหน้า">หัวหน้า</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1.5">รหัสผ่าน <span className="text-blue-500 font-normal">(ใส่หรือไม่ใส่ก็ได้ / สำหรับหัวหน้า)</span></label>
+                                <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" placeholder="ตั้งรหัสผ่านสำหรับเข้าสู่ระบบ" />
+                            </div>
+                            <button type="submit" disabled={isSubmitting} className="w-full p-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold text-lg transition-colors mt-6 shadow-md">
+                                {isSubmitting ? 'กำลังบันทึก...' : 'ลงทะเบียน'}
+                            </button>
+                        </form>
                     </div>
-                    
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-bold text-blue-800 mb-1.5">รหัสพนักงาน (ID)</label>
-                            <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base input-autofill-fix" placeholder="เช่น EMP01" />
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-5">
-                            <div className="flex-1">
-                                <label className="block text-sm font-bold text-blue-800 mb-1.5">ชื่อ</label>
-                                <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base input-autofill-fix" />
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-sm font-bold text-blue-800 mb-1.5">นามสกุล</label>
-                                <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base input-autofill-fix" />
-                            </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-5">
-                            <div className="flex-1">
-                                <label className="block text-sm font-bold text-blue-800 mb-1.5">แผนก</label>
-                                <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base">
-                                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-sm font-bold text-blue-800 mb-1.5">ระดับ</label>
-                                <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base">
-                                    <option value="พนักงาน">พนักงาน</option>
-                                    <option value="หัวหน้า">หัวหน้า</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-blue-800 mb-1.5">รหัสผ่าน <span className="text-blue-500 font-normal">(ใส่หรือไม่ใส่ก็ได้ / สำหรับหัวหน้า)</span></label>
-                            <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none focus:bg-white focus:border-violet-500 font-semibold text-blue-950 text-base input-autofill-fix" placeholder="ตั้งรหัสผ่านสำหรับเข้าสู่ระบบ" />
-                        </div>
-                        <button type="submit" disabled={isSubmitting} className="w-full p-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-lg transition-colors mt-6 shadow-md">
-                            {isSubmitting ? 'กำลังบันทึก...' : 'ลงทะเบียน'}
-                        </button>
-                    </form>
                 </div>
             );
         }
 
-        function AdminLoginView({ employees, onLogin, onCancel }) {
-            const [adminId, setAdminId] = useState('');
-            const [password, setPassword] = useState('');
-            const [errorMsg, setErrorMsg] = useState('');
+        // ==========================================
+        // Dashboard Components (Clock In/Out Actions)
+        // ==========================================
+        function ActionPanelView({ currentUser, currentTime, records, setRecords, schedules, formatDateForInput, sendToGoogleSheet }) {
+            const [actionType, setActionType] = useState(null); // 'in' or 'out' or null
 
-            const handleLogin = () => {
-                const id = adminId.trim().toUpperCase();
-                if (!id) { setErrorMsg('กรุณากรอกรหัสประจำตัว'); return; }
-                const emp = employees[id];
-                if (!emp || emp.dept !== 'ADMIN') { setErrorMsg('รหัสนี้ไม่มีสิทธิ์เข้าถึง'); return; }
-                const sheetPassword = emp.password || '';
-                if (sheetPassword !== '' && password !== sheetPassword) { setErrorMsg('รหัสผ่านไม่ถูกต้อง'); return; }
-                onLogin({ id, ...emp });
-            };
+            // ถ้าไม่ได้กดปุ่ม ให้แสดงหน้าจอเลือก Action
+            if (!actionType) {
+                return (
+                    <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-minimal text-center border border-slate-100 max-w-lg mx-auto">
+                        <div className="text-6xl font-extrabold text-slate-800 tracking-tight font-mono drop-shadow-sm mb-2">{formatTime24(currentTime)} <span className="text-2xl text-slate-500 font-sans">น.</span></div>
+                        <p className="text-slate-500 font-semibold mb-8">{formatDisplayDate(formatDateForInput(currentTime))}</p>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <button onClick={() => setActionType('in')} className="flex flex-col items-center justify-center p-6 bg-emerald-50 border-2 border-emerald-100 rounded-[2rem] hover:bg-emerald-100 hover:border-emerald-300 transition-all group">
+                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                                    <i className="fa-solid fa-arrow-right-to-bracket text-3xl text-emerald-500"></i>
+                                </div>
+                                <span className="text-xl font-bold text-emerald-800">เข้างาน</span>
+                            </button>
+                            <button onClick={() => setActionType('out')} className="flex flex-col items-center justify-center p-6 bg-rose-50 border-2 border-rose-100 rounded-[2rem] hover:bg-rose-100 hover:border-rose-300 transition-all group">
+                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                                    <i className="fa-solid fa-arrow-right-from-bracket text-3xl text-rose-500"></i>
+                                </div>
+                                <span className="text-xl font-bold text-rose-800">ออกงาน</span>
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
 
+            // ถ้าย่อยมาที่ In หรือ Out ก็แสดง View ย่อย
             return (
-                <div className="max-w-md mx-auto bg-white rounded-3xl p-10 shadow-floating border border-blue-100 mt-10 text-center">
-                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-lock text-3xl text-blue-600"></i></div>
-                    <h2 className="text-2xl font-bold text-blue-950">ผู้ดูแลระบบ (Admin)</h2>
-                    <p className="text-base text-blue-700 mt-2 mb-8 font-medium">เข้าสู่ระบบเพื่อจัดการข้อมูล</p>
-                    {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">{errorMsg}</div>}
-                    <input type="text" placeholder="รหัสพนักงาน ADMIN" value={adminId} onChange={e => setAdminId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-3 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-blue-500 input-autofill-fix" />
-                    <input type="password" placeholder="รหัสผ่าน (ถ้ามี)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-blue-500 input-autofill-fix" />
-                    <button onClick={handleLogin} className="w-full p-4 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold text-lg transition-colors mb-3 shadow-md">เข้าสู่ระบบ</button>
-                    <button onClick={onCancel} className="w-full p-3 text-base text-blue-600 font-bold hover:text-blue-800 transition-colors">ยกเลิก</button>
+                <div className="max-w-md mx-auto">
+                    <button onClick={() => setActionType(null)} className="mb-4 text-slate-500 font-bold hover:text-slate-800 flex items-center bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200">
+                        <i className="fa-solid fa-arrow-left mr-2"></i> ย้อนกลับ
+                    </button>
+                    {actionType === 'in' && <ClockInModule currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} onDone={() => setActionType(null)} />}
+                    {actionType === 'out' && <ClockOutModule currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} onDone={() => setActionType(null)} />}
                 </div>
             );
         }
 
-        function SupervisorLoginView({ employees, onLogin, onCancel }) {
-            const [superId, setSuperId] = useState('');
-            const [password, setPassword] = useState('');
-            const [errorMsg, setErrorMsg] = useState('');
-
-            const handleLogin = () => {
-                const id = superId.trim().toUpperCase();
-                if (!id) { setErrorMsg('กรุณากรอกรหัสประจำตัว'); return; }
-                const emp = employees[id];
-                if (!emp || emp.level !== 'หัวหน้า') { setErrorMsg('รหัสนี้ไม่มีสิทธิ์เข้าถึง'); return; }
-                const sheetPassword = emp.password || '';
-                if (sheetPassword !== '' && password !== sheetPassword) { setErrorMsg('รหัสผ่านไม่ถูกต้อง'); return; }
-                onLogin({ id, ...emp });
-            };
-
-            return (
-                <div className="max-w-md mx-auto bg-white rounded-3xl p-10 shadow-floating border border-amber-200 mt-10 text-center">
-                    <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-user-shield text-3xl text-amber-600"></i></div>
-                    <h2 className="text-2xl font-bold text-blue-950">พื้นที่หัวหน้างาน (Supervisor)</h2>
-                    <p className="text-base text-blue-700 mt-2 mb-8 font-medium">เข้าสู่ระบบเพื่อจัดการตารางเวรและสรุปผล</p>
-                    {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">{errorMsg}</div>}
-                    <input type="text" placeholder="รหัสพนักงานของหัวหน้า" value={superId} onChange={e => setSuperId(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-3 border-2 border-amber-100 rounded-xl bg-amber-50/30 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-amber-400 input-autofill-fix" />
-                    <input type="password" placeholder="รหัสผ่าน (ถ้ามี)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full p-4 mb-5 border-2 border-amber-100 rounded-xl bg-amber-50/30 outline-none text-center tracking-wide font-bold text-blue-950 text-lg focus:bg-white focus:border-amber-400 input-autofill-fix" />
-                    <button onClick={handleLogin} className="w-full p-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-lg transition-colors mb-3 shadow-md">เข้าสู่ระบบ</button>
-                    <button onClick={onCancel} className="w-full p-3 text-base text-blue-600 font-bold hover:text-blue-800 transition-colors">ยกเลิก</button>
-                </div>
-            );
-        }
-
-        // ... ClockInView, ClockOutView, DailyReportView logic
-        function ClockInView({ currentTime, records, setRecords, formatDateForInput, employees, schedules, sendToGoogleSheet }) {
-            const [empId, setEmpId] = useState('');
-            const [loggedInEmp, setLoggedInEmp] = useState(null);
+        // --- Clock In Module (No Emp ID Input Needed) ---
+        function ClockInModule({ currentUser, currentTime, records, setRecords, schedules, formatDateForInput, sendToGoogleSheet, onDone }) {
             const [selectedShift, setSelectedShift] = useState('ช');
             const [locationStatus, setLocationStatus] = useState('checking'); 
             const [currentLocation, setCurrentLocation] = useState(null);
@@ -443,14 +529,21 @@
             const videoRef = useRef(null);
 
             useEffect(() => {
-                if (cameraActive && loggedInEmp && !result) {
+                initializeSetup();
+            }, []);
+
+            useEffect(() => {
+                if (cameraActive && !result) {
                     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
                         .then(stream => { if (videoRef.current) videoRef.current.srcObject = stream; })
                         .catch(() => { setErrorMsg("ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาต"); setCameraActive(false); });
                 } else {
                     if (videoRef.current && videoRef.current.srcObject) videoRef.current.srcObject.getTracks().forEach(track => track.stop());
                 }
-            }, [cameraActive, loggedInEmp, result]);
+                return () => {
+                     if (videoRef.current && videoRef.current.srcObject) videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+                }
+            }, [cameraActive, result]);
 
             const getDistance = (lat1, lon1, lat2, lon2) => {
                 const R = 6371; 
@@ -477,16 +570,16 @@
                 );
             };
 
-            const handleLogin = () => {
-                if (!empId.trim()) { setErrorMsg("กรุณากรอกรหัสพนักงาน"); return; }
-                const upperEmpId = empId.trim().toUpperCase();
-                if (!employees[upperEmpId]) { setErrorMsg(`ไม่พบรหัสพนักงาน ${upperEmpId}`); return; }
-                
+            const initializeSetup = () => {
                 const todayStr = formatDateForInput(currentTime);
-                const activeRecord = records.find(r => r.empId === upperEmpId && (r.date === todayStr || (currentTime.getHours() <= 8 && r.date === formatDateForInput(new Date(currentTime.getTime() - 86400000)))) && !r.timeOut);
-                if (activeRecord) { setErrorMsg(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[activeRecord.shiftId]?.label || activeRecord.shiftId}"`); return; }
+                const activeRecord = records.find(r => r.empId === currentUser.id && (r.date === todayStr || (currentTime.getHours() <= 8 && r.date === formatDateForInput(new Date(currentTime.getTime() - 86400000)))) && !r.timeOut);
+                
+                if (activeRecord) { 
+                    setErrorMsg(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[activeRecord.shiftId]?.label || activeRecord.shiftId}" กรุณาลงเวลาออกก่อน`); 
+                    return; 
+                }
 
-                const schedObjToday = schedules[todayStr]?.[upperEmpId];
+                const schedObjToday = schedules[todayStr]?.[currentUser.id];
                 let scheduledShifts = schedObjToday?.shifts || (Array.isArray(schedObjToday) ? schedObjToday : []);
                 
                 if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
@@ -494,20 +587,19 @@
                     yesterday.setDate(yesterday.getDate() - 1);
                     const yesterdayStr = formatDateForInput(yesterday);
                     
-                    const yestObj = schedules[yesterdayStr]?.[upperEmpId];
+                    const yestObj = schedules[yesterdayStr]?.[currentUser.id];
                     const yesterdayShifts = yestObj?.shifts || (Array.isArray(yestObj) ? yestObj : []);
                     if (yesterdayShifts.length > 0) scheduledShifts = yesterdayShifts;
                 }
 
                 const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s));
-                if(validScheduledShifts.length > 0) { setSelectedShift(validScheduledShifts[0]); } 
-                else {
-                    const defaultShiftKeys = getSortedShiftKeys(employees[upperEmpId].dept);
+                if(validScheduledShifts.length > 0) { 
+                    setSelectedShift(validScheduledShifts[0]); 
+                } else {
+                    const defaultShiftKeys = getSortedShiftKeys(currentUser.dept);
                     if(defaultShiftKeys.length > 0) setSelectedShift(defaultShiftKeys[0]);
                 }
 
-                setErrorMsg('');
-                setLoggedInEmp({ id: upperEmpId, ...employees[upperEmpId] });
                 checkLocation(); 
             };
 
@@ -516,13 +608,13 @@
                 const todayStr = formatDateForInput(currentTime);
                 let targetDate = todayStr; 
                 
-                const schedObjToday = schedules[todayStr]?.[loggedInEmp.id];
+                const schedObjToday = schedules[todayStr]?.[currentUser.id];
                 let scheduledShifts = schedObjToday?.shifts || (Array.isArray(schedObjToday) ? schedObjToday : []);
                 
                 if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
                     const yesterday = new Date(currentTime); yesterday.setDate(yesterday.getDate() - 1);
                     const yesterdayStr = formatDateForInput(yesterday);
-                    const yestObj = schedules[yesterdayStr]?.[loggedInEmp.id];
+                    const yestObj = schedules[yesterdayStr]?.[currentUser.id];
                     const yesterdayShifts = yestObj?.shifts || (Array.isArray(yestObj) ? yestObj : []);
                     
                     if (yesterdayShifts.includes(selectedShift)) {
@@ -548,7 +640,7 @@
                 const timeInStr = formatTime24(currentTime);
 
                 const newRecord = {
-                    id: Date.now().toString(), date: targetDate, empId: loggedInEmp.id, shiftId: selectedShift, 
+                    id: Date.now().toString(), date: targetDate, empId: currentUser.id, shiftId: selectedShift, 
                     timeIn: timeInStr, timeOut: null, isLate: isLate, lateMinutes: lateMinutes, credit: shiftData.credit,
                     lat: currentLocation?.lat, lon: currentLocation?.lon, photoBase64: photoBase64
                 };
@@ -562,81 +654,63 @@
             };
 
             if (result) return (
-                <div className="max-w-md mx-auto bg-white rounded-3xl p-8 sm:p-10 shadow-floating border border-blue-100 text-center mt-6">
+                <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-minimal border border-slate-100 text-center animate-fade-in">
                     <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-check text-4xl text-emerald-600"></i></div>
-                    <h2 className="text-2xl font-bold text-blue-950">เข้างานสำเร็จ</h2>
-                    <div className="my-8 p-6 bg-emerald-50 rounded-2xl border border-emerald-200">
-                        <p className="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-2">เวลาเข้างาน</p>
-                        <p className="text-5xl font-extrabold text-emerald-700 tracking-tight mb-4">{displaySafeTime(result.timeIn)}</p>
-                        <div className="inline-flex items-center gap-2 text-base font-bold text-emerald-800 bg-white px-4 py-2 rounded-xl border border-emerald-200 shadow-sm">
+                    <h2 className="text-2xl font-bold text-slate-800">เข้างานสำเร็จ</h2>
+                    <div className="my-8 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">เวลาเข้างาน</p>
+                        <p className="text-5xl font-extrabold text-emerald-600 tracking-tight mb-4">{displaySafeTime(result.timeIn)}</p>
+                        <div className="inline-flex items-center gap-2 text-base font-bold text-slate-700 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
                             <i className="fa-solid fa-calendar-day text-emerald-500"></i> กะ: {result.shiftName}
                         </div>
-                        <p className="text-sm font-semibold text-emerald-600 mt-3">บันทึกลงวันที่: {formatDisplayDate(result.date)}</p>
+                        <p className="text-sm font-semibold text-slate-500 mt-3">บันทึกลงวันที่: {formatDisplayDate(result.date)}</p>
                     </div>
                     {result.isLate && (
-                        <div className="mb-8 inline-flex items-center gap-2 bg-red-100 text-red-800 px-5 py-2.5 rounded-full text-base font-bold border border-red-200">
+                        <div className="mb-8 inline-flex items-center gap-2 bg-red-50 text-red-700 px-5 py-2.5 rounded-full text-base font-bold border border-red-100">
                             <i className="fa-regular fa-clock"></i> สาย {result.lateMinutes} นาที
                         </div>
                     )}
-                    <button onClick={() => {setResult(null); setLoggedInEmp(null); setEmpId(''); setCurrentLocation(null);}} className="w-full p-4 rounded-xl border-2 border-blue-200 text-blue-800 font-bold text-lg hover:bg-blue-50 transition-colors">เสร็จสิ้น</button>
+                    <button onClick={onDone} className="w-full p-4 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold text-lg hover:bg-slate-50 transition-colors">เสร็จสิ้น</button>
                 </div>
             );
 
             return (
-                <div className="max-w-md mx-auto bg-white rounded-3xl shadow-floating border border-emerald-200 overflow-hidden mt-6 relative">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-emerald-500"></div>
-                    <div className="px-8 pt-10 pb-6 text-center border-b border-blue-50">
-                        <h2 className="text-xl font-bold text-emerald-700 mb-2">ลงเวลาเข้างาน</h2>
-                        <div className="text-6xl font-extrabold text-blue-950 tracking-tight font-mono drop-shadow-sm">{formatTime24(currentTime)} <span className="text-2xl">น.</span></div>
+                <div className="bg-white rounded-3xl shadow-minimal border border-slate-100 overflow-hidden animate-fade-in">
+                    <div className="px-8 pt-8 pb-4 text-center border-b border-slate-50">
+                        <h2 className="text-xl font-bold text-emerald-600 mb-2">เข้างาน</h2>
                     </div>
-                    <div className="p-8 space-y-6">
-                        {errorMsg && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold flex items-start gap-3 border border-red-200"><i className="fa-solid fa-circle-exclamation mt-1"></i> <span>{errorMsg}</span></div>}
-                        {!loggedInEmp ? (
-                            <>
-                                <div>
-                                    <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">รหัสพนักงาน</label>
-                                    <input type="text" value={empId} onChange={(e) => setEmpId(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-lg focus:bg-white focus:border-emerald-500 transition-colors placeholder:font-medium placeholder:text-blue-300 input-autofill-fix" placeholder="กรอกรหัสพนักงาน" />
-                                </div>
-                                <button onClick={handleLogin} className="w-full p-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg transition-colors shadow-md">ตรวจสอบข้อมูล</button>
-                            </>
-                        ) : (
-                            <div className="space-y-6 animate-in fade-in">
-                                <div className="flex items-center gap-5 bg-blue-50 border border-blue-100 p-5 rounded-2xl">
-                                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-700 shadow-sm"><i className="fa-regular fa-user text-xl"></i></div>
-                                    <div>
-                                        <p className="font-bold text-lg text-blue-950">{loggedInEmp.fname} {loggedInEmp.lname}</p>
-                                        <p className="text-sm font-semibold text-blue-700">{loggedInEmp.id} • {loggedInEmp.dept}</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">เลือกกะการทำงาน</label>
-                                    <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)} className="w-full p-4 border-2 border-blue-200 rounded-xl bg-white outline-none font-bold text-blue-950 text-base focus:border-emerald-500 transition-colors shadow-sm">
-                                        {getSortedShiftKeys(loggedInEmp.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
-                                    </select>
-                                </div>
-                                <div className={`p-4 rounded-xl flex items-center gap-3 text-sm font-bold border-2 ${locationStatus === 'ok' ? 'bg-green-50 border-green-200 text-green-800' : locationStatus === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
-                                    {locationStatus === 'ok' ? <><i className="fa-solid fa-location-dot text-lg"></i> พิกัดถูกต้อง (ใน รพ.)</> : locationStatus === 'error' ? <><i className="fa-solid fa-location-xmark text-lg"></i> พิกัดอยู่นอกพื้นที่ <button onClick={checkLocation} className="ml-auto underline font-black text-red-900">ลองใหม่</button></> : <><i className="fa-solid fa-spinner fa-spin text-lg"></i> ตรวจสอบพิกัด GPS...</>}
-                                </div>
-                                <div className="border-2 border-dashed border-blue-300 rounded-2xl h-56 flex items-center justify-center bg-blue-50 overflow-hidden relative group">
-                                    {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
-                                    <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok'} className={`flex flex-col items-center transition-colors ${locationStatus === 'ok' ? 'text-emerald-700 hover:text-emerald-800' : 'text-blue-300'}`}>
-                                        <div className="w-14 h-14 rounded-full bg-white border-2 border-emerald-200 flex items-center justify-center mb-3 shadow-md group-hover:shadow-lg transition-all"><i className="fa-solid fa-camera text-2xl"></i></div>
-                                        <span className="text-sm font-bold">เปิดกล้องสแกนใบหน้า</span>
-                                    </button>}
-                                </div>
-                                <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok'} className={`w-full p-4 rounded-xl font-bold text-lg text-white transition-all ${(cameraActive && locationStatus === 'ok') ? 'bg-emerald-600 hover:bg-emerald-700 shadow-md' : 'bg-blue-200 text-white cursor-not-allowed'}`}>
-                                    {isScanning ? 'กำลังบันทึก...' : 'สแกนใบหน้า ยืนยันเข้างาน'}
-                                </button>
-                                <button onClick={() => {setLoggedInEmp(null); setCurrentLocation(null);}} className="w-full text-sm text-blue-600 font-bold hover:text-blue-800 text-center uppercase tracking-wider mt-2">ย้อนกลับ / เปลี่ยนพนักงาน</button>
-                            </div>
-                        )}
+                    <div className="p-6 space-y-6">
+                        {errorMsg && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold flex items-start gap-3 border border-red-100"><i className="fa-solid fa-circle-exclamation mt-1"></i> <span>{errorMsg}</span></div>}
+                        
+                        <div>
+                            <label className="block text-sm font-bold text-slate-600 mb-2 ml-1">กะการทำงาน (เลือกกะที่ถูกต้อง)</label>
+                            <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)} className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none font-bold text-slate-800 text-base focus:border-emerald-500 transition-colors">
+                                {getSortedShiftKeys(currentUser.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
+                            </select>
+                        </div>
+                        
+                        <div className={`p-4 rounded-2xl flex items-center gap-3 text-sm font-bold border-2 ${locationStatus === 'ok' ? 'bg-green-50 border-green-200 text-green-800' : locationStatus === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                            {locationStatus === 'ok' ? <><i className="fa-solid fa-location-dot text-lg"></i> พิกัดถูกต้อง (ใน รพ.)</> : locationStatus === 'error' ? <><i className="fa-solid fa-location-xmark text-lg"></i> พิกัดอยู่นอกพื้นที่ <button onClick={checkLocation} className="ml-auto underline font-black text-red-800">ลองใหม่</button></> : <><i className="fa-solid fa-spinner fa-spin text-lg"></i> กำลังตรวจสอบพิกัด...</>}
+                        </div>
+                        
+                        <div className="border-2 border-dashed border-slate-200 rounded-2xl h-64 flex items-center justify-center bg-slate-50 overflow-hidden relative group">
+                            {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
+                            <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok'} className={`flex flex-col items-center transition-colors ${locationStatus === 'ok' ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-400'}`}>
+                                <div className="w-16 h-16 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center mb-3 shadow-sm group-hover:shadow-md transition-all"><i className="fa-solid fa-camera text-2xl"></i></div>
+                                <span className="text-sm font-bold">เปิดกล้องสแกนใบหน้า</span>
+                            </button>}
+                        </div>
+                        
+                        <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok'} className={`w-full p-4 rounded-2xl font-bold text-lg text-white transition-all ${(cameraActive && locationStatus === 'ok') ? 'bg-emerald-600 hover:bg-emerald-700 shadow-[0_8px_20px_-6px_rgba(5,150,105,0.5)]' : 'bg-slate-300 text-white cursor-not-allowed'}`}>
+                            {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันเข้างาน'}
+                        </button>
                     </div>
                 </div>
             );
         }
 
-        function ClockOutView({ currentTime, records, setRecords, formatDateForInput, employees, sendToGoogleSheet }) {
-            const [outEmpId, setOutEmpId] = useState('');
+        // --- Clock Out Module (No Emp ID Input Needed) ---
+        function ClockOutModule({ currentUser, currentTime, records, setRecords, formatDateForInput, sendToGoogleSheet, onDone }) {
             const [outDate, setOutDate] = useState(formatDateForInput(currentTime));
             const [foundRecord, setFoundRecord] = useState(null);
             const [errorMsg, setErrorMsg] = useState('');
@@ -647,20 +721,33 @@
             const videoRef = useRef(null);
 
             useEffect(() => {
-                if (cameraActive) {
+                searchRecord(outDate);
+                // eslint-disable-next-line
+            }, []);
+
+            useEffect(() => {
+                if (cameraActive && !successResult) {
                     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
                         .then(stream => { if (videoRef.current) videoRef.current.srcObject = stream; })
                         .catch(() => { setErrorMsg("ไม่สามารถเข้าถึงกล้องได้"); setCameraActive(false); });
                 } else if (videoRef.current && videoRef.current.srcObject) videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-            }, [cameraActive]);
+                
+                return () => {
+                     if (videoRef.current && videoRef.current.srcObject) videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+                }
+            }, [cameraActive, successResult]);
 
-            const searchRecord = () => {
-                setErrorMsg(''); setFoundRecord(null);
-                const upperEmpId = outEmpId.trim().toUpperCase();
-                if (!upperEmpId) { setErrorMsg("กรุณากรอกรหัสพนักงาน"); return; }
-                const record = records.find(r => r.empId === upperEmpId && r.date === outDate && !r.timeOut);
+            const searchRecord = (searchDate) => {
+                setErrorMsg(''); setFoundRecord(null); setCameraActive(false);
+                const record = records.find(r => r.empId === currentUser.id && r.date === searchDate && !r.timeOut);
                 if (!record) { setErrorMsg(`ไม่พบประวัติค้างลงเวลาออกของวันที่กำหนด`); return; }
                 setFoundRecord(record);
+            };
+
+            const handleDateChange = (e) => {
+                const newDate = e.target.value;
+                setOutDate(newDate);
+                searchRecord(newDate);
             };
 
             const handleClockOutAttempt = () => {
@@ -692,73 +779,72 @@
             };
 
             if (successResult) return (
-                <div className="max-w-md mx-auto bg-white rounded-3xl p-8 sm:p-10 shadow-floating border border-blue-100 text-center mt-6">
-                    <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-arrow-right-from-bracket text-3xl text-rose-600"></i></div>
-                    <h2 className="text-2xl font-bold text-blue-950">ลงเวลาออกงานสำเร็จ</h2>
-                    <div className="my-8 p-6 bg-rose-50 rounded-2xl border border-rose-200">
-                        <p className="text-sm font-bold text-rose-800 uppercase tracking-wider mb-2">เวลาออกงาน</p>
-                        <p className="text-5xl font-extrabold text-rose-700 tracking-tight mb-4">{displaySafeTime(successResult.timeOut)}</p>
-                        <div className="inline-flex items-center gap-2 text-base font-bold text-rose-800 bg-white px-4 py-2 rounded-xl border border-rose-200 shadow-sm">
+                <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-minimal border border-slate-100 text-center animate-fade-in">
+                    <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-arrow-right-from-bracket text-4xl text-rose-600"></i></div>
+                    <h2 className="text-2xl font-bold text-slate-800">ออกงานสำเร็จ</h2>
+                    <div className="my-8 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">เวลาออกงาน</p>
+                        <p className="text-5xl font-extrabold text-rose-600 tracking-tight mb-4">{displaySafeTime(successResult.timeOut)}</p>
+                        <div className="inline-flex items-center gap-2 text-base font-bold text-slate-700 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
                             <i className="fa-solid fa-calendar-day text-rose-500"></i> กะ: {successResult.shiftName}
                         </div>
                     </div>
-                    <button onClick={() => { setSuccessResult(null); setFoundRecord(null); setOutEmpId(''); }} className="w-full p-4 rounded-xl border-2 border-blue-200 text-blue-800 font-bold text-lg hover:bg-blue-50 transition-colors">เสร็จสิ้น</button>
+                    <button onClick={onDone} className="w-full p-4 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold text-lg hover:bg-slate-50 transition-colors">เสร็จสิ้น</button>
                 </div>
             );
 
             return (
-                <div className="max-w-md mx-auto bg-white rounded-3xl shadow-floating border border-rose-200 overflow-hidden mt-6 relative">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-rose-500"></div>
-                    <div className="px-8 pt-10 pb-6 text-center border-b border-blue-50">
-                        <h2 className="text-xl font-bold text-rose-600 mb-2">ลงเวลาออกงาน</h2>
-                        <div className="text-6xl font-extrabold text-blue-950 tracking-tight font-mono drop-shadow-sm">{formatTime24(currentTime)} <span className="text-2xl">น.</span></div>
+                <div className="bg-white rounded-3xl shadow-minimal border border-slate-100 overflow-hidden animate-fade-in">
+                    <div className="px-8 pt-8 pb-4 text-center border-b border-slate-50">
+                        <h2 className="text-xl font-bold text-rose-600 mb-2">ออกงาน</h2>
                     </div>
-                    <div className="p-8 space-y-6">
-                        {errorMsg && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold flex items-start gap-3 border border-red-200"><i className="fa-solid fa-circle-exclamation mt-1"></i> <span>{errorMsg}</span></div>}
+                    <div className="p-6 space-y-6">
+                        {errorMsg && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold flex items-start gap-3 border border-red-100"><i className="fa-solid fa-circle-exclamation mt-1"></i> <span>{errorMsg}</span></div>}
+                        
+                        <div>
+                            <label className="block text-sm font-bold text-slate-600 mb-2 ml-1">วันที่เข้างาน (ถ้าย้อนวันให้กดเปลี่ยน)</label>
+                            <input type="date" value={outDate} onChange={handleDateChange} className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none font-bold text-slate-800 text-base focus:border-rose-400 transition-colors" />
+                        </div>
+
                         {!foundRecord ? (
-                            <>
-                                <div className="space-y-5">
-                                    <div>
-                                        <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">รหัสพนักงาน</label>
-                                        <input type="text" value={outEmpId} onChange={(e) => setOutEmpId(e.target.value.toUpperCase())} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-lg focus:bg-white focus:border-rose-400 transition-colors placeholder:font-medium placeholder:text-blue-300 input-autofill-fix" placeholder="เช่น EMP01" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">วันที่เข้างาน</label>
-                                        <input type="date" value={outDate} onChange={(e) => setOutDate(e.target.value)} className="w-full p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50 outline-none font-bold text-blue-950 text-base focus:bg-white focus:border-rose-400 transition-colors" />
-                                        <p className="text-xs text-blue-500 font-bold mt-1.5 ml-1"><i className="fa-solid fa-circle-info mr-1"></i> หากออกเวรดึก (ด/ชบ) ให้เปลี่ยนวันที่เป็นของเมื่อวาน</p>
-                                    </div>
-                                </div>
-                                <button onClick={searchRecord} className="w-full p-4 bg-rose-100 text-rose-800 hover:bg-rose-200 rounded-xl font-bold text-lg transition-colors shadow-sm">ค้นหาประวัติเข้างาน</button>
-                            </>
+                            <div className="text-center py-10 bg-slate-50 rounded-2xl border border-slate-200">
+                                <i className="fa-solid fa-magnifying-glass text-4xl text-slate-300 mb-3"></i>
+                                <p className="text-slate-500 font-medium">ไม่พบประวัติเข้างานของวันที่กำหนด</p>
+                            </div>
                         ) : (
                             <div className="space-y-6 animate-in fade-in">
-                                <div className="bg-blue-50 border border-blue-200 p-5 rounded-2xl relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-rose-400"></div>
-                                    <p className="font-bold text-lg text-blue-950 ml-2">{foundRecord.empId} • {employees[foundRecord.empId]?.fname}</p>
-                                    <p className="text-sm font-semibold text-blue-700 mt-2 ml-2"><i className="fa-regular fa-clock mr-2 text-rose-500"></i> เข้างาน: {displaySafeTime(foundRecord.timeIn)} ({SHIFT_TYPES[foundRecord.shiftId]?.label})</p>
-                                    <p className="text-sm font-semibold text-blue-700 mt-1.5 ml-2"><i className="fa-regular fa-calendar mr-2 text-rose-500"></i> วันที่: {formatDisplayDate(foundRecord.date)}</p>
+                                <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-400 uppercase">กะที่บันทึกไว้</p>
+                                        <p className="font-bold text-slate-800 mt-1">{SHIFT_TYPES[foundRecord.shiftId]?.label}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs font-bold text-slate-400 uppercase">เวลาเข้า</p>
+                                        <p className="font-bold text-emerald-600 mt-1">{displaySafeTime(foundRecord.timeIn)}</p>
+                                    </div>
                                 </div>
-                                <div className="border-2 border-dashed border-blue-300 rounded-2xl h-56 flex items-center justify-center bg-blue-50 overflow-hidden relative group">
+
+                                <div className="border-2 border-dashed border-slate-200 rounded-2xl h-64 flex items-center justify-center bg-slate-50 overflow-hidden relative group">
                                     {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
-                                    <button onClick={() => setCameraActive(true)} className="flex flex-col items-center text-blue-400 hover:text-rose-600 transition-colors">
-                                        <div className="w-14 h-14 rounded-full bg-white border-2 border-rose-200 flex items-center justify-center mb-3 shadow-md group-hover:shadow-lg transition-all"><i className="fa-solid fa-camera text-2xl"></i></div>
+                                    <button onClick={() => setCameraActive(true)} className="flex flex-col items-center text-rose-500 hover:text-rose-600 transition-colors">
+                                        <div className="w-16 h-16 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center mb-3 shadow-sm group-hover:shadow-md transition-all"><i className="fa-solid fa-camera text-2xl"></i></div>
                                         <span className="text-sm font-bold">เปิดกล้องสแกนหน้า</span>
                                     </button>}
                                 </div>
+
                                 {showEarlyWarning ? (
-                                    <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 text-center">
-                                        <p className="font-bold text-amber-900 mb-4 text-base">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
+                                    <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 text-center">
+                                        <p className="font-bold text-amber-900 mb-4 text-base"><i className="fa-solid fa-triangle-exclamation mr-2"></i>ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
                                         <div className="flex gap-3">
-                                            <button onClick={processClockOut} className="flex-1 bg-amber-600 text-white rounded-xl py-3 text-base font-bold shadow-sm">ยืนยันออก</button>
-                                            <button onClick={() => setShowEarlyWarning(false)} className="flex-1 bg-white border-2 border-blue-200 text-blue-800 rounded-xl py-3 text-base font-bold">ยกเลิก</button>
+                                            <button onClick={processClockOut} className="flex-1 bg-amber-600 text-white rounded-xl py-3 text-base font-bold shadow-sm hover:bg-amber-700">ยืนยันออก</button>
+                                            <button onClick={() => setShowEarlyWarning(false)} className="flex-1 bg-white border-2 border-slate-200 text-slate-700 rounded-xl py-3 text-base font-bold hover:bg-slate-50">ยกเลิก</button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <button onClick={handleClockOutAttempt} disabled={!cameraActive || isScanning} className={`w-full p-4 rounded-xl font-bold text-lg text-white transition-all ${cameraActive ? 'bg-rose-600 hover:bg-rose-700 shadow-md' : 'bg-blue-200 text-white cursor-not-allowed'}`}>
+                                    <button onClick={handleClockOutAttempt} disabled={!cameraActive || isScanning} className={`w-full p-4 rounded-2xl font-bold text-lg text-white transition-all ${cameraActive ? 'bg-rose-600 hover:bg-rose-700 shadow-[0_8px_20px_-6px_rgba(225,29,72,0.5)]' : 'bg-slate-300 text-white cursor-not-allowed'}`}>
                                         {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันออกงาน'}
                                     </button>
                                 )}
-                                <button onClick={() => setFoundRecord(null)} className="w-full text-sm text-blue-600 font-bold hover:text-blue-800 text-center uppercase tracking-wider mt-2">ค้นหาใหม่</button>
                             </div>
                         )}
                     </div>
@@ -766,119 +852,69 @@
             );
         }
 
-        function DailyReportView({ records, employees, formatDateForInput, currentTime }) {
-            const [filterDate, setFilterDate] = useState(formatDateForInput(currentTime));
-            const [filterEmp, setFilterEmp] = useState('');
+        // ==========================================
+        // My History View (For Logged In User)
+        // ==========================================
+        function MyHistoryView({ currentUser, records, formatDateForInput, currentTime }) {
+            const [filterMonth, setFilterMonth] = useState(`${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, '0')}`);
 
-            const filteredRecords = records.filter(r => {
-                const emp = employees[r.empId];
-                if (!emp) return false;
-                let match = true;
-                if (filterDate && r.date !== filterDate) match = false;
-                if (filterEmp) {
-                    const search = filterEmp.toLowerCase();
-                    const name = `${emp.fname} ${emp.lname}`.toLowerCase();
-                    if (!r.empId.toLowerCase().includes(search) && !name.includes(search)) match = false;
-                }
-                return match;
-            });
+            const myRecords = records.filter(r => r.empId === currentUser.id && r.date.startsWith(filterMonth)).sort((a, b) => b.date.localeCompare(a.date) || b.timeIn.localeCompare(a.timeIn));
+
+            const totalCredit = myRecords.reduce((sum, r) => sum + (r.credit || 0), 0);
+            const totalLate = myRecords.filter(r => r.isLate).length;
 
             return (
-                <div className="bg-white rounded-3xl shadow-floating border border-blue-100 p-8 mt-4 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
-                    <h2 className="text-2xl font-bold text-blue-950 mb-8 mt-2">ประวัติการลงเวลา</h2>
-                    <div className="flex flex-col md:flex-row gap-5 mb-8">
-                        <div className="flex-1">
-                            <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">วันที่</label>
-                            <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="w-full p-3.5 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 bg-blue-50/50 outline-none focus:bg-white focus:border-blue-500" />
+                <div className="max-w-2xl mx-auto space-y-6">
+                    <div className="bg-white rounded-3xl p-6 shadow-minimal border border-slate-100 flex flex-wrap gap-4 items-center justify-between">
+                        <h2 className="text-xl font-bold text-slate-800">ประวัติของฉัน</h2>
+                        <input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="p-3 border-2 border-slate-200 rounded-xl bg-slate-50 font-bold text-slate-700 outline-none focus:border-blue-500" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-blue-600 text-white rounded-3xl p-6 shadow-md flex flex-col justify-center">
+                            <p className="text-blue-200 text-sm font-bold mb-1">รวมเครดิตเวร</p>
+                            <p className="text-4xl font-extrabold">{totalCredit}</p>
                         </div>
-                        <div className="flex-1">
-                            <label className="block text-sm font-bold text-blue-800 mb-2 ml-1">ค้นหาพนักงาน</label>
-                            <input type="text" placeholder="รหัส หรือ ชื่อ..." value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className="w-full p-3.5 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 bg-blue-50/50 outline-none focus:bg-white focus:border-blue-500" />
+                        <div className="bg-white rounded-3xl p-6 shadow-minimal border border-slate-100 flex flex-col justify-center">
+                            <p className="text-slate-500 text-sm font-bold mb-1">สถิติมาสาย</p>
+                            <p className="text-4xl font-extrabold text-red-500">{totalLate} <span className="text-lg text-slate-400 font-semibold">ครั้ง</span></p>
                         </div>
                     </div>
-                    <div className="overflow-x-auto border-2 border-blue-100 rounded-2xl">
-                        <table className="min-w-full text-base text-left whitespace-nowrap">
-                            <thead className="bg-blue-100/50 border-b-2 border-blue-100">
-                                <tr>
-                                    <th className="px-6 py-4 font-bold text-blue-900">พนักงาน</th>
-                                    <th className="px-6 py-4 font-bold text-blue-900">แผนก</th>
-                                    <th className="px-6 py-4 font-bold text-blue-900">กะ</th>
-                                    <th className="px-6 py-4 font-bold text-blue-900 text-center">เข้า</th>
-                                    <th className="px-6 py-4 font-bold text-blue-900 text-center">ออก</th>
-                                    <th className="px-6 py-4 font-bold text-blue-900 text-center">สถานะ</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-blue-50">
-                                {filteredRecords.map(r => {
-                                    const emp = employees[r.empId];
-                                    return (
-                                        <tr key={r.id} className="hover:bg-blue-50 transition-colors">
-                                            <td className="px-6 py-4"><span className="font-bold text-blue-950">{emp.fname}</span> <span className="text-blue-600 text-sm ml-1 font-semibold">({r.empId})</span></td>
-                                            <td className="px-6 py-4 text-blue-800 text-sm font-semibold">{emp.dept}</td>
-                                            <td className="px-6 py-4 text-blue-800 text-sm font-semibold">{SHIFT_TYPES[r.shiftId]?.label}</td>
-                                            <td className="px-6 py-4 text-center font-bold text-blue-950">{displaySafeTime(r.timeIn)}</td>
-                                            <td className="px-6 py-4 text-center font-bold text-blue-950">{displaySafeTime(r.timeOut)}</td>
-                                            <td className="px-6 py-4 text-center">
-                                                {r.isLate ? <span className="text-red-700 text-sm font-bold bg-red-100 px-3 py-1.5 rounded-full border border-red-200">สาย {r.lateMinutes} นาที</span> : <span className="text-green-800 text-sm font-bold bg-green-100 px-3 py-1.5 rounded-full border border-green-200">ปกติ</span>}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                                {filteredRecords.length === 0 && <tr><td colSpan="6" className="px-6 py-10 text-center text-blue-500 font-medium text-lg">ไม่พบประวัติในวันที่เลือก</td></tr>}
-                            </tbody>
-                        </table>
+
+                    <div className="space-y-4">
+                        {myRecords.map(r => (
+                            <div key={r.id} className="bg-white rounded-3xl p-5 shadow-minimal border border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="bg-blue-100 text-blue-800 text-xs font-extrabold px-2 py-1 rounded-lg">{formatDisplayDate(r.date)}</span>
+                                        <span className="font-bold text-slate-700">{SHIFT_TYPES[r.shiftId]?.label}</span>
+                                    </div>
+                                    <div className="text-slate-500 text-sm font-medium flex items-center gap-4">
+                                        <span><i className="fa-solid fa-arrow-right-to-bracket text-emerald-500 mr-1"></i> {displaySafeTime(r.timeIn)}</span>
+                                        <span><i className="fa-solid fa-arrow-right-from-bracket text-rose-500 mr-1"></i> {displaySafeTime(r.timeOut)}</span>
+                                    </div>
+                                </div>
+                                <div className="text-right flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto">
+                                    {r.isLate ? <span className="text-red-600 font-bold bg-red-50 px-3 py-1 rounded-xl text-sm border border-red-100 whitespace-nowrap">สาย {r.lateMinutes} นาที</span> : <span className="text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-xl text-sm border border-emerald-100">ปกติ</span>}
+                                    <span className="text-slate-400 text-xs font-bold mt-2 hidden sm:block">เครดิต: {r.credit}</span>
+                                </div>
+                            </div>
+                        ))}
+                        {myRecords.length === 0 && (
+                            <div className="text-center py-12 bg-white rounded-3xl border border-slate-100 shadow-minimal">
+                                <i className="fa-solid fa-inbox text-5xl text-slate-200 mb-4"></i>
+                                <p className="text-slate-500 font-medium">ไม่พบประวัติในเดือนนี้</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
         }
 
-        const MapModal = ({ lat, lon, onClose }) => (
-            <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                <div className="bg-white p-1 rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200">
-                    <div className="flex justify-between items-center px-6 py-4 border-b border-blue-50">
-                        <h3 className="font-bold text-blue-950 text-lg">พิกัดลงเวลา</h3>
-                        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
-                    </div>
-                    <iframe src={`https://maps.google.com/maps?q=${lat},${lon}&hl=th&z=17&output=embed`} width="100%" height="350" frameBorder="0" className="bg-blue-50" />
-                </div>
-            </div>
-        );
-
-        const PhotoModal = ({ record, employees, onClose }) => {
-            const emp = employees[record.empId] || {};
-            return (
-                <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white p-1 rounded-3xl w-full max-w-md shadow-floating overflow-hidden flex flex-col border border-blue-200">
-                        <div className="flex justify-between items-center px-6 py-4 border-b border-blue-50 shrink-0">
-                            <h3 className="font-bold text-blue-950 text-lg">รูปสแกนใบหน้า</h3>
-                            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
-                        </div>
-                        <div className="p-6 bg-blue-50/50 flex gap-5 h-72 overflow-hidden">
-                            {record.photoInUrl ? (
-                                <div className="flex-1 flex flex-col">
-                                    <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">เข้างาน</p>
-                                    <iframe src={record.photoInUrl.replace('/view', '/preview')} className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm" />
-                                </div>
-                            ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
-                            
-                            {record.photoOutUrl ? (
-                                <div className="flex-1 flex flex-col">
-                                    <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">ออกงาน</p>
-                                    <iframe src={record.photoOutUrl.replace('/view', '/preview')} className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm" />
-                                </div>
-                            ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
-                        </div>
-                        <div className="p-5 border-t border-blue-50 text-base text-blue-800 shrink-0 bg-white">
-                            <p><span className="font-bold text-blue-950 text-lg">{emp.fname} {emp.lname}</span> <span className="font-semibold text-blue-600">({record.empId})</span></p>
-                            <p className="text-sm mt-1.5 font-medium text-blue-700">วันที่: {formatDisplayDate(record.date)}</p>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        function ReportView({ role, user, onLogout, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
+        // ==========================================
+        // Manager / Admin View (Existing Logic Kept intact, styled as Dashboard tab)
+        // ==========================================
+        function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
             const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs'); 
             const [startDate, setStartDate] = useState('');
             const [endDate, setEndDate] = useState('');
@@ -1088,7 +1124,6 @@
             const exportLogsToCSV = () => {
                 if(filteredRecords.length === 0) return alert("ไม่มีข้อมูลสำหรับส่งออก");
                 let csvContent = "\uFEFF";
-                // 🌟 เพิ่มหัวรายงาน
                 csvContent += `"ประวัติลงเวลาทั้งหมด","แผนก: ${filterDept || 'ทั้งหมด'}","ตั้งแต่วันที่: ${startDate || '-'}","ถึงวันที่: ${endDate || '-'}"\n\n`;
                 csvContent += "วันที่,รหัสพนักงาน,ชื่อ-สกุล,แผนก,กะ,เวลาเข้า,เวลาออก,สถานะ,สาย (นาที),จำนวนเวร\n";
                 filteredRecords.forEach(r => {
@@ -1107,15 +1142,11 @@
             const exportSummaryToCSV = () => {
                 if(summaryMatrix.length === 0) return alert("ไม่มีข้อมูลสรุปสำหรับส่งออก");
                 let csvContent = "\uFEFF"; 
-                
-                // 🌟 เพิ่มหัวรายงานใน CSV (เดือน และ แผนก)
                 csvContent += `"สรุปภาพรวมแผนก: ${filterDept || 'ทุกแผนก'}","ประจำเดือน: ${matrixMonth}"\n\n`;
-                
                 const headers = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'แผนก', ...daysArray];
                 sortedShiftTypesUsed.forEach(type => headers.push(type));
                 headers.push('รวมเวรทั้งหมด', 'วันทำการ', 'เวร OT');
                 if (role === 'admin') headers.push('รวมสาย (นาที)');
-
                 csvContent += headers.join(',') + '\n';
                 
                 let grandTotalCredit = 0;
@@ -1124,17 +1155,14 @@
                 summaryMatrix.forEach(row => {
                     grandTotalCredit += row.empTotalCredit;
                     grandTotalOT += row.otShifts;
-
                     const rowData = [row.empId, `${row.fname} ${row.lname}`, row.dept];
                     daysArray.forEach(day => rowData.push(row.shiftsByDay[day].display));
                     sortedShiftTypesUsed.forEach(type => rowData.push(row.shiftCounts[type] || 0));
                     rowData.push(row.empTotalCredit, localWorkDays, row.otShifts);
                     if (role === 'admin') rowData.push(row.empTotalLate);
-
                     csvContent += `"${rowData.join('","')}"\n`;
                 });
                 
-                // 🌟 เพิ่มบรรทัดสรุปรวมทั้งหมดของแผนกด้านล่างสุด
                 const emptyColsCount = 3 + daysArray.length + sortedShiftTypesUsed.length - 1;
                 const emptyCols = Array(emptyColsCount).fill('""').join(',');
                 csvContent += `\n"รวมยอดทั้งแผนก",${emptyCols},"${grandTotalCredit}","", "${grandTotalOT}"\n`;
@@ -1148,10 +1176,7 @@
             const exportScheduleToCSV = () => {
                 if(matrixEmployees.length === 0) return alert("ไม่มีข้อมูลพนักงานสำหรับส่งออก");
                 let csvContent = "\uFEFF";
-                
-                // 🌟 เพิ่มหัวรายงานตารางเวรใน CSV
                 csvContent += `"ตารางเวรแผนก: ${filterDept || 'ทุกแผนก'}","ประจำเดือน: ${matrixMonth}"\n\n`;
-                
                 csvContent += "รหัสพนักงาน,ชื่อ-สกุล,แผนก," + daysArray.join(',') + "\n";
                 matrixEmployees.forEach(empId => {
                     const emp = employees[empId];
@@ -1205,13 +1230,11 @@
                 });
             };
 
-            const headerColor = role === 'supervisor' ? 'bg-amber-500' : 'bg-blue-900';
-            const iconColor = role === 'supervisor' ? 'text-amber-600' : 'text-blue-900';
-            const tabActiveColor = role === 'supervisor' ? 'border-amber-600 text-amber-700 bg-amber-50' : 'border-blue-900 text-blue-900 bg-blue-50';
+            const tabActiveColor = 'border-blue-900 text-blue-900 bg-white shadow-sm rounded-xl';
+            const tabInactiveColor = 'text-slate-500 hover:text-slate-800 hover:bg-white/50 rounded-xl';
 
             return (
-                <div className="bg-white rounded-3xl shadow-floating border border-blue-100 mt-4 relative overflow-hidden print-container">
-                    <div className={`absolute top-0 left-0 w-full h-2 ${headerColor} print-hide`}></div>
+                <div className="bg-white rounded-3xl shadow-minimal border border-slate-100 mt-4 relative overflow-hidden print-container">
                     
                     {/* 🌟 หัวกระดาษสำหรับตอนสั่งพิมพ์ */}
                     <div className="hidden print-show text-center mb-4 pb-2 border-b-2 border-slate-200">
@@ -1222,19 +1245,6 @@
                             แผนก: {filterDept || 'ทั้งหมด'} | ประจำเดือน: {matrixMonth}
                         </p>
                     </div>
-                    
-                    <div className="flex justify-between items-center p-6 border-b-2 border-blue-50 bg-blue-50/30 print-hide">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-white border-2 border-blue-100 shadow-sm ${iconColor}`}>
-                                <i className={`fa-solid text-xl ${role === 'supervisor' ? 'fa-user-tie' : 'fa-shield-halved'}`}></i>
-                            </div>
-                            <div>
-                                <p className="text-sm text-blue-800 font-bold uppercase tracking-wider">{role === 'supervisor' ? 'โหมดหัวหน้างาน' : 'โหมดผู้ดูแลระบบ (Admin)'}</p>
-                                <p className="font-bold text-xl text-blue-950 mt-0.5">{user.fname} {user.lname} <span className="text-base text-blue-600 font-semibold ml-1">({user.id})</span></p>
-                            </div>
-                        </div>
-                        <button onClick={onLogout} className="text-base px-4 py-2.5 rounded-xl border-2 border-blue-100 text-blue-800 hover:bg-blue-100 font-bold transition-colors shadow-sm"><i className="fa-solid fa-arrow-right-from-bracket mr-2"></i>ออกจากระบบ</button>
-                    </div>
 
                     {selectedMapRecord && <MapModal lat={selectedMapRecord.lat} lon={selectedMapRecord.lon} onClose={() => setSelectedMapRecord(null)} />}
                     {selectedPhotoRecord && <PhotoModal record={selectedPhotoRecord} employees={employees} onClose={() => setSelectedPhotoRecord(null)} />}
@@ -1242,7 +1252,7 @@
                     {/* Modals for Edit and Add Record ... */}
                     {editModalData && (
                         <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
-                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200">
+                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200 animate-fade-in">
                                 <div className="p-6 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
                                     <h3 className="font-bold text-blue-950 text-xl"><i className="fa-solid fa-pen text-blue-600 mr-3"></i>แก้ไขการลงเวลา</h3>
                                     <button onClick={() => setEditModalData(null)} className="text-blue-400 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-2xl"></i></button>
@@ -1279,7 +1289,7 @@
 
                     {addModalData && (
                         <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
-                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200">
+                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200 animate-fade-in">
                                 <div className="p-6 border-b border-blue-100 bg-emerald-50 flex justify-between items-center">
                                     <h3 className="font-bold text-emerald-900 text-xl"><i className="fa-solid fa-plus-circle text-emerald-600 mr-3"></i>เพิ่มข้อมูลลงเวลาย้อนหลัง</h3>
                                     <button onClick={() => setAddModalData(null)} className="text-emerald-400 hover:text-emerald-700 transition-colors"><i className="fa-solid fa-xmark text-2xl"></i></button>
@@ -1323,7 +1333,7 @@
                     
                     {scheduleModalData && (
                         <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
-                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200">
+                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200 animate-fade-in">
                                 <div className="p-6 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
                                     <h3 className="font-bold text-blue-900 text-xl"><i className="fa-solid fa-calendar-plus text-blue-600 mr-3"></i>จัดการเวร <span className="text-sm font-semibold text-blue-600 ml-1">(ออโต้เซฟตอนบันทึก)</span></h3>
                                     <button onClick={() => setScheduleModalData(null)} className="text-blue-400 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-2xl"></i></button>
@@ -1361,45 +1371,45 @@
                         </div>
                     )}
 
-                    <div className="flex border-b-2 border-blue-100 overflow-x-auto no-scrollbar pt-3 px-2 print-hide">
+                    <div className="flex gap-2 bg-slate-100/50 p-2 overflow-x-auto no-scrollbar print-hide mb-4 border-b border-slate-200">
                         {role === 'admin' && (
-                            <button onClick={() => setAdminTab('logs')} className={`px-6 py-4 text-base font-bold whitespace-nowrap transition-colors rounded-t-xl ${adminTab === 'logs' ? `border-b-4 ${tabActiveColor}` : 'text-blue-600 hover:text-blue-900 hover:bg-blue-50'}`}>ประวัติลงเวลาทั้งหมด</button>
+                            <button onClick={() => setAdminTab('logs')} className={`px-5 py-3 text-sm font-bold whitespace-nowrap transition-all ${adminTab === 'logs' ? tabActiveColor : tabInactiveColor}`}>ประวัติทั้งหมด</button>
                         )}
-                        <button onClick={() => setAdminTab('summary')} className={`px-6 py-4 text-base font-bold whitespace-nowrap transition-colors rounded-t-xl ${adminTab === 'summary' ? `border-b-4 ${tabActiveColor}` : 'text-blue-600 hover:text-blue-900 hover:bg-blue-50'}`}>สรุปภาพรวมแผนก (เวร/OT)</button>
-                        <button onClick={() => setAdminTab('schedules')} className={`px-6 py-4 text-base font-bold whitespace-nowrap transition-colors rounded-t-xl ${adminTab === 'schedules' ? `border-b-4 ${tabActiveColor}` : 'text-blue-600 hover:text-blue-900 hover:bg-blue-50'}`}>จัดตารางเวรรายเดือน</button>
+                        <button onClick={() => setAdminTab('summary')} className={`px-5 py-3 text-sm font-bold whitespace-nowrap transition-all ${adminTab === 'summary' ? tabActiveColor : tabInactiveColor}`}>สรุปภาพรวมแผนก</button>
+                        <button onClick={() => setAdminTab('schedules')} className={`px-5 py-3 text-sm font-bold whitespace-nowrap transition-all ${adminTab === 'schedules' ? tabActiveColor : tabInactiveColor}`}>จัดตารางเวร</button>
                     </div>
 
-                    <div className="px-6 pt-8 print-hide">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 bg-blue-50/50 p-6 rounded-2xl border border-blue-100 shadow-sm">
+                    <div className="px-6 print-hide">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm">
                             {adminTab === 'logs' ? (
                                 <>
                                     <div>
-                                        <label className="block text-sm font-bold text-blue-800 mb-2">ตั้งแต่วันที่</label>
-                                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-3 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 outline-none bg-white focus:border-blue-400" />
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">ตั้งแต่วันที่</label>
+                                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-blue-400" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-blue-800 mb-2">ถึงวันที่</label>
-                                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full p-3 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 outline-none bg-white focus:border-blue-400" />
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">ถึงวันที่</label>
+                                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full p-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-blue-400" />
                                     </div>
                                 </>
                             ) : (
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-bold text-blue-800 mb-2">ประจำเดือน</label>
-                                    <input type="month" value={matrixMonth} onChange={e => setMatrixMonth(e.target.value)} className="w-full p-3 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 outline-none bg-white focus:border-blue-400" />
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">ประจำเดือน</label>
+                                    <input type="month" value={matrixMonth} onChange={e => setMatrixMonth(e.target.value)} className="w-full p-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-blue-400" />
                                 </div>
                             )}
                             
                             <div>
-                                <label className="block text-sm font-bold text-blue-800 mb-2">ค้นหารหัส/ชื่อ</label>
-                                <input type="text" placeholder="ค้นหา..." value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className="w-full p-3 border-2 border-blue-100 rounded-xl text-base font-semibold text-blue-950 outline-none bg-white focus:border-blue-400 placeholder:font-medium placeholder:text-blue-300" />
+                                <label className="block text-xs font-bold text-slate-500 mb-1">ค้นหารหัส/ชื่อ</label>
+                                <input type="text" placeholder="พิมพ์ค้นหา..." value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className="w-full p-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-blue-400 placeholder:font-medium placeholder:text-slate-300" />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-blue-800 mb-2">แผนก {role === 'supervisor' && '(จำกัดสิทธิ์)'}</label>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">แผนก {role === 'supervisor' && '(จำกัด)'}</label>
                                 <select 
                                     value={filterDept} 
                                     onChange={e => setFilterDept(e.target.value)} 
                                     disabled={role === 'supervisor'}
-                                    className={`w-full p-3 border-2 border-blue-100 rounded-xl text-base font-bold outline-none ${role === 'supervisor' ? 'bg-blue-100 text-blue-900 cursor-not-allowed' : 'bg-white text-blue-950 focus:border-blue-400'}`}
+                                    className={`w-full p-2.5 border-2 rounded-xl text-sm font-bold outline-none ${role === 'supervisor' ? 'bg-slate-200 border-slate-200 text-slate-600 cursor-not-allowed' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-400'}`}
                                 >
                                     {role === 'admin' && <option value="">ทั้งหมด</option>}
                                     {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
@@ -1409,125 +1419,125 @@
                                 <button onClick={() => {
                                     setStartDate(''); setEndDate(''); setFilterEmp(''); setMatrixMonth(defaultMonth);
                                     if(role === 'admin') setFilterDept('');
-                                }} className="w-full p-3 bg-white border-2 border-blue-200 text-blue-700 font-bold rounded-xl text-base hover:bg-blue-50 hover:text-blue-900 transition-colors shadow-sm"><i className="fa-solid fa-rotate-right mr-2"></i>ล้างตัวกรอง</button>
+                                }} className="w-full p-2.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-100 transition-colors shadow-sm"><i className="fa-solid fa-rotate-right mr-2"></i>ล้างตัวกรอง</button>
                             </div>
                         </div>
                     </div>
 
                     {/* Content Views */}
                     {adminTab === 'logs' && role === 'admin' ? (
-                        <div className="p-6 pt-8">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 mb-8 print-hide">
+                        <div className="p-6 pt-6">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 print-hide">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-blue-950">รายการลงเวลาปฏิบัติงาน (ทั้งหมด)</h2>
-                                    <p className="text-base font-medium text-blue-700 mt-2">พบข้อมูล <span className="font-bold text-blue-900">{filteredRecords.length}</span> รายการ • รวมมาสาย <span className="text-red-600 font-bold">{totalLateMinutes} นาที</span></p>
+                                    <h2 className="text-xl font-bold text-slate-800">รายการลงเวลา (ทั้งหมด)</h2>
+                                    <p className="text-sm font-medium text-slate-500 mt-1">พบข้อมูล <span className="font-bold text-blue-600">{filteredRecords.length}</span> รายการ • มาสาย <span className="text-red-500 font-bold">{totalLateMinutes} นาที</span></p>
                                 </div>
-                                <div className="flex flex-wrap gap-3">
-                                    <button onClick={() => setAddModalData({empId:'', date:'', shiftId:'', timeIn:'', timeOut:''})} className="bg-emerald-100 border border-emerald-200 text-emerald-800 hover:bg-emerald-200 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm"><i className="fa-solid fa-plus mr-2"></i>เพิ่มข้อมูล</button>
-                                    <button onClick={() => window.print()} className="bg-white border-2 border-slate-200 text-slate-800 hover:bg-slate-50 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm"><i className="fa-solid fa-print mr-2 text-slate-500"></i>พิมพ์</button>
-                                    <button onClick={exportLogsToCSV} className="bg-white border-2 border-blue-200 text-blue-800 hover:bg-blue-50 hover:text-blue-950 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm"><i className="fa-solid fa-download mr-2 text-green-600"></i>ส่งออก CSV</button>
+                                <div className="flex flex-wrap gap-2">
+                                    <button onClick={() => setAddModalData({empId:'', date:'', shiftId:'', timeIn:'', timeOut:''})} className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm border border-emerald-200"><i className="fa-solid fa-plus mr-2"></i>เพิ่มข้อมูล</button>
+                                    <button onClick={() => window.print()} className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"><i className="fa-solid fa-print mr-2"></i>พิมพ์</button>
+                                    <button onClick={exportLogsToCSV} className="bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-csv mr-2"></i>ส่งออก CSV</button>
                                 </div>
                             </div>
 
-                            <div className="overflow-x-auto border-2 border-blue-100 rounded-2xl print-table-wrapper">
-                                <table className="min-w-full text-base text-left whitespace-nowrap">
-                                    <thead className="bg-blue-100/70 border-b-2 border-blue-200">
+                            <div className="overflow-x-auto border border-slate-200 rounded-2xl print-table-wrapper shadow-sm">
+                                <table className="min-w-full text-sm text-left whitespace-nowrap">
+                                    <thead className="bg-slate-50 border-b border-slate-200">
                                         <tr>
-                                            <th className="px-6 py-4 font-bold text-blue-950">วันที่</th>
-                                            <th className="px-6 py-4 font-bold text-blue-950">พนักงาน</th>
-                                            <th className="px-6 py-4 font-bold text-blue-950">กะ</th>
-                                            <th className="px-6 py-4 font-bold text-blue-950 text-center">เข้า</th>
-                                            <th className="px-6 py-4 font-bold text-blue-950 text-center">ออก</th>
-                                            <th className="px-6 py-4 font-bold text-blue-950 text-center print-hide">หลักฐาน</th>
-                                            <th className="px-6 py-4 font-bold text-blue-950 text-center">สาย</th>
-                                            <th className="px-6 py-4 font-bold text-blue-950 text-center">เครดิต</th>
-                                            <th className="px-6 py-4 font-bold text-blue-950 text-right print-hide">จัดการ</th>
+                                            <th className="px-5 py-3 font-bold text-slate-700">วันที่</th>
+                                            <th className="px-5 py-3 font-bold text-slate-700">พนักงาน</th>
+                                            <th className="px-5 py-3 font-bold text-slate-700">กะ</th>
+                                            <th className="px-5 py-3 font-bold text-slate-700 text-center">เข้า</th>
+                                            <th className="px-5 py-3 font-bold text-slate-700 text-center">ออก</th>
+                                            <th className="px-5 py-3 font-bold text-slate-700 text-center print-hide">หลักฐาน</th>
+                                            <th className="px-5 py-3 font-bold text-slate-700 text-center">สาย</th>
+                                            <th className="px-5 py-3 font-bold text-slate-700 text-center">เครดิต</th>
+                                            <th className="px-5 py-3 font-bold text-slate-700 text-right print-hide">จัดการ</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-blue-50 bg-white">
+                                    <tbody className="divide-y divide-slate-100 bg-white">
                                         {filteredRecords.map(r => {
                                             const emp = employees[r.empId] || {};
                                             return (
-                                                <tr key={r.id} className="hover:bg-blue-50/50 transition-colors">
-                                                    <td className="px-6 py-4 font-semibold text-blue-900">{formatDisplayDate(r.date)}</td>
-                                                    <td className="px-6 py-4"><span className="font-bold text-blue-950 block">{emp.fname} {emp.lname}</span><span className="text-xs font-semibold text-blue-600 uppercase mt-0.5 block">{r.empId} • {emp.dept}</span></td>
-                                                    <td className="px-6 py-4 text-blue-800 font-semibold">{SHIFT_TYPES[r.shiftId]?.label}</td>
-                                                    <td className="px-6 py-4 text-center font-bold text-blue-950">{displaySafeTime(r.timeIn)}</td>
-                                                    <td className="px-6 py-4 text-center font-bold text-blue-950">{displaySafeTime(r.timeOut)}</td>
-                                                    <td className="px-6 py-4 text-center print-hide">
-                                                        <div className="flex justify-center gap-3">
-                                                            {r.lat ? <button onClick={() => setSelectedMapRecord(r)} className="text-blue-500 hover:text-blue-800 bg-blue-50 p-2 rounded-lg transition-colors"><i className="fa-solid fa-location-dot"></i></button> : <span className="text-blue-200">-</span>}
-                                                            {(r.photoInUrl || r.photoOutUrl) ? <button onClick={() => setSelectedPhotoRecord(r)} className="text-blue-500 hover:text-blue-800 bg-blue-50 p-2 rounded-lg transition-colors"><i className="fa-solid fa-image"></i></button> : <span className="text-blue-200">-</span>}
+                                                <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-5 py-3 font-semibold text-slate-600">{formatDisplayDate(r.date)}</td>
+                                                    <td className="px-5 py-3"><span className="font-bold text-slate-800 block">{emp.fname} {emp.lname}</span><span className="text-xs font-semibold text-slate-400 block">{r.empId} • {emp.dept}</span></td>
+                                                    <td className="px-5 py-3 text-slate-700 font-semibold">{SHIFT_TYPES[r.shiftId]?.label}</td>
+                                                    <td className="px-5 py-3 text-center font-bold text-emerald-600">{displaySafeTime(r.timeIn)}</td>
+                                                    <td className="px-5 py-3 text-center font-bold text-rose-600">{displaySafeTime(r.timeOut)}</td>
+                                                    <td className="px-5 py-3 text-center print-hide">
+                                                        <div className="flex justify-center gap-2">
+                                                            {r.lat ? <button onClick={() => setSelectedMapRecord(r)} className="text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-lg transition-colors"><i className="fa-solid fa-location-dot"></i></button> : <span className="text-slate-200">-</span>}
+                                                            {(r.photoInUrl || r.photoOutUrl) ? <button onClick={() => setSelectedPhotoRecord(r)} className="text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-lg transition-colors"><i className="fa-solid fa-image"></i></button> : <span className="text-slate-200">-</span>}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center">{r.isLate ? <span className="text-red-700 font-bold bg-red-50 px-2 py-1 rounded-lg text-sm">{r.lateMinutes} นาที</span> : '-'}</td>
-                                                    <td className="px-6 py-4 text-center font-bold text-blue-900">{r.credit}</td>
-                                                    <td className="px-6 py-4 text-right print-hide">
-                                                        <button onClick={() => setEditModalData({...r})} className="text-blue-500 hover:text-blue-800 bg-blue-50 p-2.5 rounded-lg mr-2 transition-colors"><i className="fa-solid fa-pen"></i></button>
-                                                        <button onClick={() => handleDelete(r.id)} className="text-red-500 hover:text-red-800 bg-red-50 p-2.5 rounded-lg transition-colors"><i className="fa-solid fa-trash"></i></button>
+                                                    <td className="px-5 py-3 text-center">{r.isLate ? <span className="text-red-700 font-bold bg-red-50 px-2 py-1 rounded-md text-xs">{r.lateMinutes} นาที</span> : '-'}</td>
+                                                    <td className="px-5 py-3 text-center font-bold text-slate-700">{r.credit}</td>
+                                                    <td className="px-5 py-3 text-right print-hide">
+                                                        <button onClick={() => setEditModalData({...r})} className="text-slate-400 hover:text-blue-600 p-2 transition-colors"><i className="fa-solid fa-pen"></i></button>
+                                                        <button onClick={() => handleDelete(r.id)} className="text-slate-400 hover:text-red-600 p-2 transition-colors"><i className="fa-solid fa-trash"></i></button>
                                                     </td>
                                                 </tr>
                                             );
                                         })}
-                                        {filteredRecords.length === 0 && <tr><td colSpan="9" className="px-6 py-12 text-center text-blue-400 font-bold text-lg">ไม่พบข้อมูลในระบบ</td></tr>}
+                                        {filteredRecords.length === 0 && <tr><td colSpan="9" className="px-5 py-12 text-center text-slate-400 font-bold text-base">ไม่พบข้อมูลในระบบ</td></tr>}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     ) : adminTab === 'summary' ? (
-                        <div className="p-6 pt-8">
-                            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5 mb-8 print-hide">
+                        <div className="p-6 pt-6">
+                            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6 print-hide">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-blue-950">สรุปภาพรวมรายบุคคล และการเบิก OT</h2>
-                                    <p className="text-base font-medium text-blue-700 mt-2">ใช้ <span className="text-blue-900 font-extrabold bg-blue-100 px-2 py-0.5 rounded border border-blue-300">สแกนจริง</span> + <span className="text-emerald-700 font-extrabold bg-emerald-100 px-2 py-0.5 rounded opacity-80 border border-emerald-300">รอสแกน (อนาคต)</span> (รวมการเบิกวันลา)</p>
+                                    <h2 className="text-xl font-bold text-slate-800">สรุปภาพรวมรายบุคคล และการเบิก OT</h2>
+                                    <p className="text-sm font-medium text-slate-500 mt-1">ใช้ <span className="text-blue-700 font-extrabold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">สแกนจริง</span> + <span className="text-emerald-700 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">รอสแกน</span> (รวมการเบิกวันลา)</p>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-4">
-                                    <div className="bg-blue-50 border-2 border-blue-200 px-4 py-2.5 rounded-xl flex items-center gap-3 shadow-sm">
-                                        <label className="text-sm font-bold text-blue-900 uppercase">กำหนดวันทำการปกติ:</label>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl flex items-center gap-2 shadow-sm">
+                                        <label className="text-xs font-bold text-slate-600 uppercase">วันทำการ:</label>
                                         <input 
                                             type="number" min="0" 
                                             value={localWorkDays} 
                                             onChange={e => setLocalWorkDays(Number(e.target.value))} 
                                             disabled={role !== 'admin'} 
-                                            className={`w-20 p-1.5 border-2 rounded-lg text-base text-center outline-none font-extrabold ${role === 'admin' ? 'bg-white border-blue-300 text-blue-700 focus:border-blue-500' : 'bg-transparent border-transparent text-blue-900 cursor-not-allowed'}`} 
+                                            className={`w-16 p-1 border rounded-lg text-sm text-center outline-none font-extrabold ${role === 'admin' ? 'bg-white border-blue-300 text-blue-700 focus:border-blue-500' : 'bg-transparent border-transparent text-slate-700 cursor-not-allowed'}`} 
                                         />
-                                        <span className="text-sm font-bold text-blue-800">วัน</span>
+                                        <span className="text-xs font-bold text-slate-600">วัน</span>
                                         {role === 'admin' && localWorkDays !== (settings?.standardWorkDays?.[matrixMonth] || 22) && (
-                                            <button onClick={handleSaveSettings} className="ml-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-lg shadow-md font-bold transition-colors">บันทึก</button>
+                                            <button onClick={handleSaveSettings} className="ml-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] rounded shadow-sm font-bold transition-colors">บันทึก</button>
                                         )}
                                     </div>
-                                    <button onClick={() => window.print()} className="bg-white border-2 border-slate-200 text-slate-800 hover:bg-slate-50 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm flex items-center"><i className="fa-solid fa-print mr-2 text-slate-500 text-lg"></i>พิมพ์ A4 แนวนอน</button>
-                                    <button onClick={exportSummaryToCSV} className="bg-white border-2 border-blue-200 text-blue-800 hover:bg-blue-50 hover:text-blue-950 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm flex items-center"><i className="fa-solid fa-file-excel mr-2 text-green-600 text-lg"></i>ส่งออกตารางสรุป</button>
+                                    <button onClick={() => window.print()} className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"><i className="fa-solid fa-print mr-2"></i>พิมพ์</button>
+                                    <button onClick={exportSummaryToCSV} className="bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-excel mr-2 text-emerald-600"></i>ส่งออกสรุป</button>
                                 </div>
                             </div>
                             
-                            <div className="overflow-x-auto border-2 border-blue-200 rounded-2xl bg-white shadow-sm print-table-wrapper">
-                                <table className="min-w-full text-base text-left whitespace-nowrap">
-                                    <thead className="bg-blue-100/60 border-b-2 border-blue-200">
+                            <div className="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-sm print-table-wrapper">
+                                <table className="min-w-full text-sm text-left whitespace-nowrap">
+                                    <thead className="bg-slate-50 border-b border-slate-200">
                                         <tr>
-                                            <th rowSpan="2" className="px-5 py-4 font-bold text-blue-950 sticky left-0 bg-blue-100 z-20 border-r-2 border-blue-200 align-middle">พนักงาน</th>
-                                            {daysArray.map(day => <th key={day} rowSpan="2" className="px-2 py-4 font-extrabold text-blue-900 text-center min-w-[44px] align-middle">{day}</th>)}
+                                            <th rowSpan="2" className="px-4 py-3 font-bold text-slate-800 sticky left-0 bg-slate-100 z-20 border-r border-slate-200 align-middle">พนักงาน</th>
+                                            {daysArray.map(day => <th key={day} rowSpan="2" className="px-1 py-3 font-extrabold text-slate-700 text-center min-w-[38px] align-middle">{day}</th>)}
                                             
-                                            <th colSpan={sortedShiftTypesUsed.length} className="px-3 py-2 font-extrabold text-indigo-900 text-center bg-indigo-100/80 border-l-2 border-b-2 border-indigo-200 border-r-2 border-blue-200">จำนวนเวรแยกประเภท</th>
+                                            <th colSpan={sortedShiftTypesUsed.length} className="px-2 py-1.5 font-bold text-indigo-800 text-center bg-indigo-50/50 border-l border-b border-indigo-100 border-r border-slate-200 text-xs">จำนวนเวรแยกประเภท</th>
                                             
-                                            <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-950 text-center bg-blue-100/80 border-l-2 border-blue-200 align-middle">รวมเวร</th>
-                                            <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-950 text-center bg-blue-100/80 align-middle">วันทำการ</th>
-                                            <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-900 text-center bg-blue-200/50 border-l-2 border-blue-300 align-middle shadow-inner">เหลือ OT</th>
+                                            <th rowSpan="2" className="px-3 py-3 font-extrabold text-slate-800 text-center bg-slate-100/50 border-l border-slate-200 align-middle">รวมเวร</th>
+                                            <th rowSpan="2" className="px-3 py-3 font-extrabold text-slate-800 text-center bg-slate-100/50 align-middle">วันทำการ</th>
+                                            <th rowSpan="2" className="px-3 py-3 font-extrabold text-blue-700 text-center bg-blue-50/50 border-l border-blue-100 align-middle">เหลือ OT</th>
                                             
-                                            {role === 'admin' && <th rowSpan="2" className="px-4 py-4 font-extrabold text-red-800 text-center bg-red-100/80 border-l-2 border-red-200 align-middle">รวมสาย</th>}
+                                            {role === 'admin' && <th rowSpan="2" className="px-3 py-3 font-extrabold text-red-700 text-center bg-red-50/50 border-l border-red-100 align-middle">รวมสาย</th>}
                                         </tr>
                                         <tr>
                                             {sortedShiftTypesUsed.map(type => (
-                                                <th key={type} className="px-2 py-2 font-bold text-indigo-800 text-center bg-indigo-100/80 border-x border-white text-xs">{type}</th>
+                                                <th key={type} className="px-1.5 py-1.5 font-bold text-indigo-700 text-center bg-indigo-50/50 border-x border-white text-[10px]">{type}</th>
                                             ))}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-blue-100">
+                                    <tbody className="divide-y divide-slate-100">
                                         {summaryMatrix.map(row => (
-                                            <tr key={row.empId} className="hover:bg-blue-50/80 transition-colors group">
-                                                <td className="px-5 py-3 sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r-2 border-blue-100">
-                                                    <p className="font-bold text-blue-950 text-base">{row.fname} {row.lname}</p>
-                                                    <p className="text-xs font-semibold text-blue-600 mt-0.5">{row.empId} • {row.dept}</p>
+                                            <tr key={row.empId} className="hover:bg-slate-50/80 transition-colors group">
+                                                <td className="px-4 py-2 sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-200">
+                                                    <p className="font-bold text-slate-800 text-sm">{row.fname} {row.lname}</p>
+                                                    <p className="text-[10px] font-semibold text-slate-400 mt-0.5">{row.empId} • {row.dept}</p>
                                                 </td>
                                                 {daysArray.map(day => {
                                                     const shiftObj = row.shiftsByDay[day];
@@ -1536,15 +1546,15 @@
                                                     const isEmpty = uiElements.length === 0;
                                                     
                                                     return (
-                                                        <td key={day} className={`px-1 py-2 text-center text-xs font-bold border-r border-blue-50 align-middle ${isAbsentDay ? 'bg-red-50 ring-1 ring-inset ring-red-300' : (isEmpty ? '' : 'bg-blue-50/20')}`}>
-                                                            {isEmpty ? <span className="text-blue-200">-</span> : (
-                                                                <div className="flex flex-col gap-1 items-center justify-center my-1">
+                                                        <td key={day} className={`px-0.5 py-1.5 text-center text-[10px] font-bold border-r border-slate-50 align-middle ${isAbsentDay ? 'bg-red-50 ring-1 ring-inset ring-red-200' : (isEmpty ? '' : 'bg-slate-50/30')}`}>
+                                                            {isEmpty ? <span className="text-slate-300">-</span> : (
+                                                                <div className="flex flex-col gap-0.5 items-center justify-center my-0.5">
                                                                     {uiElements.map((el, idx) => {
                                                                         let chipClass = "";
-                                                                        if (el.type === 'worked') chipClass = "text-blue-900 bg-blue-200/80 px-1.5 py-0.5 rounded shadow-sm border border-blue-300";
-                                                                        else if (el.type === 'pending') chipClass = "text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded opacity-75 border border-emerald-200";
-                                                                        else if (el.type === 'absent') chipClass = "text-red-700 bg-red-200 px-1.5 py-0.5 rounded font-extrabold shadow-sm";
-                                                                        else if (el.type === 'leave') chipClass = "text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200";
+                                                                        if (el.type === 'worked') chipClass = "text-blue-800 bg-blue-100 px-1 py-0.5 rounded border border-blue-200";
+                                                                        else if (el.type === 'pending') chipClass = "text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100";
+                                                                        else if (el.type === 'absent') chipClass = "text-red-700 bg-red-100 px-1 py-0.5 rounded font-extrabold";
+                                                                        else if (el.type === 'leave') chipClass = "text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200";
                                                                         
                                                                         return <span key={idx} className={chipClass} title={el.type === 'pending' ? 'กะล่วงหน้า/รอสแกน' : ''}>{el.shift}</span>;
                                                                     })}
@@ -1555,63 +1565,63 @@
                                                 })}
                                                 
                                                 {sortedShiftTypesUsed.map(type => (
-                                                    <td key={type} className="px-2 py-3 text-center font-bold text-indigo-900 bg-indigo-50/30 border-x border-blue-50">
+                                                    <td key={type} className="px-1.5 py-2 text-center font-bold text-indigo-800 bg-indigo-50/20 border-x border-slate-50 text-xs">
                                                         {row.shiftCounts[type] || 0}
                                                     </td>
                                                 ))}
-                                                <td className="px-4 py-3 text-center font-extrabold text-blue-950 bg-blue-50/50 border-l-2 border-blue-100">{row.empTotalCredit}</td>
-                                                <td className="px-4 py-3 text-center font-bold text-blue-700 bg-blue-50/50">{localWorkDays}</td>
-                                                <td className="px-4 py-3 text-center font-extrabold text-blue-800 bg-blue-100/40 border-l-2 border-blue-200">{row.otShifts > 0 ? `+${row.otShifts}` : row.otShifts}</td>
-                                                {role === 'admin' && <td className="px-4 py-3 text-center font-bold text-red-700 bg-red-50/50 border-l-2 border-red-100">{row.empTotalLate > 0 ? `${row.empTotalLate} น.` : '-'}</td>}
+                                                <td className="px-3 py-2 text-center font-extrabold text-slate-800 bg-slate-50/50 border-l border-slate-200">{row.empTotalCredit}</td>
+                                                <td className="px-3 py-2 text-center font-bold text-slate-500 bg-slate-50/50">{localWorkDays}</td>
+                                                <td className="px-3 py-2 text-center font-extrabold text-blue-700 bg-blue-50/30 border-l border-blue-100">{row.otShifts > 0 ? `+${row.otShifts}` : row.otShifts}</td>
+                                                {role === 'admin' && <td className="px-3 py-2 text-center font-bold text-red-600 bg-red-50/30 border-l border-red-100">{row.empTotalLate > 0 ? `${row.empTotalLate} น.` : '-'}</td>}
                                             </tr>
                                         ))}
                                         {summaryMatrix.length === 0 && (
-                                            <tr><td colSpan={daysArray.length + sortedShiftTypesUsed.length + 6} className="px-6 py-12 text-center text-blue-400 font-bold text-lg print-hide">กรุณาเลือกตัวกรองด้านบน</td></tr>
+                                            <tr><td colSpan={daysArray.length + sortedShiftTypesUsed.length + 6} className="px-5 py-12 text-center text-slate-400 font-bold text-base print-hide">กรุณาเลือกตัวกรองด้านบน</td></tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     ) : (
-                        <div className="p-6 pt-8">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 mb-8 print-hide">
+                        <div className="p-6 pt-6">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 print-hide">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-blue-950">จัดการตารางเวรล่วงหน้า (รายเดือน)</h2>
-                                    <p className="text-base font-medium text-blue-700 mt-2">คลิกที่ช่องวันที่ในตารางเพื่อ <strong className="text-blue-900 bg-blue-100 px-2 py-0.5 rounded">จัดเวร</strong> หรือระบุวันหยุดของพนักงาน</p>
+                                    <h2 className="text-xl font-bold text-slate-800">จัดการตารางเวรล่วงหน้า (รายเดือน)</h2>
+                                    <p className="text-sm font-medium text-slate-500 mt-1">คลิกที่ช่องวันที่ในตารางเพื่อ <strong className="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">จัดเวร</strong> หรือระบุวันหยุดของพนักงาน</p>
                                 </div>
-                                <div className="flex flex-wrap gap-3">
-                                    <button onClick={() => window.print()} className="bg-white border-2 border-slate-200 text-slate-800 hover:bg-slate-50 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm flex items-center"><i className="fa-solid fa-print mr-2 text-slate-500 text-lg"></i>พิมพ์ A4 แนวนอน</button>
-                                    <button onClick={exportScheduleToCSV} className="bg-white border-2 border-blue-200 text-blue-800 hover:bg-blue-50 hover:text-blue-950 px-5 py-3 rounded-xl text-base font-bold transition-colors shadow-sm flex items-center"><i className="fa-solid fa-file-excel mr-2 text-green-600 text-lg"></i>ส่งออกตารางเวร (Excel)</button>
+                                <div className="flex flex-wrap gap-2">
+                                    <button onClick={() => window.print()} className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"><i className="fa-solid fa-print mr-2"></i>พิมพ์</button>
+                                    <button onClick={exportScheduleToCSV} className="bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-excel mr-2 text-emerald-600"></i>ส่งออกตาราง (Excel)</button>
                                 </div>
                             </div>
                             {filterDept ? (
-                                <div className="overflow-x-auto border-2 border-blue-200 rounded-2xl bg-white shadow-md print-table-wrapper">
-                                    <table className="min-w-full text-base text-left whitespace-nowrap select-none">
-                                        <thead className="bg-blue-100/80 border-b-2 border-blue-200">
+                                <div className="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-sm print-table-wrapper">
+                                    <table className="min-w-full text-sm text-left whitespace-nowrap select-none">
+                                        <thead className="bg-slate-50 border-b border-slate-200">
                                             <tr>
-                                                <th rowSpan="2" className="px-5 py-4 font-bold text-blue-950 sticky left-0 bg-blue-100 z-10 border-r-2 border-blue-200 align-middle">พนักงาน</th>
-                                                {daysArray.map(day => <th key={day} rowSpan="2" className="px-1 py-4 font-extrabold text-blue-900 text-center min-w-[44px] align-middle">{day}</th>)}
+                                                <th rowSpan="2" className="px-4 py-3 font-bold text-slate-800 sticky left-0 bg-slate-100 z-10 border-r border-slate-200 align-middle">พนักงาน</th>
+                                                {daysArray.map(day => <th key={day} rowSpan="2" className="px-1 py-3 font-extrabold text-slate-600 text-center min-w-[38px] align-middle">{day}</th>)}
                                                 
-                                                <th colSpan={sortedShiftTypesUsed.length} className="px-3 py-2 font-extrabold text-indigo-900 text-center bg-indigo-100/80 border-l-2 border-b-2 border-indigo-200 border-r-2 border-blue-200">จำนวนเวรแยกประเภท</th>
+                                                <th colSpan={sortedShiftTypesUsed.length} className="px-2 py-1.5 font-bold text-indigo-800 text-center bg-indigo-50/50 border-l border-b border-indigo-100 border-r border-slate-200 text-xs">จำนวนเวรแยกประเภท</th>
                                                 
-                                                <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-950 text-center bg-blue-100 border-l-2 border-blue-200 align-middle">รวมเวร</th>
-                                                <th rowSpan="2" className="px-4 py-4 font-extrabold text-blue-900 text-center bg-blue-200/50 border-l-2 border-blue-300 align-middle shadow-inner">เหลือ OT</th>
+                                                <th rowSpan="2" className="px-3 py-3 font-extrabold text-slate-800 text-center bg-slate-100/50 border-l border-slate-200 align-middle">รวมเวร</th>
+                                                <th rowSpan="2" className="px-3 py-3 font-extrabold text-blue-700 text-center bg-blue-50/50 border-l border-blue-100 align-middle shadow-inner">เหลือ OT</th>
                                             </tr>
                                             <tr>
                                                 {sortedShiftTypesUsed.map(type => (
-                                                    <th key={type} className="px-2 py-2 font-bold text-indigo-800 text-center bg-indigo-100/80 border-x border-white text-xs">{type}</th>
+                                                    <th key={type} className="px-1.5 py-1.5 font-bold text-indigo-700 text-center bg-indigo-50/50 border-x border-white text-[10px]">{type}</th>
                                                 ))}
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-blue-100">
+                                        <tbody className="divide-y divide-slate-100">
                                             {summaryMatrix.map(row => {
                                                 const empId = row.empId;
                                                 const emp = employees[empId];
                                                 return (
-                                                    <tr key={empId} className="hover:bg-blue-50/80 transition-colors group">
-                                                        <td className="px-5 py-3 sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r-2 border-blue-100">
-                                                            <p className="font-bold text-blue-950 text-base">{emp.fname} {emp.lname}</p>
-                                                            <p className="text-xs font-semibold text-blue-600 mt-0.5">{emp.level}</p>
+                                                    <tr key={empId} className="hover:bg-slate-50/80 transition-colors group">
+                                                        <td className="px-4 py-2 sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-200">
+                                                            <p className="font-bold text-slate-800 text-sm">{emp.fname} {emp.lname}</p>
+                                                            <p className="text-[10px] font-semibold text-slate-400 mt-0.5">{emp.level}</p>
                                                         </td>
                                                         {daysArray.map(day => {
                                                             const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -1622,31 +1632,31 @@
                                                             const hasShifts = shifts.length > 0;
                                                             
                                                             return (
-                                                                <td key={day} onClick={() => openScheduleModal(empId, dateStr)} title={isEdited ? `แก้ไขล่าสุดโดย: ${editedBy}` : ''} className={`px-1 py-2 text-center text-xs font-bold border-x border-blue-50 cursor-pointer transition-colors hover:ring-2 hover:ring-blue-500 hover:ring-inset relative ${hasShifts ? 'bg-blue-100/30' : 'text-blue-300 hover:bg-blue-50'}`}>
-                                                                    {isEdited && <div className="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full shadow-sm print-hide" title={`แก้ไขล่าสุดโดย: ${editedBy}`}></div>}
+                                                                <td key={day} onClick={() => openScheduleModal(empId, dateStr)} title={isEdited ? `แก้ไขล่าสุดโดย: ${editedBy}` : ''} className={`px-0.5 py-1.5 text-center text-[10px] font-bold border-r border-slate-50 cursor-pointer transition-colors hover:ring-2 hover:ring-blue-400 hover:ring-inset relative ${hasShifts ? 'bg-slate-50/30' : 'text-slate-300 hover:bg-slate-50'}`}>
+                                                                    {isEdited && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-400 rounded-full print-hide" title={`แก้ไขล่าสุดโดย: ${editedBy}`}></div>}
                                                                     {hasShifts ? (
-                                                                        <div className="flex flex-col gap-1 items-center justify-center my-0.5">
-                                                                            {shifts.map((s, idx) => <span key={idx} className="bg-blue-100/80 text-blue-900 border border-blue-200 px-1.5 py-0.5 rounded shadow-sm">{s}</span>)}
+                                                                        <div className="flex flex-col gap-0.5 items-center justify-center my-0.5">
+                                                                            {shifts.map((s, idx) => <span key={idx} className="bg-white text-slate-700 border border-slate-200 px-1 py-0.5 rounded shadow-sm">{s}</span>)}
                                                                         </div>
-                                                                    ) : <span className="text-xl leading-none opacity-50 hover:opacity-100 print-hide">+</span>}
+                                                                    ) : <span className="text-lg leading-none opacity-50 hover:opacity-100 print-hide">+</span>}
                                                                 </td>
                                                             );
                                                         })}
                                                         
                                                         {sortedShiftTypesUsed.map(type => (
-                                                            <td key={type} className="px-2 py-3 text-center font-bold text-indigo-900 bg-indigo-50/30 border-x border-blue-50">
+                                                            <td key={type} className="px-1.5 py-2 text-center font-bold text-indigo-800 bg-indigo-50/20 border-x border-slate-50 text-xs">
                                                                 {row.shiftCounts[type] || 0}
                                                             </td>
                                                         ))}
-                                                        <td className="px-4 py-3 text-center font-extrabold text-blue-950 bg-blue-50/50 border-l-2 border-blue-100">{row.empTotalCredit}</td>
-                                                        <td className="px-4 py-3 text-center font-extrabold text-blue-800 bg-blue-100/40 border-l-2 border-blue-200">{row.otShifts > 0 ? `+${row.otShifts}` : row.otShifts}</td>
+                                                        <td className="px-3 py-2 text-center font-extrabold text-slate-800 bg-slate-50/50 border-l border-slate-200">{row.empTotalCredit}</td>
+                                                        <td className="px-3 py-2 text-center font-extrabold text-blue-700 bg-blue-50/30 border-l border-blue-100">{row.otShifts > 0 ? `+${row.otShifts}` : row.otShifts}</td>
                                                     </tr>
                                                 );
                                             })}
                                         </tbody>
                                     </table>
                                 </div>
-                            ) : <div className="text-center py-16 text-blue-400 border-2 border-dashed border-blue-200 rounded-2xl bg-blue-50/50 print-hide"><i className="fa-solid fa-calendar-day text-5xl mb-4 text-blue-300"></i><p className="text-lg font-bold text-blue-700">กรุณาเลือก <strong className="text-blue-900">แผนก</strong> จากแถบด้านบน เพื่อเริ่มจัดการตารางเวร</p></div>}
+                            ) : <div className="text-center py-12 text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50 print-hide"><i className="fa-solid fa-calendar-day text-4xl mb-3 text-slate-300"></i><p className="text-base font-bold text-slate-500">กรุณาเลือก <strong className="text-slate-700">แผนก</strong> จากแถบด้านบน</p></div>}
                         </div>
                     )}
                 </div>
