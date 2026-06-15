@@ -165,8 +165,9 @@
             }
         };
 
+        // 🌟 ปรับปรุงฟังก์ชันบันทึกภาพ ให้มีระบบเช็คว่าถ่ายติดจริงหรือไม่
         const captureImage = (videoElement) => {
-            if (!videoElement) return null;
+            if (!videoElement || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) return null;
             const canvas = document.createElement('canvas');
             const scale = 0.5; 
             canvas.width = videoElement.videoWidth * scale;
@@ -314,7 +315,7 @@
             const isManager = currentUser.level === 'หัวหน้า' || currentUser.dept === 'ADMIN';
             const role = currentUser.dept === 'ADMIN' ? 'admin' : (currentUser.level === 'หัวหน้า' ? 'supervisor' : 'employee');
             
-            // 🌟 ระบบดึงรูปโปรไฟล์อัจฉริยะ (ใช้รูปที่สแกนเข้างานล่าสุดมาทำเป็นโปรไฟล์)
+            // ระบบดึงรูปโปรไฟล์อัจฉริยะ (ใช้รูปที่สแกนเข้างานล่าสุดมาทำเป็นโปรไฟล์)
             const getDriveImageUrl = (url) => {
                 if (!url) return null;
                 const match = url.match(/[-\w]{25,}/);
@@ -355,7 +356,7 @@
                         {activeTab === 'manager' && isManager && <ReportView role={role} user={currentUser} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} />}
                     </main>
 
-                    {/* 🌟 ปุ่มลอย สลับไป ระบบการลา (Leave Flow Pro) */}
+                    {/* ปุ่มลอย สลับไป ระบบการลา (Leave Flow Pro) */}
                     <a href={LEAVE_SYSTEM_URL} target="_blank" className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 bg-gradient-to-r from-pink-600 to-rose-500 text-white px-4 py-3 rounded-full shadow-[0_8px_20px_-6px_rgba(225,29,72,0.5)] hover:scale-105 transition-transform z-[100] flex items-center gap-2 border-2 border-white/50 backdrop-blur-sm print-hide" style={{ textDecoration: 'none' }}>
                         <i className="fa-solid fa-notes-medical text-lg"></i>
                         <span className="text-sm font-bold tracking-wide">ลางาน</span>
@@ -472,7 +473,6 @@
                         )}
                     </div>
                     
-                    {/* 🌟 ปุ่มลอย สลับไป ระบบการลา ในหน้าล็อคอินด้วย */}
                     <a href={LEAVE_SYSTEM_URL} target="_blank" className="absolute top-6 right-6 bg-white/80 text-pink-600 px-4 py-2 rounded-full shadow-sm hover:scale-105 transition-transform flex items-center gap-2 border border-pink-200 backdrop-blur-sm" style={{ textDecoration: 'none' }}>
                         <i className="fa-solid fa-notes-medical"></i>
                         <span className="text-sm font-bold">ระบบลางาน</span>
@@ -744,6 +744,13 @@
                 }
 
                 const photoBase64 = captureImage(videoRef.current);
+                // 🌟 ระบบป้องกัน ถ่ายรูปไม่ติดให้หยุดการส่งข้อมูล
+                if (!photoBase64) {
+                    setErrorMsg(`เกิดข้อผิดพลาดในการจับภาพ กรุณารอให้กล้องแสดงภาพชัดเจนก่อนกดสแกน`); 
+                    setIsScanning(false); 
+                    return; 
+                }
+
                 const shiftData = SHIFT_TYPES[selectedShift];
                 const [shiftHour, shiftMinute] = shiftData.start.split(':').map(Number);
                 const actualMins = currentTime.getHours() * 60 + currentTime.getMinutes();
@@ -894,6 +901,13 @@
             const processClockOut = async () => {
                 setShowEarlyWarning(false); setIsScanning(true); setErrorMsg('');
                 const photoBase64 = captureImage(videoRef.current);
+                // 🌟 ระบบป้องกัน ถ่ายรูปไม่ติดให้หยุดการส่งข้อมูล
+                if (!photoBase64) {
+                    setErrorMsg(`เกิดข้อผิดพลาดในการจับภาพ กรุณารอให้กล้องแสดงภาพชัดเจนก่อนกดสแกน`); 
+                    setIsScanning(false); 
+                    return; 
+                }
+
                 const timeOutStr = formatTime24(currentTime);
                 
                 const res = await sendToGoogleSheet('clockOut', { id: foundRecord.id, timeOut: timeOutStr, photoBase64: photoBase64 });
