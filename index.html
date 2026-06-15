@@ -313,7 +313,19 @@
             // 3. หน้า Dashboard 
             const isManager = currentUser.level === 'หัวหน้า' || currentUser.dept === 'ADMIN';
             const role = currentUser.dept === 'ADMIN' ? 'admin' : (currentUser.level === 'หัวหน้า' ? 'supervisor' : 'employee');
-            const avatarUrl = `https://ui-avatars.com/api/?name=${currentUser.fname}+${currentUser.lname}&background=1e3a8a&color=fff&size=150&font-size=0.33`;
+            
+            // 🌟 ระบบดึงรูปโปรไฟล์อัจฉริยะ (ใช้รูปที่สแกนเข้างานล่าสุดมาทำเป็นโปรไฟล์)
+            const getDriveImageUrl = (url) => {
+                if (!url) return null;
+                const match = url.match(/[-\w]{25,}/);
+                if (match && match[0]) return `https://drive.google.com/uc?export=view&id=${match[0]}`;
+                return url;
+            };
+            
+            const latestRecordWithPhoto = records.filter(r => r.empId === currentUser.id && r.photoInUrl).sort((a,b) => b.id.localeCompare(a.id))[0];
+            const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${currentUser.fname}+${currentUser.lname}&background=1e3a8a&color=fff&size=150&font-size=0.33`;
+            
+            const avatarUrl = latestRecordWithPhoto ? getDriveImageUrl(latestRecordWithPhoto.photoInUrl) : defaultAvatarUrl;
 
             return (
                 <div className="min-h-screen flex flex-col bg-slate-100 pb-20 relative">
