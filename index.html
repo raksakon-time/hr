@@ -78,8 +78,8 @@
         // ==========================================
         // ⚠️ การตั้งค่า URL และพิกัด
         // ==========================================
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec"; // ⚠️ URL ระบบลงเวลา
-        const LEAVE_SYSTEM_URL = "https://script.google.com/macros/s/AKfycbzZvLTxd5MtGo7_5BQISe8b7KU-759zTWbHeIwsnhlGXI-nte9OwWvfporBCtoeAGk3/exec"; // ⚠️ URL ระบบการลา
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec"; // ⚠️ ใส่ URL ของระบบลงเวลา
+        const LEAVE_SYSTEM_URL = "https://script.google.com/macros/s/AKfycbzZvLTxd5MtGo7_5BQISe8b7KU-759zTWbHeIwsnhlGXI-nte9OwWvfporBCtoeAGk3/exec"; // ⚠️ ใส่ URL ของระบบการลา
 
         const HOSPITAL_LAT = 17.162383247325145;
         const HOSPITAL_LON = 104.14513206230059;
@@ -173,9 +173,6 @@
             canvas.width = videoElement.videoWidth * scale;
             canvas.height = videoElement.videoHeight * scale;
             const ctx = canvas.getContext('2d');
-            // ทำการกลับด้านรูปก่อนบันทึกเพื่อให้รูปที่เซฟไปตรงกับกระจก
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
             ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
             return canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
         };
@@ -217,7 +214,7 @@
 
         const PhotoModal = ({ record, employees, onClose }) => {
             const emp = employees[record.empId] || {};
-            // 🌟 แก้ไข URL สำหรับแสดงใน Modal ให้หลีกเลี่ยงการถูก Block ด้วย Thumbnail API
+            // 🌟 แก้ไข URL สำหรับแสดงใน Modal ให้หลีกเลี่ยงการถูก Block ด้วย
             const getPreviewUrl = (url) => {
                 if (!url) return null;
                 const match = url.match(/[-\w]{25,}/);
@@ -237,7 +234,6 @@
                                 <div className="flex-1 flex flex-col">
                                     <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">เข้างาน</p>
                                     <div className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm overflow-hidden flex items-center justify-center">
-                                        {/* ใช้ img แทน iframe เพื่อการแสดงผลแบบ Mirror */}
                                         <img src={getPreviewUrl(record.photoInUrl)} className="w-full h-full object-cover" alt="Check In" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
                                     </div>
                                 </div>
@@ -247,7 +243,6 @@
                                 <div className="flex-1 flex flex-col">
                                     <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">ออกงาน</p>
                                     <div className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm overflow-hidden flex items-center justify-center">
-                                        {/* ใช้ img แทน iframe เพื่อการแสดงผลแบบ Mirror */}
                                         <img src={getPreviewUrl(record.photoOutUrl)} className="w-full h-full object-cover" alt="Check Out" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
                                     </div>
                                 </div>
@@ -268,7 +263,7 @@
         function App() {
             const [currentUser, setCurrentUser] = useState(null); 
             const [activeTab, setActiveTab] = useState('home'); 
-            const [avatarImgError, setAvatarImgError] = useState(false); 
+            const [avatarImgError, setAvatarImgError] = useState(false); // 🌟 State จัดการถ้ารูปใน Drive พัง
             
             const [currentTime, setCurrentTime] = useState(new Date());
             const [records, setRecords] = useState([]);
@@ -358,7 +353,7 @@
                         </button>
                         <div className="text-center">
                             <div className="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-lg mb-4 flex items-center justify-center overflow-hidden">
-                                {/* 🌟 รูปโปรไฟล์ (ตัด Mirror ออกเพราะบันทึกรูปถูกด้านแล้ว) */}
+                                {/* 🌟 รูปโปรไฟล์ พร้อมระบบซ่อนถ้ารูปเสีย */}
                                 <img 
                                     src={avatarUrl} 
                                     alt="Profile" 
@@ -1445,7 +1440,7 @@
                 }
             };
 
-            // 🌟 ฟังก์ชันหลัก: คำนวณและประมวลผลการจัดเวรอัตโนมัติ
+            // 🌟 ฟังก์ชันหลัก: คำนวณและประมวลผลการจัดเวรอัตโนมัติ (ปรับปรุงใหม่ให้กระจายเวรได้)
             const handleRunAutoSchedule = async () => {
                 if (!autoScheduleData.shiftId) return alert('กรุณาเลือกกะที่จะเติม');
                 if (autoScheduleData.assignMode === 'quota' && autoScheduleData.requiredCount < 1) return alert('จำนวนคนต่อวันต้องมากกว่า 0');
@@ -1487,7 +1482,7 @@
                             const currentSched = newSchedules[dateStr]?.[empId]?.shifts || [];
                             const isEmpty = currentSched.length === 0 || (currentSched.length === 1 && currentSched[0] === '');
                             
-                            // กฎเหล็ก: โหมด Quota ห้ามจ่ายกะเดิมซ้ำในวันเดียวกันให้คนเดิม
+                            // 🛑 กฎเหล็ก: โหมด Quota ห้ามจ่ายกะเดิมซ้ำในวันเดียวกันให้คนเดิม
                             if (isQuotaMode && currentSched.includes(autoScheduleData.shiftId)) return false;
                             
                             return isEmpty || autoScheduleData.overwrite;
