@@ -629,6 +629,20 @@
             const [errorMsg, setErrorMsg] = useState('');
             const videoRef = useRef(null);
 
+            // 🌟 คำนวณวันที่เป้าหมาย และตรวจสอบการลงเวลาซ้ำแบบเรียลไทม์
+            const todayStrRaw = formatDateForInput(currentTime);
+            let effectiveTargetDate = todayStrRaw;
+            if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
+                const yesterday = new Date(currentTime); yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = formatDateForInput(yesterday);
+                const yestObj = schedules[yesterdayStr]?.[currentUser.id];
+                const yesterdayShifts = yestObj?.shifts || (Array.isArray(yestObj) ? yestObj : []);
+                if (yesterdayShifts.includes(selectedShift)) {
+                    effectiveTargetDate = yesterdayStr; 
+                }
+            }
+            const isAlreadyClockedIn = selectedShift ? records.some(r => r.empId === currentUser.id && r.date === effectiveTargetDate && r.shiftId === selectedShift) : false;
+
             useEffect(() => {
                 initializeSetup();
             }, []);
@@ -712,6 +726,7 @@
                     return; 
                 }
 
+                let targetDate = todayStr; 
                 const schedObjToday = schedules[todayStr]?.[currentUser.id];
                 let scheduledShifts = schedObjToday?.shifts || (Array.isArray(schedObjToday) ? schedObjToday : []);
                 
@@ -722,10 +737,23 @@
                     
                     const yestObj = schedules[yesterdayStr]?.[currentUser.id];
                     const yesterdayShifts = yestObj?.shifts || (Array.isArray(yestObj) ? yestObj : []);
-                    if (yesterdayShifts.length > 0) scheduledShifts = yesterdayShifts;
+                    if (yesterdayShifts.length > 0) {
+                        scheduledShifts = yesterdayShifts;
+                        targetDate = yesterdayStr;
+                    }
                 }
 
-                const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s));
+                // 🌟 ระบบตัดกะที่เคยสแกนไปแล้วออกไปเลย จะได้ไม่โผล่ใน Dropdown
+                const completedShifts = records
+                    .filter(r => r.empId === currentUser.id && r.date === targetDate)
+                    .map(r => r.shiftId);
+
+                const validScheduledShifts = scheduledShifts.filter(s => 
+                    s && 
+                    !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s) &&
+                    !completedShifts.includes(s) // หักล้างกะที่เคยลงเวลาไปแล้วออก
+                );
+
                 setValidShifts(validScheduledShifts);
 
                 if(validScheduledShifts.length > 0) { 
@@ -733,12 +761,22 @@
                     checkLocation(); 
                 } else {
                     setSelectedShift('');
-                    setErrorMsg('ไม่อนุญาต: ไม่พบตารางเวรของคุณในระบบ กรุณาติดต่อหัวหน้างานหรือ HR');
+                    // แจ้งเตือนถ้ายอดจัดเวรมี แต่โดนกรองออกหมดแปลว่าลงครบแล้ว
+                    if (scheduledShifts.length > 0 && completedShifts.length > 0) {
+                        setErrorMsg('ท่านได้ลงเวลาครบทุกกะของวันนี้แล้ว ไม่สามารถลงซ้ำได้');
+                    } else {
+                        setErrorMsg('ไม่อนุญาต: ไม่พบตารางเวรของคุณในระบบ กรุณาติดต่อหัวหน้างานหรือ HR');
+                    }
                     setLocationStatus('error');
                 }
             };
 
             const handleClockIn = async () => {
+                if (isAlreadyClockedIn) {
+                    setErrorMsg(`ไม่อนุญาต: คุณได้ลงเวลาสำหรับกะนี้ไปแล้ว`);
+                    setIsScanning(false); setCameraActive(false); return; 
+                }
+
                 setErrorMsg(''); setIsScanning(true);
                 const todayStr = formatDateForInput(currentTime);
                 let targetDate = todayStr; 
@@ -757,12 +795,20 @@
                     }
                 }
                 
-                const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s));
+                // 🌟 เช็คซ้ำอีกชั้นตอนกดปุ่ม
+                const completedShifts = records.filter(r => r.empId === currentUser.id && r.date === targetDate).map(r => r.shiftId);
+
+                const validScheduledShifts = scheduledShifts.filter(s => 
+                    s && 
+                    !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s) &&
+                    !completedShifts.includes(s)
+                );
+                
                 if (validScheduledShifts.length > 0 && !validScheduledShifts.includes(selectedShift)) {
-                    setErrorMsg(`ไม่อนุญาต: กะที่เลือกไม่ตรงกับตารางเวร กรุณาติดต่อหัวหน้างานหรือ HR`); setIsScanning(false); setCameraActive(false); return; 
+                    setErrorMsg(`ไม่อนุญาต: กะนี้ถูกลงเวลาไปแล้ว หรือไม่ตรงกับตารางเวร`); setIsScanning(false); setCameraActive(false); return; 
                 }
                 if (validScheduledShifts.length === 0) {
-                    setErrorMsg(`ไม่อนุญาต: ไม่พบตารางเวรของคุณในระบบ กรุณาติดต่อหัวหน้างานหรือ HR`); setIsScanning(false); setCameraActive(false); return; 
+                    setErrorMsg(`ไม่อนุญาต: ท่านได้ลงเวลาครบทุกกะของวันนี้แล้ว`); setIsScanning(false); setCameraActive(false); return; 
                 }
 
                 const photoBase64 = captureImage(videoRef.current);
@@ -823,6 +869,14 @@
                     <div className="p-6 space-y-6">
                         {errorMsg && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold flex items-start gap-3 border border-red-100"><i className="fa-solid fa-circle-exclamation mt-1"></i> <span>{errorMsg}</span></div>}
                         
+                        {/* 🌟 แจ้งเตือนกรณีลงเวลาซ้ำ */}
+                        {isAlreadyClockedIn && (
+                            <div className="p-4 bg-amber-50 text-amber-800 rounded-xl text-sm font-bold flex items-start gap-3 border border-amber-200">
+                                <i className="fa-solid fa-triangle-exclamation mt-1"></i> 
+                                <span>คุณได้ลงเวลาสำหรับกะ "{SHIFT_TYPES[selectedShift]?.label}" ของวันนี้ไปแล้ว ระบบไม่อนุญาตให้ลงซ้ำครับ</span>
+                            </div>
+                        )}
+                        
                         <div>
                             <label className="block text-sm font-bold text-slate-600 mb-2 ml-1">กะการทำงาน (ล็อกตามตารางเวร)</label>
                             {validShifts.length > 0 ? (
@@ -844,13 +898,13 @@
                         
                         <div className="border-2 border-dashed border-slate-200 rounded-2xl h-64 flex items-center justify-center bg-slate-50 overflow-hidden relative group">
                             {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
-                            <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok' || validShifts.length === 0} className={`flex flex-col items-center transition-colors ${locationStatus === 'ok' && validShifts.length > 0 ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-400'}`}>
+                            <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className={`flex flex-col items-center transition-colors ${locationStatus === 'ok' && validShifts.length > 0 && !isAlreadyClockedIn ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-400'}`}>
                                 <div className="w-16 h-16 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center mb-3 shadow-sm group-hover:shadow-md transition-all"><i className="fa-solid fa-camera text-2xl"></i></div>
                                 <span className="text-sm font-bold">เปิดกล้องสแกนใบหน้า</span>
                             </button>}
                         </div>
                         
-                        <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok' || validShifts.length === 0} className={`w-full p-4 rounded-2xl font-bold text-lg text-white transition-all ${(cameraActive && locationStatus === 'ok' && validShifts.length > 0) ? 'bg-emerald-600 hover:bg-emerald-700 shadow-[0_8px_20px_-6px_rgba(5,150,105,0.5)]' : 'bg-slate-300 text-white cursor-not-allowed'}`}>
+                        <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className={`w-full p-4 rounded-2xl font-bold text-lg text-white transition-all ${(cameraActive && locationStatus === 'ok' && validShifts.length > 0 && !isAlreadyClockedIn) ? 'bg-emerald-600 hover:bg-emerald-700 shadow-[0_8px_20px_-6px_rgba(5,150,105,0.5)]' : 'bg-slate-300 text-white cursor-not-allowed'}`}>
                             {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันเข้างาน'}
                         </button>
                     </div>
