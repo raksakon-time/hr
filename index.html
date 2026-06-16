@@ -238,7 +238,7 @@
                                     <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">เข้างาน</p>
                                     <div className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm overflow-hidden flex items-center justify-center">
                                         {/* ใช้ img แทน iframe เพื่อการแสดงผลแบบ Mirror */}
-                                        <img src={getPreviewUrl(record.photoInUrl)} className="w-full h-full object-cover" alt="Check In" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
+                                        <img src={getPreviewUrl(record.photoInUrl)} className="w-full h-full object-cover transform scale-x-[-1]" alt="Check In" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
                                     </div>
                                 </div>
                             ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
@@ -248,7 +248,7 @@
                                     <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">ออกงาน</p>
                                     <div className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm overflow-hidden flex items-center justify-center">
                                         {/* ใช้ img แทน iframe เพื่อการแสดงผลแบบ Mirror */}
-                                        <img src={getPreviewUrl(record.photoOutUrl)} className="w-full h-full object-cover" alt="Check Out" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
+                                        <img src={getPreviewUrl(record.photoOutUrl)} className="w-full h-full object-cover transform scale-x-[-1]" alt="Check Out" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
                                     </div>
                                 </div>
                             ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
@@ -358,11 +358,11 @@
                         </button>
                         <div className="text-center">
                             <div className="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-lg mb-4 flex items-center justify-center overflow-hidden">
-                                {/* 🌟 รูปโปรไฟล์ (ตัด Mirror ออกเพราะบันทึกรูปถูกด้านแล้ว) */}
+                                {/* 🌟 รูปโปรไฟล์ (กลับด้าน Mirror ให้ถูกต้อง) */}
                                 <img 
                                     src={avatarUrl} 
                                     alt="Profile" 
-                                    className="w-full h-full rounded-full object-cover" 
+                                    className="w-full h-full rounded-full object-cover transform scale-x-[-1]" 
                                     onError={() => setAvatarImgError(true)} 
                                 />
                             </div>
@@ -464,7 +464,7 @@
                             {!needsPassword ? (
                                 <div>
                                     <input 
-                                        type="text" placeholder="รหัสพนักงาน" 
+                                        type="text" placeholder="รหัสพนักงาน (เช่น EMP01)" 
                                         value={empId} onChange={e => setEmpId(e.target.value.toUpperCase())} 
                                         className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none text-center tracking-wide font-extrabold text-blue-950 text-xl focus:bg-white focus:border-blue-500 transition-all placeholder:font-medium placeholder:text-slate-400 input-autofill-fix" 
                                     />
