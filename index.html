@@ -78,8 +78,8 @@
         // ==========================================
         // ⚠️ การตั้งค่า URL และพิกัด
         // ==========================================
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec"; // ⚠️ ใส่ URL ของระบบลงเวลา
-        const LEAVE_SYSTEM_URL = "https://script.google.com/macros/s/AKfycbzZvLTxd5MtGo7_5BQISe8b7KU-759zTWbHeIwsnhlGXI-nte9OwWvfporBCtoeAGk3/exec"; // ⚠️ ใส่ URL ของระบบการลา
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec"; // ⚠️ URL ระบบลงเวลา
+        const LEAVE_SYSTEM_URL = "https://script.google.com/macros/s/AKfycbzZvLTxd5MtGo7_5BQISe8b7KU-759zTWbHeIwsnhlGXI-nte9OwWvfporBCtoeAGk3/exec"; // ⚠️ URL ระบบการลา
 
         const HOSPITAL_LAT = 17.162383247325145;
         const HOSPITAL_LON = 104.14513206230059;
@@ -156,16 +156,17 @@
                     body: JSON.stringify({ action: action, payload: payload })
                 });
                 const data = await response.json();
-                if (data.status === 'error') alert("แจ้งเตือน: " + data.message);
+                if (data.status === 'error') {
+                    Swal.fire('แจ้งเตือน', data.message, 'error');
+                }
                 return data;
             } catch (error) {
                 console.error("Error:", error);
-                alert("การเชื่อมต่อล้มเหลว: " + error.message);
+                Swal.fire('ข้อผิดพลาด', 'การเชื่อมต่อล้มเหลว: ' + error.message, 'error');
                 return { status: 'error', message: error.message };
             }
         };
 
-        // ปรับปรุงฟังก์ชันบันทึกภาพ
         const captureImage = (videoElement) => {
             if (!videoElement || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) return null;
             const canvas = document.createElement('canvas');
@@ -173,6 +174,8 @@
             canvas.width = videoElement.videoWidth * scale;
             canvas.height = videoElement.videoHeight * scale;
             const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
             ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
             return canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
         };
@@ -214,7 +217,6 @@
 
         const PhotoModal = ({ record, employees, onClose }) => {
             const emp = employees[record.empId] || {};
-            // 🌟 แก้ไข URL สำหรับแสดงใน Modal ให้หลีกเลี่ยงการถูก Block ด้วย
             const getPreviewUrl = (url) => {
                 if (!url) return null;
                 const match = url.match(/[-\w]{25,}/);
@@ -234,7 +236,7 @@
                                 <div className="flex-1 flex flex-col">
                                     <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">เข้างาน</p>
                                     <div className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm overflow-hidden flex items-center justify-center">
-                                        <img src={getPreviewUrl(record.photoInUrl)} className="w-full h-full object-cover" alt="Check In" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
+                                        <img src={getPreviewUrl(record.photoInUrl)} className="w-full h-full object-cover transform scale-x-[-1]" alt="Check In" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
                                     </div>
                                 </div>
                             ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
@@ -243,7 +245,7 @@
                                 <div className="flex-1 flex flex-col">
                                     <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">ออกงาน</p>
                                     <div className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm overflow-hidden flex items-center justify-center">
-                                        <img src={getPreviewUrl(record.photoOutUrl)} className="w-full h-full object-cover" alt="Check Out" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
+                                        <img src={getPreviewUrl(record.photoOutUrl)} className="w-full h-full object-cover transform scale-x-[-1]" alt="Check Out" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
                                     </div>
                                 </div>
                             ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
@@ -258,12 +260,12 @@
         };
 
         // ==========================================
-        // Main App Container (Modern Single Entry)
+        // Main App Container
         // ==========================================
         function App() {
             const [currentUser, setCurrentUser] = useState(null); 
             const [activeTab, setActiveTab] = useState('home'); 
-            const [avatarImgError, setAvatarImgError] = useState(false); // 🌟 State จัดการถ้ารูปใน Drive พัง
+            const [avatarImgError, setAvatarImgError] = useState(false); 
             
             const [currentTime, setCurrentTime] = useState(new Date());
             const [records, setRecords] = useState([]);
@@ -283,7 +285,7 @@
                         setIsLoading(false); return;
                     }
                     const res = await sendToGoogleSheet('getInitialData');
-                    if (res.status === 'success') {
+                    if (res && res.status === 'success') {
                         setEmployees(res.data.employees || {});
                         setRecords(res.data.records || []);
                         setSchedules(res.data.schedules || {});
@@ -315,49 +317,40 @@
                 </div>
             );
 
-            // 1. หน้าลงทะเบียน
             if (!currentUser && activeTab === 'register') {
                 return <RegisterView employees={employees} setEmployees={setEmployees} onCancel={() => setActiveTab('home')} sendToGoogleSheet={sendToGoogleSheet} />;
             }
 
-            // 2. หน้าเข้าสู่ระบบ
             if (!currentUser) {
                 return <UnifiedLoginView employees={employees} onLogin={(user) => { setCurrentUser(user); setAvatarImgError(false); }} onRegisterClick={() => setActiveTab('register')} />;
             }
 
-            // 3. หน้า Dashboard 
             const isManager = currentUser.level === 'หัวหน้า' || currentUser.dept === 'ADMIN';
             const role = currentUser.dept === 'ADMIN' ? 'admin' : (currentUser.level === 'หัวหน้า' ? 'supervisor' : 'employee');
             
-            // 🌟 ระบบดึงรูปโปรไฟล์อัจฉริยะแบบใหม่
             const getDriveImageUrl = (url) => {
                 if (!url) return null;
                 const match = url.match(/[-\w]{25,}/);
-                // ใช้ thumbnail endpoint เลี่ยงปัญหา Block จาก Google Drive
                 if (match && match[0]) return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w400-h400`;
                 return url;
             };
             
             const latestRecordWithPhoto = records.filter(r => r.empId === currentUser.id && r.photoInUrl).sort((a,b) => b.id.localeCompare(a.id))[0];
             const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${currentUser.fname}+${currentUser.lname}&background=1e3a8a&color=fff&size=150&font-size=0.33`;
-            
-            // ถ้ารูปล่าสุดพัง ให้ใช้ตัวย่อชื่อแทน
             const avatarUrl = (latestRecordWithPhoto && !avatarImgError) ? getDriveImageUrl(latestRecordWithPhoto.photoInUrl) : defaultAvatarUrl;
 
             return (
                 <div className="min-h-screen flex flex-col bg-slate-100 pb-20 relative">
-                    {/* ส่วน Header */}
                     <div className="bg-blue-950 text-white rounded-b-[2.5rem] shadow-floating pb-8 pt-10 px-6 relative print-hide">
                         <button onClick={handleLogout} className="absolute top-6 right-6 text-blue-200 hover:text-white transition-colors flex items-center">
                             <i className="fa-solid fa-arrow-right-from-bracket text-xl mr-2"></i> ออกจากระบบ
                         </button>
                         <div className="text-center">
                             <div className="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-lg mb-4 flex items-center justify-center overflow-hidden">
-                                {/* 🌟 รูปโปรไฟล์ พร้อมระบบซ่อนถ้ารูปเสีย */}
                                 <img 
                                     src={avatarUrl} 
                                     alt="Profile" 
-                                    className="w-full h-full rounded-full object-cover" 
+                                    className="w-full h-full rounded-full object-cover transform scale-x-[-1]" 
                                     onError={() => setAvatarImgError(true)} 
                                 />
                             </div>
@@ -370,7 +363,6 @@
                         </div>
                     </div>
 
-                    {/* ส่วนพื้นที่ใช้งาน */}
                     <main className="flex-grow w-full max-w-7xl mx-auto -mt-6 z-10 px-4 sm:px-6 lg:px-8">
                         {activeTab === 'home' && <ActionPanelView currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} />}
                         {activeTab === 'calendar' && <MyCalendarView currentUser={currentUser} schedules={schedules} />}
@@ -378,13 +370,11 @@
                         {activeTab === 'manager' && isManager && <ReportView role={role} user={currentUser} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} />}
                     </main>
 
-                    {/* ปุ่มลอย สลับไป ระบบการลา (Leave Flow Pro) */}
                     <a href={LEAVE_SYSTEM_URL} target="_blank" className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 bg-gradient-to-r from-pink-600 to-rose-500 text-white px-4 py-3 rounded-full shadow-[0_8px_20px_-6px_rgba(225,29,72,0.5)] hover:scale-105 transition-transform z-[100] flex items-center gap-2 border-2 border-white/50 backdrop-blur-sm print-hide" style={{ textDecoration: 'none' }}>
                         <i className="fa-solid fa-notes-medical text-lg"></i>
                         <span className="text-sm font-bold tracking-wide">ลางาน</span>
                     </a>
 
-                    {/* เมนูด้านล่าง */}
                     <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe print-hide bottom-nav-hide z-50">
                         <div className="max-w-md mx-auto flex justify-around p-2">
                             <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'home' ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
@@ -509,14 +499,18 @@
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
-                if (!formData.empId.trim() || !formData.fname.trim() || !formData.lname.trim()) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+                if (!formData.empId.trim() || !formData.fname.trim() || !formData.lname.trim()) {
+                    return Swal.fire("แจ้งเตือน", "กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
+                }
                 const upperEmpId = formData.empId.trim().toUpperCase();
-                if (employees[upperEmpId]) return alert("รหัสพนักงานนี้มีอยู่ในระบบแล้ว");
+                if (employees[upperEmpId]) {
+                    return Swal.fire("แจ้งเตือน", "รหัสพนักงานนี้มีอยู่ในระบบแล้ว", "warning");
+                }
 
                 setIsSubmitting(true);
                 const res = await sendToGoogleSheet('register', { ...formData, empId: upperEmpId });
                 if (res.status === 'success') {
-                    alert("ลงทะเบียนสำเร็จ");
+                    Swal.fire("สำเร็จ", "ลงทะเบียนสำเร็จ", "success");
                     setEmployees({ ...employees, [upperEmpId]: { ...formData } });
                     onCancel(); 
                 }
@@ -629,7 +623,6 @@
             const [errorMsg, setErrorMsg] = useState('');
             const videoRef = useRef(null);
 
-            // 🌟 คำนวณวันที่เป้าหมาย และตรวจสอบการลงเวลาซ้ำแบบเรียลไทม์
             const todayStrRaw = formatDateForInput(currentTime);
             let effectiveTargetDate = todayStrRaw;
             if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
@@ -743,7 +736,6 @@
                     }
                 }
 
-                // 🌟 ระบบตัดกะที่เคยสแกนไปแล้วออกไปเลย จะได้ไม่โผล่ใน Dropdown
                 const completedShifts = records
                     .filter(r => r.empId === currentUser.id && r.date === targetDate)
                     .map(r => r.shiftId);
@@ -751,7 +743,7 @@
                 const validScheduledShifts = scheduledShifts.filter(s => 
                     s && 
                     !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s) &&
-                    !completedShifts.includes(s) // หักล้างกะที่เคยลงเวลาไปแล้วออก
+                    !completedShifts.includes(s) 
                 );
 
                 setValidShifts(validScheduledShifts);
@@ -761,7 +753,6 @@
                     checkLocation(); 
                 } else {
                     setSelectedShift('');
-                    // แจ้งเตือนถ้ายอดจัดเวรมี แต่โดนกรองออกหมดแปลว่าลงครบแล้ว
                     if (scheduledShifts.length > 0 && completedShifts.length > 0) {
                         setErrorMsg('ท่านได้ลงเวลาครบทุกกะของวันนี้แล้ว ไม่สามารถลงซ้ำได้');
                     } else {
@@ -795,7 +786,6 @@
                     }
                 }
                 
-                // 🌟 เช็คซ้ำอีกชั้นตอนกดปุ่ม
                 const completedShifts = records.filter(r => r.empId === currentUser.id && r.date === targetDate).map(r => r.shiftId);
 
                 const validScheduledShifts = scheduledShifts.filter(s => 
@@ -836,7 +826,9 @@
                 if (res.status === 'success') {
                     setRecords([...records, newRecord]);
                     setResult({ ...newRecord, shiftName: shiftData.label }); 
-                } else setErrorMsg("บันทึกไม่สำเร็จ: " + res.message);
+                } else {
+                    Swal.fire("ข้อผิดพลาด", "บันทึกไม่สำเร็จ: " + res.message, "error");
+                }
                 setIsScanning(false); setCameraActive(false);
             };
 
@@ -869,7 +861,6 @@
                     <div className="p-6 space-y-6">
                         {errorMsg && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold flex items-start gap-3 border border-red-100"><i className="fa-solid fa-circle-exclamation mt-1"></i> <span>{errorMsg}</span></div>}
                         
-                        {/* 🌟 แจ้งเตือนกรณีลงเวลาซ้ำ */}
                         {isAlreadyClockedIn && (
                             <div className="p-4 bg-amber-50 text-amber-800 rounded-xl text-sm font-bold flex items-start gap-3 border border-amber-200">
                                 <i className="fa-solid fa-triangle-exclamation mt-1"></i> 
@@ -988,7 +979,9 @@
                 if (res.status === 'success') {
                     setRecords(records.map(r => r.id === foundRecord.id ? { ...r, timeOut: timeOutStr } : r));
                     setSuccessResult({ timeOut: timeOutStr, shiftName: SHIFT_TYPES[foundRecord.shiftId]?.label });
-                } else setErrorMsg("เกิดข้อผิดพลาด: " + res.message);
+                } else {
+                    Swal.fire("ข้อผิดพลาด", "บันทึกไม่สำเร็จ: " + res.message, "error");
+                }
                 setIsScanning(false); setCameraActive(false);
             };
 
@@ -1077,7 +1070,7 @@
             const month = currentDate.getMonth();
 
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 (Sun) to 6 (Sat)
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); 
 
             const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
 
@@ -1227,7 +1220,7 @@
         }
 
         // ==========================================
-        // Views: พื้นที่จัดการของแอดมิน / หัวหน้างาน (Admin/Supervisor)
+        // Views: พื้นที่จัดการของแอดมิน / หัวหน้างาน
         // ==========================================
         function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
             const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs'); 
@@ -1257,7 +1250,6 @@
             const [isSaving, setIsSaving] = useState(false);
             const [scheduleModalData, setScheduleModalData] = useState(null);
             
-            // 🌟 State สำหรับระบบจัดเวรอัตโนมัติ (Auto Schedule)
             const [autoScheduleModal, setAutoScheduleModal] = useState(false);
             const [autoScheduleData, setAutoScheduleData] = useState({ empId: 'all', shiftId: '', dayPattern: 'all', overwrite: false, assignMode: 'all', requiredCount: 1 });
 
@@ -1393,12 +1385,12 @@
                 });
                 if(res.status === 'success') {
                     setSettings({...settings, standardWorkDays: { ...settings.standardWorkDays, [matrixMonth]: localWorkDays }});
-                    alert(`อัปเดตวันทำการปกติของเดือน ${matrixMonth} เรียบร้อย ระบบเปลี่ยนให้ทุกคนเห็นตรงกันแล้ว`);
+                    Swal.fire("สำเร็จ", `อัปเดตวันทำการปกติของเดือน ${matrixMonth} เรียบร้อย`, "success");
                 }
             };
 
             const handleSaveEdit = async () => {
-                if(!editModalData.shiftId) return alert('กรุณาเลือกกะ');
+                if(!editModalData.shiftId) return Swal.fire("แจ้งเตือน", "กรุณาเลือกกะ", "warning");
                 setIsSaving(true);
                 const shiftData = SHIFT_TYPES[editModalData.shiftId];
                 const res = await sendToGoogleSheet('editRecord', { 
@@ -1416,9 +1408,9 @@
             };
 
             const handleSaveAdd = async () => {
-                if(!addModalData.empId || !addModalData.date || !addModalData.shiftId || !addModalData.timeIn) return alert('กรุณากรอกข้อมูลสำคัญให้ครบ (รหัส, วันที่, กะ, เวลาเข้า)');
+                if(!addModalData.empId || !addModalData.date || !addModalData.shiftId || !addModalData.timeIn) return Swal.fire("แจ้งเตือน", "กรุณากรอกข้อมูลสำคัญให้ครบ", "warning");
                 const upperEmp = addModalData.empId.trim().toUpperCase();
-                if(!employees[upperEmp]) return alert('ไม่พบรหัสพนักงานนี้ในระบบ');
+                if(!employees[upperEmp]) return Swal.fire("แจ้งเตือน", "ไม่พบรหัสพนักงานนี้ในระบบ", "warning");
 
                 setIsSaving(true);
                 const shiftData = SHIFT_TYPES[addModalData.shiftId];
@@ -1434,16 +1426,25 @@
             };
 
             const handleDelete = async (id) => {
-                if (confirm('ยืนยันการลบข้อมูลการลงเวลานี้?')) {
+                const confirmDel = await Swal.fire({
+                    title: 'ยืนยันการลบ?',
+                    text: "ข้อมูลการลงเวลานี้จะถูกลบทิ้ง",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'ใช่, ลบทิ้ง',
+                    cancelButtonText: 'ยกเลิก'
+                });
+                if (confirmDel.isConfirmed) {
                     const res = await sendToGoogleSheet('deleteRecord', { id });
                     if (res.status === 'success') setRecords(records.filter(r => r.id !== id));
                 }
             };
 
-            // 🌟 ฟังก์ชันหลัก: คำนวณและประมวลผลการจัดเวรอัตโนมัติ (ปรับปรุงใหม่ให้กระจายเวรได้)
             const handleRunAutoSchedule = async () => {
-                if (!autoScheduleData.shiftId) return alert('กรุณาเลือกกะที่จะเติม');
-                if (autoScheduleData.assignMode === 'quota' && autoScheduleData.requiredCount < 1) return alert('จำนวนคนต่อวันต้องมากกว่า 0');
+                if (!autoScheduleData.shiftId) return Swal.fire("แจ้งเตือน", "กรุณาเลือกกะที่จะเติม", "warning");
+                if (autoScheduleData.assignMode === 'quota' && autoScheduleData.requiredCount < 1) return Swal.fire("แจ้งเตือน", "จำนวนคนต่อวันต้องมากกว่า 0", "warning");
                 
                 setIsSaving(true);
                 const targetEmps = autoScheduleData.empId === 'all' ? matrixEmployees : [autoScheduleData.empId];
@@ -1453,7 +1454,6 @@
                 const updates = [];
                 const newSchedules = { ...schedules };
                 
-                // สำหรับโหมด Quota: ติดตามจำนวนเวรที่แต่ละคนได้รับเพื่อความยุติธรรม
                 const assignedCounts = {};
                 if (isQuotaMode) {
                     targetEmps.forEach(empId => {
@@ -1477,31 +1477,23 @@
                     else if (autoScheduleData.dayPattern === 'weekends' && (dayOfWeek === 0 || dayOfWeek === 6)) isMatchPattern = true;
                     
                     if (isMatchPattern) {
-                        // คัดกรองคนที่เข้าเงื่อนไขในวันนี้
                         let eligibleEmps = targetEmps.filter(empId => {
                             const currentSched = newSchedules[dateStr]?.[empId]?.shifts || [];
                             const isEmpty = currentSched.length === 0 || (currentSched.length === 1 && currentSched[0] === '');
-                            
-                            // 🛑 กฎเหล็ก: โหมด Quota ห้ามจ่ายกะเดิมซ้ำในวันเดียวกันให้คนเดิม
                             if (isQuotaMode && currentSched.includes(autoScheduleData.shiftId)) return false;
-                            
                             return isEmpty || autoScheduleData.overwrite;
                         });
 
                         let selectedEmpsForDay = eligibleEmps;
 
                         if (isQuotaMode) {
-                            // จัดเรียงคนที่มีเวรนี้น้อยที่สุดขึ้นมาก่อน (ถ้าเท่ากันให้สุ่ม) เพื่อให้ได้เวรเท่าๆ กันทุกคน
                             eligibleEmps.sort((a, b) => {
                                 if (assignedCounts[a] === assignedCounts[b]) return Math.random() - 0.5;
                                 return assignedCounts[a] - assignedCounts[b];
                             });
-                            
-                            // หยิบมาตามจำนวนโควต้าที่กำหนด
                             selectedEmpsForDay = eligibleEmps.slice(0, reqCount);
                         }
 
-                        // จ่ายเวรให้คนที่ได้รับคัดเลือก
                         selectedEmpsForDay.forEach(empId => {
                             if (!newSchedules[dateStr]) newSchedules[dateStr] = {};
                             newSchedules[dateStr][empId] = {
@@ -1522,16 +1514,14 @@
                 });
                 
                 if (updates.length === 0) {
-                    alert('ไม่มีช่องว่างให้เติม หรือจำนวนพนักงานไม่เพียงพอตามเงื่อนไขครับ');
+                    Swal.fire("แจ้งเตือน", "ไม่มีช่องว่างให้เติม หรือจำนวนพนักงานไม่เพียงพอตามเงื่อนไข", "warning");
                     setIsSaving(false);
                     return;
                 }
                 
-                // อัปเดตหน้าจอทันที
                 setSchedules(newSchedules);
                 setAutoScheduleModal(false);
                 
-                // ส่งข้อมูลเข้าเซิร์ฟเวอร์แบบกลุ่ม (Bulk)
                 const res = await sendToGoogleSheet('saveScheduleBulk', {
                     updates: updates,
                     editorId: user.id,
@@ -1548,7 +1538,7 @@
             };
 
             const exportLogsToCSV = () => {
-                if(filteredRecords.length === 0) return alert("ไม่มีข้อมูลสำหรับส่งออก");
+                if(filteredRecords.length === 0) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสำหรับส่งออก", "info");
                 let csvContent = "\uFEFF";
                 csvContent += `"ประวัติลงเวลาทั้งหมด","แผนก: ${filterDept || 'ทั้งหมด'}","ตั้งแต่วันที่: ${startDate || '-'}","ถึงวันที่: ${endDate || '-'}"\n\n`;
                 csvContent += "วันที่,รหัสพนักงาน,ชื่อ-สกุล,แผนก,กะ,เวลาเข้า,เวลาออก,สถานะ,สาย (นาที),จำนวนเวร\n";
@@ -1566,7 +1556,7 @@
             };
 
             const exportSummaryToCSV = () => {
-                if(summaryMatrix.length === 0) return alert("ไม่มีข้อมูลสรุปสำหรับส่งออก");
+                if(summaryMatrix.length === 0) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสรุปสำหรับส่งออก", "info");
                 let csvContent = "\uFEFF"; 
                 csvContent += `"สรุปภาพรวมแผนก: ${filterDept || 'ทุกแผนก'}","ประจำเดือน: ${matrixMonth}"\n\n`;
                 const headers = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'แผนก', ...daysArray];
@@ -1600,7 +1590,7 @@
             };
             
             const exportScheduleToCSV = () => {
-                if(matrixEmployees.length === 0) return alert("ไม่มีข้อมูลพนักงานสำหรับส่งออก");
+                if(matrixEmployees.length === 0) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลพนักงานสำหรับส่งออก", "info");
                 let csvContent = "\uFEFF";
                 csvContent += `"ตารางเวรแผนก: ${filterDept || 'ทุกแผนก'}","ประจำเดือน: ${matrixMonth}"\n\n`;
                 csvContent += "รหัสพนักงาน,ชื่อ-สกุล,แผนก," + daysArray.join(',') + "\n";
@@ -1662,7 +1652,6 @@
             return (
                 <div className="bg-white rounded-3xl shadow-minimal border border-slate-100 mt-4 relative overflow-hidden print-container mb-12">
                     
-                    {/* 🌟 หัวกระดาษสำหรับตอนสั่งพิมพ์ */}
                     <div className="hidden print-show text-center mb-4 pb-2 border-b-2 border-slate-200">
                         <h2 className="text-xl font-bold text-black mb-1">
                             {adminTab === 'logs' ? 'ประวัติลงเวลาทั้งหมด' : adminTab === 'summary' ? 'สรุปภาพรวมแผนกและการเบิก OT' : 'ตารางเวรปฏิบัติงาน'}
@@ -1675,7 +1664,6 @@
                     {selectedMapRecord && <MapModal lat={selectedMapRecord.lat} lon={selectedMapRecord.lon} onClose={() => setSelectedMapRecord(null)} />}
                     {selectedPhotoRecord && <PhotoModal record={selectedPhotoRecord} employees={employees} onClose={() => setSelectedPhotoRecord(null)} />}
                     
-                    {/* Modals for Edit and Add Record ... */}
                     {editModalData && (
                         <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
                             <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200 animate-fade-in">
@@ -1797,7 +1785,6 @@
                         </div>
                     )}
                     
-                    {/* 🌟 Modal: จัดเวรอัตโนมัติ (Smart Rostering) */}
                     {autoScheduleModal && (
                         <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
                             <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-indigo-200 animate-fade-in">
@@ -2094,7 +2081,6 @@
                                     <p className="text-sm font-medium text-slate-500 mt-1">คลิกที่ช่องวันที่ในตารางเพื่อ <strong className="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">จัดเวร</strong> หรือระบุวันหยุดของพนักงาน</p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {/* 🌟 ปุ่มจัดเวรอัตโนมัติ (จะโชว์ก็ต่อเมื่อเลือกแผนกแล้ว) */}
                                     <button onClick={() => setAutoScheduleModal(true)} disabled={!filterDept} className={`border px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center ${!filterDept ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-indigo-50 border-indigo-200 text-indigo-800 hover:bg-indigo-100'}`}>
                                         <i className="fa-solid fa-wand-magic-sparkles mr-2"></i> จัดเวรอัตโนมัติ
                                     </button>
