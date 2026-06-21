@@ -1497,9 +1497,14 @@
 
                         selectedEmpsForDay.forEach(empId => {
                             if (!newSchedules[dateStr]) newSchedules[dateStr] = {};
+                            
+                            const oldSchedObj = schedules[dateStr]?.[empId];
+                            const oldShifts = oldSchedObj?.shifts || [];
+                            const oldIsEmpty = oldShifts.length === 0 || (oldShifts.length === 1 && oldShifts[0] === '');
+                            
                             newSchedules[dateStr][empId] = {
                                 shifts: [autoScheduleData.shiftId],
-                                isEdited: true,
+                                isEdited: !oldIsEmpty,
                                 editedBy: user.id
                             };
                             
@@ -1629,9 +1634,13 @@
                 const newSchedules = { ...schedules };
                 if (!newSchedules[dateStr]) newSchedules[dateStr] = {};
                 
+                const oldSchedObj = schedules[dateStr]?.[empId];
+                const oldShifts = oldSchedObj?.shifts || [];
+                const oldIsEmpty = oldShifts.length === 0 || (oldShifts.length === 1 && oldShifts[0] === '');
+                
                 newSchedules[dateStr][empId] = {
                     shifts: filteredShifts,
-                    isEdited: true,
+                    isEdited: !oldIsEmpty,
                     editedBy: user.id
                 };
                 
