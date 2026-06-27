@@ -61,11 +61,14 @@
             
             table { width: 100% !important; border-collapse: collapse !important; page-break-inside: auto; }
             tr { page-break-inside: avoid; page-break-after: auto; }
-            th, td { border: 1px solid #94a3b8 !important; padding: 4px 6px !important; font-size: 11px !important; color: black !important; }
+            th, td { border: 1px solid #94a3b8 !important; padding: 2px 4px !important; font-size: 12px !important; color: black !important; }
             th { background-color: #f1f5f9 !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            td span { background: none !important; border: none !important; color: black !important; box-shadow: none !important; padding: 0 !important; }
             
-            @page { size: A4 landscape; margin: 10mm; }
+            td span:not(.shift-chip) { background: none !important; border: none !important; color: black !important; box-shadow: none !important; padding: 0 !important; }
+            td .shift-chip { font-size: 13pt !important; font-weight: 800 !important; color: black !important; background: transparent !important; border: none !important; box-shadow: none !important; display: inline-block; padding: 1px !important; }
+            td .shift-chip strong { font-size: 14pt !important; font-weight: 900 !important; }
+            
+            @page { size: A4 landscape; margin: 8mm; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
@@ -2104,15 +2107,15 @@
                                                     const isEmpty = uiElements.length === 0;
                                                     
                                                     return (
-                                                        <td key={day} className={`px-0.5 py-1.5 text-center text-[10px] font-bold border-r border-slate-50 align-middle ${isAbsentDay ? 'bg-red-50 ring-1 ring-inset ring-red-200' : (isEmpty ? '' : 'bg-slate-50/30')}`}>
+                                                        <td key={day} className={`px-0.5 py-1.5 text-center text-xs font-bold border-r border-slate-50 align-middle ${isAbsentDay ? 'bg-red-50 ring-1 ring-inset ring-red-200' : (isEmpty ? '' : 'bg-slate-50/30')}`}>
                                                             {isEmpty ? <span className="text-slate-300">-</span> : (
                                                                 <div className="flex flex-col gap-0.5 items-center justify-center my-0.5">
                                                                     {uiElements.map((el, idx) => {
-                                                                        let chipClass = "";
-                                                                        if (el.type === 'worked') chipClass = "text-blue-800 bg-blue-100 px-1 py-0.5 rounded border border-blue-200";
-                                                                        else if (el.type === 'pending') chipClass = "text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100";
-                                                                        else if (el.type === 'absent') chipClass = "text-red-700 bg-red-100 px-1 py-0.5 rounded font-extrabold";
-                                                                        else if (el.type === 'leave') chipClass = "text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200";
+                                                                        let chipClass = "shift-chip text-sm font-bold px-1.5 py-0.5 rounded border ";
+                                                                        if (el.type === 'worked') chipClass += "text-blue-900 bg-blue-100 border-blue-300";
+                                                                        else if (el.type === 'pending') chipClass += "text-emerald-900 bg-emerald-50 border-emerald-200";
+                                                                        else if (el.type === 'absent') chipClass += "text-red-900 bg-red-100 border-red-300";
+                                                                        else if (el.type === 'leave') chipClass += "text-amber-900 bg-amber-50 border-amber-300";
                                                                         
                                                                         return <span key={idx} className={chipClass} title={el.type === 'pending' ? 'กะล่วงหน้า/รอสแกน' : ''}>{el.shift}</span>;
                                                                     })}
@@ -2135,7 +2138,7 @@
                                         ))}
                                         {summaryMatrix.length > 0 && (
                                             <tr className="bg-amber-50/50 border-t-2 border-amber-200">
-                                                <td className="px-4 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-bold text-slate-800 text-right">
+                                                <td className="px-4 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-extrabold text-slate-800 text-right text-sm">
                                                     สรุปอัตรากำลัง/วัน
                                                 </td>
                                                 {daysArray.map(day => {
@@ -2146,8 +2149,8 @@
                                                             {Object.keys(counts).length > 0 ? (
                                                                 <div className="flex flex-col gap-0.5 mt-1">
                                                                     {Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([shift, count]) => (
-                                                                        <span key={shift} className="text-[9px] font-bold text-slate-600 bg-white border border-slate-200 px-1 rounded shadow-sm">
-                                                                            {shift}: <span className="text-blue-600">{count}</span>
+                                                                        <span key={shift} className="shift-chip text-xs sm:text-sm font-bold text-slate-800 bg-white border border-slate-300 px-1.5 py-0.5 rounded shadow-sm">
+                                                                            {shift}: <strong className="text-blue-700 text-sm sm:text-base">{count}</strong>
                                                                         </span>
                                                                     ))}
                                                                 </div>
@@ -2222,11 +2225,11 @@
                                                             const hasShifts = shifts.length > 0;
                                                             
                                                             return (
-                                                                <td key={day} onClick={() => openScheduleModal(empId, dateStr)} title={isEdited ? `แก้ไขล่าสุดโดย: ${editedBy}` : ''} className={`px-0.5 py-1.5 text-center text-[10px] font-bold border-r border-slate-50 cursor-pointer transition-colors hover:ring-2 hover:ring-blue-400 hover:ring-inset relative ${hasShifts ? 'bg-slate-50/30' : 'text-slate-300 hover:bg-slate-50'}`}>
+                                                        <td key={day} onClick={() => openScheduleModal(empId, dateStr)} title={isEdited ? `แก้ไขล่าสุดโดย: ${editedBy}` : ''} className={`px-0.5 py-1.5 text-center text-xs font-bold border-r border-slate-50 cursor-pointer transition-colors hover:ring-2 hover:ring-blue-400 hover:ring-inset relative ${hasShifts ? 'bg-slate-50/30' : 'text-slate-300 hover:bg-slate-50'}`}>
                                                                     {isEdited && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-400 rounded-full print-hide" title={`แก้ไขล่าสุดโดย: ${editedBy}`}></div>}
                                                                     {hasShifts ? (
                                                                         <div className="flex flex-col gap-0.5 items-center justify-center my-0.5">
-                                                                            {shifts.map((s, idx) => <span key={idx} className="bg-white text-slate-700 border border-slate-200 px-1 py-0.5 rounded shadow-sm">{s}</span>)}
+                                                                            {shifts.map((s, idx) => <span key={idx} className="shift-chip bg-white text-slate-800 border border-slate-300 px-1.5 py-0.5 rounded shadow-sm text-sm font-bold">{s}</span>)}
                                                                         </div>
                                                                     ) : <span className="text-lg leading-none opacity-50 hover:opacity-100 print-hide">+</span>}
                                                                 </td>
@@ -2245,7 +2248,7 @@
                                             })}
                                             {summaryMatrix.length > 0 && (
                                                 <tr className="bg-amber-50/50 border-t-2 border-amber-200">
-                                                    <td className="px-4 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-bold text-slate-800 text-right">
+                                                    <td className="px-4 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-extrabold text-slate-800 text-right text-sm">
                                                         สรุปอัตรากำลัง/วัน
                                                     </td>
                                                     {daysArray.map(day => {
@@ -2256,8 +2259,8 @@
                                                                 {Object.keys(counts).length > 0 ? (
                                                                     <div className="flex flex-col gap-0.5 mt-1">
                                                                         {Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([shift, count]) => (
-                                                                            <span key={shift} className="text-[9px] font-bold text-slate-600 bg-white border border-slate-200 px-1 rounded shadow-sm">
-                                                                                {shift}: <span className="text-blue-600">{count}</span>
+                                                                            <span key={shift} className="shift-chip text-xs sm:text-sm font-bold text-slate-800 bg-white border border-slate-300 px-1.5 py-0.5 rounded shadow-sm">
+                                                                                {shift}: <strong className="text-blue-700 text-sm sm:text-base">{count}</strong>
                                                                             </span>
                                                                         ))}
                                                                     </div>
