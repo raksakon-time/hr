@@ -20,9 +20,6 @@
                     boxShadow: {
                         'minimal': '0 4px 20px -2px rgba(0,0,0,0.05)',
                         'floating': '0 10px 40px -10px rgba(0,0,0,0.08)',
-                    },
-                    colors: {
-                        brand: { 50: '#f0fdfa', 100: '#ccfbf1', 500: '#14b8a6', 600: '#0d9488', 900: '#134e4a' }
                     }
                 }
             }
@@ -42,11 +39,11 @@
     <script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; -webkit-font-smoothing: antialiased; color: #0f172a; font-size: 16px; margin: 0; padding: 0;}
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased; color: #0f172a; font-size: 16px; margin: 0; padding: 0;}
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .input-autofill-fix:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px white inset !important; }
-        select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%231e3a8a' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
+        select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
         
         /* 🌟 CSS สำหรับการสั่งพิมพ์ A4 แนวนอน (Print) */
         .print-show { display: none; }
@@ -61,10 +58,10 @@
             
             table { width: 100% !important; border-collapse: collapse !important; page-break-inside: auto; }
             tr { page-break-inside: avoid; page-break-after: auto; }
-            th, td { border: 1px solid #94a3b8 !important; padding: 2px 4px !important; font-size: 12px !important; color: black !important; }
+            th, td { border: 1px solid #94a3b8 !important; padding: 4px 6px !important; font-size: 11px !important; color: black !important; }
             th { background-color: #f1f5f9 !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            
             td span:not(.shift-chip) { background: none !important; border: none !important; color: black !important; box-shadow: none !important; padding: 0 !important; }
+            
             td .shift-chip { font-size: 13pt !important; font-weight: 800 !important; color: black !important; background: transparent !important; border: none !important; box-shadow: none !important; display: inline-block; padding: 1px !important; }
             td .shift-chip strong { font-size: 14pt !important; font-weight: 900 !important; }
             
@@ -104,7 +101,7 @@
             "NA OPD": ['ช6', 'ช7', 'ช716','ช917', 'ช21', 'ช', 'ชบ', 'ช9', 'บ', 'ด', 'บ4'],
             "IPD": ['ช', 'บ', 'ด', 'ชบ', 'บด'],
             "NA IPD": ['ช', 'บ', 'ด', 'ชบ', 'บด'],
-            "ห้องยา": ['ช716','ช', 'บ', 'ด', 'ชบ', 'บด', 'ช20'],
+            "ห้องยา": ['ช', 'บ', 'ด', 'ชบ', 'บด', 'ช20'],
             "ห้องปฏิบัติการทางการแพทย์": ['ช', 'ช7', 'ชบ7', 'บ15', 'ช20', 'ช719'],
             "เอกซเรย์": ['ช', 'ชบ', 'ช7','บ'],
             "OR-LR": ['ช'],
@@ -200,6 +197,13 @@
             return `${day}/${month}/${thaiYear}`;
         };
 
+        const formatFullThaiDate = (dateObj) => {
+            if (!dateObj) return '';
+            const days = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
+            const months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+            return `${days[dateObj.getDay()]}ที่ ${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear() + 543}`;
+        };
+
         const formatTime24 = (dateObj) => {
             if (!dateObj) return '';
             const h = String(dateObj.getHours()).padStart(2, '0');
@@ -217,13 +221,13 @@
         // Modals
         // ==========================================
         const MapModal = ({ lat, lon, onClose }) => (
-            <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                <div className="bg-white p-1 rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200">
-                    <div className="flex justify-between items-center px-6 py-4 border-b border-blue-50">
-                        <h3 className="font-bold text-blue-950 text-lg">พิกัดลงเวลา</h3>
-                        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <div className="bg-white p-1 rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-slate-200">
+                    <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
+                        <h3 className="font-bold text-slate-800 text-lg">พิกัดลงเวลา</h3>
+                        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
                     </div>
-                    <iframe src={`https://maps.google.com/maps?q=${lat},${lon}&hl=th&z=17&output=embed`} width="100%" height="350" frameBorder="0" className="bg-blue-50" />
+                    <iframe src={`https://maps.google.com/maps?q=${lat},${lon}&hl=th&z=17&output=embed`} width="100%" height="350" frameBorder="0" className="bg-slate-50" />
                 </div>
             </div>
         );
@@ -239,34 +243,34 @@
             };
 
             return (
-                <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white p-1 rounded-3xl w-full max-w-md shadow-floating overflow-hidden flex flex-col border border-blue-200">
-                        <div className="flex justify-between items-center px-6 py-4 border-b border-blue-50 shrink-0">
-                            <h3 className="font-bold text-blue-950 text-lg">รูปสแกนใบหน้า</h3>
-                            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white p-1 rounded-3xl w-full max-w-md shadow-floating overflow-hidden flex flex-col border border-slate-200">
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 shrink-0">
+                            <h3 className="font-bold text-slate-800 text-lg">รูปสแกนใบหน้า</h3>
+                            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
                         </div>
-                        <div className="p-6 bg-blue-50/50 flex gap-5 h-72 overflow-hidden">
+                        <div className="p-6 bg-slate-50/50 flex gap-5 h-72 overflow-hidden">
                             {record.photoInUrl ? (
                                 <div className="flex-1 flex flex-col">
-                                    <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">เข้างาน</p>
-                                    <div className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm overflow-hidden flex items-center justify-center">
-                                        <img src={getPreviewUrl(record.photoInUrl)} className="w-full h-full object-cover transform scale-x-[-1]" alt="Check In" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
+                                    <p className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-3 text-center">เข้างาน</p>
+                                    <div className="w-full flex-1 border-2 border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden flex items-center justify-center">
+                                        <img src={getPreviewUrl(record.photoInUrl)} className="w-full h-full object-cover transform scale-x-[-1]" alt="Check In" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-slate-300 text-3xl"></i>'; }} />
                                     </div>
                                 </div>
-                            ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
+                            ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-slate-300 text-3xl"></i></div>}
                             
                             {record.photoOutUrl ? (
                                 <div className="flex-1 flex flex-col">
-                                    <p className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 text-center">ออกงาน</p>
-                                    <div className="w-full flex-1 border-2 border-blue-200 rounded-2xl bg-white shadow-sm overflow-hidden flex items-center justify-center">
-                                        <img src={getPreviewUrl(record.photoOutUrl)} className="w-full h-full object-cover transform scale-x-[-1]" alt="Check Out" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-blue-300 text-3xl"></i>'; }} />
+                                    <p className="text-sm font-bold text-rose-500 uppercase tracking-wider mb-3 text-center">ออกงาน</p>
+                                    <div className="w-full flex-1 border-2 border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden flex items-center justify-center">
+                                        <img src={getPreviewUrl(record.photoOutUrl)} className="w-full h-full object-cover transform scale-x-[-1]" alt="Check Out" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-slate-300 text-3xl"></i>'; }} />
                                     </div>
                                 </div>
-                            ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-blue-200 text-3xl"></i></div>}
+                            ) : <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-white"><i className="fa-regular fa-image text-slate-300 text-3xl"></i></div>}
                         </div>
-                        <div className="p-5 border-t border-blue-50 text-base text-blue-800 shrink-0 bg-white">
-                            <p><span className="font-bold text-blue-950 text-lg">{emp.fname} {emp.lname}</span> <span className="font-semibold text-blue-600">({record.empId})</span></p>
-                            <p className="text-sm mt-1.5 font-medium text-blue-700">วันที่: {formatDisplayDate(record.date)}</p>
+                        <div className="p-5 border-t border-slate-100 text-base text-slate-800 shrink-0 bg-white">
+                            <p><span className="font-bold text-slate-900 text-lg">{emp.fname} {emp.lname}</span> <span className="font-semibold text-slate-500">({record.empId})</span></p>
+                            <p className="text-sm mt-1.5 font-medium text-slate-500">วันที่: {formatDisplayDate(record.date)}</p>
                         </div>
                     </div>
                 </div>
@@ -327,7 +331,7 @@
             if (isLoading) return (
                 <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
                     <i className="fa-solid fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i>
-                    <h2 className="text-xl font-bold text-blue-900 mt-4">กำลังเชื่อมต่อฐานข้อมูล...</h2>
+                    <h2 className="text-xl font-bold text-blue-900 mt-4">กำลังโหลดข้อมูล...</h2>
                 </div>
             );
 
@@ -355,70 +359,62 @@
             };
             
             const latestRecordWithPhoto = records.filter(r => r.empId === currentUser.id && r.photoInUrl).sort((a,b) => b.id.localeCompare(a.id))[0];
-            const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${currentUser.fname}+${currentUser.lname}&background=1e3a8a&color=fff&size=150&font-size=0.33`;
+            const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${currentUser.fname}+${currentUser.lname}&background=3b82f6&color=fff&size=150&font-size=0.33`;
             
             // ถ้ารูปล่าสุดพัง ให้ใช้ตัวย่อชื่อแทน
             const avatarUrl = (latestRecordWithPhoto && !avatarImgError) ? getDriveImageUrl(latestRecordWithPhoto.photoInUrl) : defaultAvatarUrl;
 
             return (
-                <div className="min-h-screen flex flex-col bg-slate-100 pb-20 relative">
-                    {/* ส่วน Header */}
-                    <div className="bg-blue-950 text-white rounded-b-[2.5rem] shadow-floating pb-8 pt-10 px-6 relative print-hide">
-                        <button onClick={handleLogout} className="absolute top-6 right-6 text-blue-200 hover:text-white transition-colors flex items-center">
-                            <i className="fa-solid fa-arrow-right-from-bracket text-xl mr-2"></i> ออกจากระบบ
-                        </button>
-                        <div className="text-center">
-                            <div className="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-lg mb-4 flex items-center justify-center overflow-hidden">
-                                {/* 🌟 รูปโปรไฟล์ (กลับด้าน Mirror ให้ถูกต้อง) */}
-                                <img 
-                                    src={avatarUrl} 
-                                    alt="Profile" 
-                                    className="w-full h-full rounded-full object-cover transform scale-x-[-1]" 
-                                    onError={() => setAvatarImgError(true)} 
-                                />
+                <div className="min-h-screen flex flex-col bg-slate-50 pb-20 relative font-sans text-slate-800">
+                    
+                    {/* Top Background Block to mimic app header */}
+                    <div className="bg-gradient-to-r from-blue-600 to-sky-500 h-36 w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2.5rem] shadow-floating"></div>
+
+                    <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col h-full">
+                        {/* Global Slim Header */}
+                        <header className="flex justify-between items-center px-6 pt-5 pb-2 text-white print-hide">
+                            <div className="flex flex-col">
+                                {activeTab !== 'home' && <span className="font-bold tracking-wider text-lg">รักษ์สกล Time</span>}
                             </div>
-                            <h2 className="text-2xl font-bold">{currentUser.fname} {currentUser.lname}</h2>
-                            <p className="text-blue-200 text-sm mt-1 font-semibold tracking-wide flex items-center justify-center flex-wrap gap-3">
-                                <span><i className="fa-regular fa-id-badge mr-1.5"></i>{currentUser.id}</span>
-                                <span><i className="fa-solid fa-briefcase mr-1.5"></i>{currentUser.dept}</span> 
-                                {isManager && <span className="bg-amber-500 text-white px-2 py-0.5 rounded text-xs"><i className="fa-solid fa-star mr-1"></i>{role === 'admin' ? 'แอดมิน' : 'หัวหน้า'}</span>}
-                            </p>
-                        </div>
+                            <button onClick={handleLogout} className="text-white hover:text-blue-100 transition-colors flex items-center bg-white/20 px-3 py-1.5 rounded-full font-bold text-sm backdrop-blur-sm">
+                                <i className="fa-solid fa-arrow-right-from-bracket mr-2"></i> ออกจากระบบ
+                            </button>
+                        </header>
+
+                        {/* Main Content Area */}
+                        <main className="flex-grow px-4 sm:px-6 lg:px-8 mt-4">
+                            {activeTab === 'home' && <ActionPanelView currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} avatarUrl={avatarUrl} setActiveTab={setActiveTab} formatFullThaiDate={formatFullThaiDate} />}
+                            {activeTab === 'calendar' && <MyCalendarView currentUser={currentUser} schedules={schedules} />}
+                            {activeTab === 'history' && <MyHistoryView currentUser={currentUser} records={records} formatDateForInput={formatDateForInput} currentTime={currentTime} />}
+                            {activeTab === 'manager' && isManager && <ReportView role={role} user={currentUser} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} />}
+                        </main>
                     </div>
 
-                    {/* ส่วนพื้นที่ใช้งาน */}
-                    <main className="flex-grow w-full max-w-7xl mx-auto -mt-6 z-10 px-4 sm:px-6 lg:px-8">
-                        {activeTab === 'home' && <ActionPanelView currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} />}
-                        {activeTab === 'calendar' && <MyCalendarView currentUser={currentUser} schedules={schedules} />}
-                        {activeTab === 'history' && <MyHistoryView currentUser={currentUser} records={records} formatDateForInput={formatDateForInput} currentTime={currentTime} />}
-                        {activeTab === 'manager' && isManager && <ReportView role={role} user={currentUser} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} />}
-                    </main>
-
-                    {/* ปุ่มลอย สลับไป ระบบการลา (Leave Flow Pro) */}
-                    <a href={LEAVE_SYSTEM_URL} target="_blank" className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 bg-gradient-to-r from-pink-600 to-rose-500 text-white px-4 py-3 rounded-full shadow-[0_8px_20px_-6px_rgba(225,29,72,0.5)] hover:scale-105 transition-transform z-[100] flex items-center gap-2 border-2 border-white/50 backdrop-blur-sm print-hide" style={{ textDecoration: 'none' }}>
+                    {/* Floating Leave Button */}
+                    <a href={LEAVE_SYSTEM_URL} target="_blank" className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 bg-gradient-to-r from-pink-500 to-rose-500 text-white px-5 py-3.5 rounded-full shadow-[0_8px_20px_-6px_rgba(225,29,72,0.6)] hover:scale-105 transition-transform z-[100] flex items-center gap-2 border-2 border-white/50 backdrop-blur-sm print-hide" style={{ textDecoration: 'none' }}>
                         <i className="fa-solid fa-notes-medical text-lg"></i>
                         <span className="text-sm font-bold tracking-wide">ลางาน</span>
                     </a>
 
-                    {/* เมนูด้านล่าง */}
-                    <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe print-hide bottom-nav-hide z-50">
+                    {/* Minimalist Bottom Navigation */}
+                    <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] pb-safe print-hide bottom-nav-hide z-50">
                         <div className="max-w-md mx-auto flex justify-around p-2">
-                            <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'home' ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
+                            <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'home' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                                 <i className={`fa-solid fa-clock text-2xl mb-1 transition-transform ${activeTab === 'home' ? 'scale-110' : ''}`}></i>
                                 <span className="text-xs font-bold">ลงเวลา</span>
                             </button>
-                            <button onClick={() => setActiveTab('calendar')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'calendar' ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
+                            <button onClick={() => setActiveTab('calendar')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'calendar' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                                 <i className={`fa-regular fa-calendar-days text-2xl mb-1 transition-transform ${activeTab === 'calendar' ? 'scale-110' : ''}`}></i>
                                 <span className="text-xs font-bold">ตารางเวร</span>
                             </button>
-                            <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'history' ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
+                            <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                                 <i className={`fa-solid fa-clock-rotate-left text-2xl mb-1 transition-transform ${activeTab === 'history' ? 'scale-110' : ''}`}></i>
-                                <span className="text-xs font-bold">ประวัติฉัน</span>
+                                <span className="text-xs font-bold">ประวัติ</span>
                             </button>
                             {isManager && (
-                                <button onClick={() => setActiveTab('manager')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'manager' ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
+                                <button onClick={() => setActiveTab('manager')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'manager' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                                     <i className={`fa-solid fa-chart-pie text-2xl mb-1 transition-transform ${activeTab === 'manager' ? 'scale-110' : ''}`}></i>
-                                    <span className="text-xs font-bold">จัดการทีม</span>
+                                    <span className="text-xs font-bold">จัดการ</span>
                                 </button>
                             )}
                         </div>
@@ -460,16 +456,16 @@
             };
 
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative">
-                    <div className="w-full max-w-md bg-white rounded-[2rem] shadow-floating border border-white/50 p-8 sm:p-10 text-center relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
+                <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-sky-100 p-4 relative">
+                    <div className="w-full max-w-md bg-white rounded-[2rem] shadow-floating border border-white p-8 sm:p-10 text-center relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-sky-400"></div>
                         <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border-4 border-white">
-                            <i className="fa-solid fa-hospital-user text-4xl text-blue-700"></i>
+                            <i className="fa-solid fa-fingerprint text-4xl text-blue-500"></i>
                         </div>
-                        <h1 className="text-3xl font-extrabold text-blue-950 tracking-tight">รักษ์สกล Time</h1>
-                        <p className="text-blue-500 font-medium mt-2 mb-8">ระบบจัดการเวลาปฏิบัติงาน</p>
+                        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">รักษ์สกล Time</h1>
+                        <p className="text-blue-500 font-bold mt-1 mb-8">เข้าสู่ระบบเพื่อปฏิบัติงาน</p>
 
-                        {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200 animate-fade-in"><i className="fa-solid fa-circle-exclamation mr-2"></i>{errorMsg}</div>}
+                        {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm font-bold border border-red-100 animate-fade-in"><i className="fa-solid fa-circle-exclamation mr-2"></i>{errorMsg}</div>}
 
                         <form onSubmit={handleNext} className="space-y-4">
                             {!needsPassword ? (
@@ -477,10 +473,10 @@
                                     <input 
                                         type="text" placeholder="รหัสพนักงาน (เช่น EMP01)" 
                                         value={empId} onChange={e => setEmpId(e.target.value.toUpperCase())} 
-                                        className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none text-center tracking-wide font-extrabold text-blue-950 text-xl focus:bg-white focus:border-blue-500 transition-all placeholder:font-medium placeholder:text-slate-400 input-autofill-fix" 
+                                        className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none text-center tracking-wide font-extrabold text-slate-800 text-xl focus:bg-white focus:border-blue-400 transition-all placeholder:font-medium placeholder:text-slate-400 input-autofill-fix" 
                                     />
-                                    <button type="submit" className="w-full mt-6 p-4 bg-blue-700 hover:bg-blue-800 text-white rounded-2xl font-bold text-lg transition-colors shadow-[0_8px_20px_-6px_rgba(29,78,216,0.5)]">
-                                        เข้าสู่ระบบ
+                                    <button type="submit" className="w-full mt-6 p-4 bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 text-white rounded-2xl font-bold text-lg transition-colors shadow-[0_8px_20px_-6px_rgba(59,130,246,0.6)]">
+                                        ดำเนินการต่อ
                                     </button>
                                 </div>
                             ) : (
@@ -489,13 +485,13 @@
                                     <input 
                                         type="password" placeholder="รหัสผ่านของคุณ" 
                                         value={password} onChange={e => setPassword(e.target.value)} 
-                                        className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none text-center tracking-widest font-extrabold text-blue-950 text-xl focus:bg-white focus:border-blue-500 transition-all placeholder:font-medium placeholder:text-slate-400 input-autofill-fix" 
+                                        className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none text-center tracking-widest font-extrabold text-slate-800 text-xl focus:bg-white focus:border-blue-400 transition-all placeholder:font-medium placeholder:text-slate-400 input-autofill-fix" 
                                         autoFocus
                                     />
                                     <div className="flex gap-3 mt-6">
-                                        <button type="button" onClick={() => {setNeedsPassword(false); setPassword('');}} className="w-1/3 p-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-lg transition-colors">กลับ</button>
-                                        <button type="submit" className="w-2/3 p-4 bg-blue-700 hover:bg-blue-800 text-white rounded-2xl font-bold text-lg transition-colors shadow-[0_8px_20px_-6px_rgba(29,78,216,0.5)]">
-                                            ยืนยัน
+                                        <button type="button" onClick={() => {setNeedsPassword(false); setPassword('');}} className="w-1/3 p-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl font-bold text-lg transition-colors border border-slate-200">กลับ</button>
+                                        <button type="submit" className="w-2/3 p-4 bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 text-white rounded-2xl font-bold text-lg transition-colors shadow-[0_8px_20px_-6px_rgba(59,130,246,0.6)]">
+                                            เข้าสู่ระบบ
                                         </button>
                                     </div>
                                 </div>
@@ -505,16 +501,11 @@
                         {!needsPassword && (
                             <div className="mt-8 border-t border-slate-100 pt-6">
                                 <p className="text-sm text-slate-500 font-medium">
-                                    พนักงานใหม่ยังไม่มีรหัส? <button onClick={onRegisterClick} className="text-blue-600 font-bold hover:underline ml-1">ลงทะเบียนที่นี่</button>
+                                    พนักงานใหม่ยังไม่มีรหัส? <button onClick={onRegisterClick} className="text-blue-500 font-bold hover:underline ml-1">ลงทะเบียนที่นี่</button>
                                 </p>
                             </div>
                         )}
                     </div>
-                    
-                    <a href={LEAVE_SYSTEM_URL} target="_blank" className="absolute top-6 right-6 bg-white/80 text-pink-600 px-4 py-2 rounded-full shadow-sm hover:scale-105 transition-transform flex items-center gap-2 border border-pink-200 backdrop-blur-sm" style={{ textDecoration: 'none' }}>
-                        <i className="fa-solid fa-notes-medical"></i>
-                        <span className="text-sm font-bold">ระบบลางาน</span>
-                    </a>
                 </div>
             );
         }
@@ -549,45 +540,45 @@
                 <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
                     <div className="max-w-lg w-full bg-white rounded-[2rem] shadow-floating border border-slate-100 p-8 sm:p-10">
                         <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-2xl font-bold text-blue-950">ลงทะเบียนพนักงาน</h2>
-                            <button onClick={onCancel} className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><i className="fa-solid fa-xmark text-xl"></i></button>
+                            <h2 className="text-2xl font-bold text-slate-800">ลงทะเบียนพนักงาน</h2>
+                            <button onClick={onCancel} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-800 transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1.5">รหัสพนักงาน (ID)</label>
-                                <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" placeholder="เช่น EMP01" />
+                                <label className="block text-sm font-bold text-slate-600 mb-1.5">รหัสพนักงาน (ID)</label>
+                                <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-400 font-bold text-slate-800 text-base" placeholder="เช่น EMP01" />
                             </div>
                             <div className="flex gap-4">
                                 <div className="flex-1">
-                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">ชื่อ</label>
-                                    <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" />
+                                    <label className="block text-sm font-bold text-slate-600 mb-1.5">ชื่อ</label>
+                                    <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-400 font-bold text-slate-800 text-base" />
                                 </div>
                                 <div className="flex-1">
-                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">นามสกุล</label>
-                                    <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" />
+                                    <label className="block text-sm font-bold text-slate-600 mb-1.5">นามสกุล</label>
+                                    <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-400 font-bold text-slate-800 text-base" />
                                 </div>
                             </div>
                             <div className="flex gap-4">
                                 <div className="flex-1">
-                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">แผนก</label>
-                                    <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base">
+                                    <label className="block text-sm font-bold text-slate-600 mb-1.5">แผนก</label>
+                                    <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-400 font-bold text-slate-800 text-base">
                                         {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
                                     </select>
                                 </div>
                                 <div className="flex-1">
-                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">ระดับ</label>
-                                    <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base">
+                                    <label className="block text-sm font-bold text-slate-600 mb-1.5">ระดับ</label>
+                                    <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-400 font-bold text-slate-800 text-base">
                                         <option value="พนักงาน">พนักงาน</option>
                                         <option value="หัวหน้า">หัวหน้า</option>
                                     </select>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1.5">รหัสผ่าน <span className="text-blue-500 font-normal">(ใส่หรือไม่ใส่ก็ได้ / สำหรับหัวหน้า)</span></label>
-                                <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-950 text-base" placeholder="ตั้งรหัสผ่านสำหรับเข้าสู่ระบบ" />
+                                <label className="block text-sm font-bold text-slate-600 mb-1.5">รหัสผ่าน <span className="text-blue-500 font-normal">(ใส่หรือไม่ใส่ก็ได้ / สำหรับหัวหน้า)</span></label>
+                                <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:bg-white focus:border-blue-400 font-bold text-slate-800 text-base" placeholder="ตั้งรหัสผ่านสำหรับเข้าสู่ระบบ" />
                             </div>
-                            <button type="submit" disabled={isSubmitting} className="w-full p-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold text-lg transition-colors mt-6 shadow-md">
+                            <button type="submit" disabled={isSubmitting} className="w-full p-4 bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 text-white rounded-xl font-bold text-lg transition-colors mt-6 shadow-md">
                                 {isSubmitting ? 'กำลังบันทึก...' : 'ลงทะเบียน'}
                             </button>
                         </form>
@@ -599,27 +590,36 @@
         // ==========================================
         // Views: เลือกสถานะ เข้า หรือ ออกงาน
         // ==========================================
-        function ActionPanelView({ currentUser, currentTime, records, setRecords, schedules, formatDateForInput, sendToGoogleSheet }) {
+        function ActionPanelView({ currentUser, currentTime, records, setRecords, schedules, formatDateForInput, sendToGoogleSheet, avatarUrl, setActiveTab, formatFullThaiDate }) {
             const [actionType, setActionType] = useState(null); 
 
             if (!actionType) {
                 return (
-                    <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-minimal text-center border border-slate-100 max-w-lg mx-auto">
-                        <div className="text-6xl font-extrabold text-slate-800 tracking-tight font-mono drop-shadow-sm mb-2">{formatTime24(currentTime)} <span className="text-2xl text-slate-500 font-sans">น.</span></div>
-                        <p className="text-slate-500 font-semibold mb-8">{formatDisplayDate(formatDateForInput(currentTime))}</p>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                            <button onClick={() => setActionType('in')} className="flex flex-col items-center justify-center p-6 bg-emerald-50 border-2 border-emerald-100 rounded-[2rem] hover:bg-emerald-100 hover:border-emerald-300 transition-all group">
-                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                                    <i className="fa-solid fa-arrow-right-to-bracket text-3xl text-emerald-500"></i>
-                                </div>
-                                <span className="text-xl font-bold text-emerald-800">เข้างาน</span>
+                    <div className="max-w-md mx-auto flex flex-col items-center mt-6">
+                        <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-md mb-4 shrink-0">
+                            <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover transform scale-x-[-1]" />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-800">{currentUser.fname} {currentUser.lname}</h2>
+                        <p className="text-sm font-semibold text-slate-500 mb-10">แผนก{currentUser.dept}</p>
+
+                        <div className="text-7xl font-light text-slate-800 tracking-tight mb-2 font-mono drop-shadow-sm">
+                            {formatTime24(currentTime)}
+                        </div>
+                        <p className="text-sm font-bold text-slate-500 mb-14">
+                            {formatFullThaiDate(currentTime)}
+                        </p>
+
+                        <div className="flex gap-4 w-full px-2 mb-6">
+                            <button onClick={() => setActionType('in')} className="flex-1 bg-blue-500 text-white py-4 rounded-full font-bold shadow-[0_8px_20px_-6px_rgba(59,130,246,0.6)] hover:bg-blue-600 hover:-translate-y-0.5 transition-all text-base tracking-wide">
+                                ลงเวลาเข้า
                             </button>
-                            <button onClick={() => setActionType('out')} className="flex flex-col items-center justify-center p-6 bg-rose-50 border-2 border-rose-100 rounded-[2rem] hover:bg-rose-100 hover:border-rose-300 transition-all group">
-                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                                    <i className="fa-solid fa-arrow-right-from-bracket text-3xl text-rose-500"></i>
-                                </div>
-                                <span className="text-xl font-bold text-rose-800">ออกงาน</span>
+                            <button onClick={() => setActionType('out')} className="flex-1 bg-amber-600 text-white py-4 rounded-full font-bold shadow-[0_8px_20px_-6px_rgba(217,119,6,0.6)] hover:bg-amber-700 hover:-translate-y-0.5 transition-all text-base tracking-wide">
+                                ลงเวลาออก
+                            </button>
+                        </div>
+                        <div className="w-full px-2">
+                            <button onClick={() => setActiveTab('history')} className="w-full border-2 border-slate-200 text-slate-600 py-3.5 rounded-full font-bold hover:bg-slate-50 hover:text-slate-800 transition-colors text-sm tracking-wide">
+                                ประวัติการลงเวลา
                             </button>
                         </div>
                     </div>
@@ -627,7 +627,7 @@
             }
 
             return (
-                <div className="max-w-md mx-auto">
+                <div className="max-w-md mx-auto mt-4">
                     <button onClick={() => setActionType(null)} className="mb-4 text-slate-500 font-bold hover:text-slate-800 flex items-center bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200 transition-colors">
                         <i className="fa-solid fa-arrow-left mr-2"></i> ย้อนกลับ
                     </button>
@@ -856,7 +856,6 @@
                     setRecords([...records, newRecord]);
                     setResult({ ...newRecord, shiftName: shiftData.label }); 
                 } else if (res && res.status === 'error') {
-                    // หากซ้ำซ้อน ฐานข้อมูลหลังบ้านจะตอบ error กลับมา
                     Swal.fire("ข้อผิดพลาด", "บันทึกไม่สำเร็จ: " + res.message, "error");
                 }
                 setIsScanning(false); setCameraActive(false);
@@ -864,13 +863,13 @@
 
             if (result) return (
                 <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-minimal border border-slate-100 text-center animate-fade-in">
-                    <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-check text-4xl text-emerald-600"></i></div>
+                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-check text-4xl text-blue-600"></i></div>
                     <h2 className="text-2xl font-bold text-slate-800">เข้างานสำเร็จ</h2>
                     <div className="my-8 p-6 bg-slate-50 rounded-2xl border border-slate-200">
                         <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">เวลาเข้างาน</p>
-                        <p className="text-5xl font-extrabold text-emerald-600 tracking-tight mb-4">{displaySafeTime(result.timeIn)}</p>
+                        <p className="text-5xl font-extrabold text-blue-600 tracking-tight mb-4">{displaySafeTime(result.timeIn)}</p>
                         <div className="inline-flex items-center gap-2 text-base font-bold text-slate-700 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
-                            <i className="fa-solid fa-calendar-day text-emerald-500"></i> กะ: {result.shiftName}
+                            <i className="fa-solid fa-calendar-day text-blue-500"></i> กะ: {result.shiftName}
                         </div>
                         <p className="text-sm font-semibold text-slate-500 mt-3">บันทึกลงวันที่: {formatDisplayDate(result.date)}</p>
                     </div>
@@ -886,12 +885,11 @@
             return (
                 <div className="bg-white rounded-3xl shadow-minimal border border-slate-100 overflow-hidden animate-fade-in">
                     <div className="px-8 pt-8 pb-4 text-center border-b border-slate-50">
-                        <h2 className="text-xl font-bold text-emerald-600 mb-2">เข้างาน</h2>
+                        <h2 className="text-xl font-bold text-blue-600 mb-2">เข้างาน</h2>
                     </div>
                     <div className="p-6 space-y-6">
                         {errorMsg && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold flex items-start gap-3 border border-red-100"><i className="fa-solid fa-circle-exclamation mt-1"></i> <span>{errorMsg}</span></div>}
                         
-                        {/* 🌟 แจ้งเตือนกรณีลงเวลาซ้ำ */}
                         {isAlreadyClockedIn && (
                             <div className="p-4 bg-amber-50 text-amber-800 rounded-xl text-sm font-bold flex items-start gap-3 border border-amber-200">
                                 <i className="fa-solid fa-triangle-exclamation mt-1"></i> 
@@ -902,7 +900,7 @@
                         <div>
                             <label className="block text-sm font-bold text-slate-600 mb-2 ml-1">กะการทำงาน (ล็อกตามตารางเวร)</label>
                             {validShifts.length > 0 ? (
-                                <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)} className="w-full p-4 border-2 border-emerald-200 rounded-2xl bg-emerald-50 outline-none font-bold text-emerald-900 text-base focus:border-emerald-500 transition-colors cursor-pointer appearance-none">
+                                <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)} className="w-full p-4 border-2 border-blue-200 rounded-2xl bg-blue-50 outline-none font-bold text-blue-900 text-base focus:border-blue-500 transition-colors cursor-pointer appearance-none">
                                     {validShifts.map(key => <option key={key} value={key}>{SHIFT_TYPES[key]?.label || key}</option>)}
                                 </select>
                             ) : (
@@ -920,13 +918,13 @@
                         
                         <div className="border-2 border-dashed border-slate-200 rounded-2xl h-64 flex items-center justify-center bg-slate-50 overflow-hidden relative group">
                             {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
-                            <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className={`flex flex-col items-center transition-colors ${locationStatus === 'ok' && validShifts.length > 0 && !isAlreadyClockedIn ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-400'}`}>
+                            <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className={`flex flex-col items-center transition-colors ${locationStatus === 'ok' && validShifts.length > 0 && !isAlreadyClockedIn ? 'text-blue-600 hover:text-blue-700' : 'text-slate-400'}`}>
                                 <div className="w-16 h-16 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center mb-3 shadow-sm group-hover:shadow-md transition-all"><i className="fa-solid fa-camera text-2xl"></i></div>
                                 <span className="text-sm font-bold">เปิดกล้องสแกนใบหน้า</span>
                             </button>}
                         </div>
                         
-                        <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className={`w-full p-4 rounded-2xl font-bold text-lg text-white transition-all ${(cameraActive && locationStatus === 'ok' && validShifts.length > 0 && !isAlreadyClockedIn) ? 'bg-emerald-600 hover:bg-emerald-700 shadow-[0_8px_20px_-6px_rgba(5,150,105,0.5)]' : 'bg-slate-300 text-white cursor-not-allowed'}`}>
+                        <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className={`w-full p-4 rounded-2xl font-bold text-lg text-white transition-all ${(cameraActive && locationStatus === 'ok' && validShifts.length > 0 && !isAlreadyClockedIn) ? 'bg-blue-600 hover:bg-blue-700 shadow-[0_8px_20px_-6px_rgba(37,99,235,0.5)]' : 'bg-slate-300 text-white cursor-not-allowed'}`}>
                             {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันเข้างาน'}
                         </button>
                     </div>
@@ -1018,13 +1016,13 @@
 
             if (successResult) return (
                 <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-minimal border border-slate-100 text-center animate-fade-in">
-                    <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-arrow-right-from-bracket text-4xl text-rose-600"></i></div>
+                    <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fa-solid fa-arrow-right-from-bracket text-4xl text-amber-600"></i></div>
                     <h2 className="text-2xl font-bold text-slate-800">ออกงานสำเร็จ</h2>
                     <div className="my-8 p-6 bg-slate-50 rounded-2xl border border-slate-200">
                         <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">เวลาออกงาน</p>
-                        <p className="text-5xl font-extrabold text-rose-600 tracking-tight mb-4">{displaySafeTime(successResult.timeOut)}</p>
+                        <p className="text-5xl font-extrabold text-amber-600 tracking-tight mb-4">{displaySafeTime(successResult.timeOut)}</p>
                         <div className="inline-flex items-center gap-2 text-base font-bold text-slate-700 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
-                            <i className="fa-solid fa-calendar-day text-rose-500"></i> กะ: {successResult.shiftName}
+                            <i className="fa-solid fa-calendar-day text-amber-500"></i> กะ: {successResult.shiftName}
                         </div>
                     </div>
                     <button onClick={onDone} className="w-full p-4 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold text-lg hover:bg-slate-50 transition-colors">เสร็จสิ้น</button>
@@ -1034,14 +1032,14 @@
             return (
                 <div className="bg-white rounded-3xl shadow-minimal border border-slate-100 overflow-hidden animate-fade-in">
                     <div className="px-8 pt-8 pb-4 text-center border-b border-slate-50">
-                        <h2 className="text-xl font-bold text-rose-600 mb-2">ออกงาน</h2>
+                        <h2 className="text-xl font-bold text-amber-600 mb-2">ออกงาน</h2>
                     </div>
                     <div className="p-6 space-y-6">
                         {errorMsg && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold flex items-start gap-3 border border-red-100"><i className="fa-solid fa-circle-exclamation mt-1"></i> <span>{errorMsg}</span></div>}
                         
                         <div>
                             <label className="block text-sm font-bold text-slate-600 mb-2 ml-1">วันที่เข้างาน (ถ้าย้อนวันให้กดเปลี่ยน)</label>
-                            <input type="date" value={outDate} onChange={handleDateChange} className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none font-bold text-slate-800 text-base focus:border-rose-400 transition-colors" />
+                            <input type="date" value={outDate} onChange={handleDateChange} className="w-full p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none font-bold text-slate-800 text-base focus:border-amber-400 transition-colors" />
                         </div>
 
                         {!foundRecord ? (
@@ -1058,28 +1056,28 @@
                                     </div>
                                     <div className="text-right">
                                         <p className="text-xs font-bold text-slate-400 uppercase">เวลาเข้า</p>
-                                        <p className="font-bold text-emerald-600 mt-1">{displaySafeTime(foundRecord.timeIn)}</p>
+                                        <p className="font-bold text-blue-600 mt-1">{displaySafeTime(foundRecord.timeIn)}</p>
                                     </div>
                                 </div>
 
                                 <div className="border-2 border-dashed border-slate-200 rounded-2xl h-64 flex items-center justify-center bg-slate-50 overflow-hidden relative group">
                                     {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
-                                    <button onClick={() => setCameraActive(true)} className="flex flex-col items-center text-rose-500 hover:text-rose-600 transition-colors">
+                                    <button onClick={() => setCameraActive(true)} className="flex flex-col items-center text-amber-500 hover:text-amber-600 transition-colors">
                                         <div className="w-16 h-16 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center mb-3 shadow-sm group-hover:shadow-md transition-all"><i className="fa-solid fa-camera text-2xl"></i></div>
                                         <span className="text-sm font-bold">เปิดกล้องสแกนหน้า</span>
                                     </button>}
                                 </div>
 
                                 {showEarlyWarning ? (
-                                    <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 text-center">
-                                        <p className="font-bold text-amber-900 mb-4 text-base"><i className="fa-solid fa-triangle-exclamation mr-2"></i>ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
+                                    <div className="bg-orange-50 p-5 rounded-2xl border border-orange-200 text-center">
+                                        <p className="font-bold text-orange-900 mb-4 text-base"><i className="fa-solid fa-triangle-exclamation mr-2"></i>ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
                                         <div className="flex gap-3">
-                                            <button onClick={processClockOut} className="flex-1 bg-amber-600 text-white rounded-xl py-3 text-base font-bold shadow-sm hover:bg-amber-700">ยืนยันออก</button>
+                                            <button onClick={processClockOut} className="flex-1 bg-orange-600 text-white rounded-xl py-3 text-base font-bold shadow-sm hover:bg-orange-700">ยืนยันออก</button>
                                             <button onClick={() => setShowEarlyWarning(false)} className="flex-1 bg-white border-2 border-slate-200 text-slate-700 rounded-xl py-3 text-base font-bold hover:bg-slate-50">ยกเลิก</button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <button onClick={handleClockOutAttempt} disabled={!cameraActive || isScanning} className={`w-full p-4 rounded-2xl font-bold text-lg text-white transition-all ${cameraActive ? 'bg-rose-600 hover:bg-rose-700 shadow-[0_8px_20px_-6px_rgba(225,29,72,0.5)]' : 'bg-slate-300 text-white cursor-not-allowed'}`}>
+                                    <button onClick={handleClockOutAttempt} disabled={!cameraActive || isScanning} className={`w-full p-4 rounded-2xl font-bold text-lg text-white transition-all ${cameraActive ? 'bg-amber-600 hover:bg-amber-700 shadow-[0_8px_20px_-6px_rgba(217,119,6,0.5)]' : 'bg-slate-300 text-white cursor-not-allowed'}`}>
                                         {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันออกงาน'}
                                     </button>
                                 )}
@@ -1210,13 +1208,13 @@
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-blue-600 text-white rounded-3xl p-6 shadow-md flex flex-col justify-center">
-                            <p className="text-blue-200 text-sm font-bold mb-1">รวมเครดิตเวร</p>
+                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-3xl p-6 shadow-md flex flex-col justify-center">
+                            <p className="text-blue-100 text-sm font-bold mb-1">รวมเครดิตเวร</p>
                             <p className="text-4xl font-extrabold">{totalCredit}</p>
                         </div>
                         <div className="bg-white rounded-3xl p-6 shadow-minimal border border-slate-100 flex flex-col justify-center">
                             <p className="text-slate-500 text-sm font-bold mb-1">สถิติมาสาย</p>
-                            <p className="text-4xl font-extrabold text-red-500">{totalLate} <span className="text-lg text-slate-400 font-semibold">ครั้ง</span></p>
+                            <p className="text-4xl font-extrabold text-rose-500">{totalLate} <span className="text-lg text-slate-400 font-semibold">ครั้ง</span></p>
                         </div>
                     </div>
 
@@ -1234,7 +1232,7 @@
                                     </div>
                                 </div>
                                 <div className="text-right flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto">
-                                    {r.isLate ? <span className="text-red-600 font-bold bg-red-50 px-3 py-1 rounded-xl text-sm border border-red-100 whitespace-nowrap">สาย {r.lateMinutes} นาที</span> : <span className="text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-xl text-sm border border-emerald-100">ปกติ</span>}
+                                    {r.isLate ? <span className="text-rose-600 font-bold bg-rose-50 px-3 py-1 rounded-xl text-sm border border-rose-100 whitespace-nowrap">สาย {r.lateMinutes} นาที</span> : <span className="text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-xl text-sm border border-emerald-100">ปกติ</span>}
                                     <span className="text-slate-400 text-xs font-bold mt-2 hidden sm:block">เครดิต: {r.credit}</span>
                                 </div>
                             </div>
@@ -1251,7 +1249,7 @@
         }
 
         // ==========================================
-        // Views: พื้นที่จัดการของแอดมิน / หัวหน้างาน
+        // Views: พื้นที่จัดการของแอดมิน / หัวหน้างาน (กู้คืน 100%)
         // ==========================================
         function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
             const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs'); 
@@ -1712,7 +1710,7 @@
                 });
             };
 
-            const tabActiveColor = 'border-blue-900 text-blue-900 bg-white shadow-sm rounded-xl';
+            const tabActiveColor = 'border-blue-500 text-blue-700 bg-white shadow-sm rounded-xl';
             const tabInactiveColor = 'text-slate-500 hover:text-slate-800 hover:bg-white/50 rounded-xl';
 
             return (
@@ -1731,10 +1729,10 @@
                     {selectedPhotoRecord && <PhotoModal record={selectedPhotoRecord} employees={employees} onClose={() => setSelectedPhotoRecord(null)} />}
                     
                     {editModalData && (
-                        <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
                             <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200 animate-fade-in">
                                 <div className="p-6 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
-                                    <h3 className="font-bold text-blue-950 text-xl"><i className="fa-solid fa-pen text-blue-600 mr-3"></i>แก้ไขการลงเวลา</h3>
+                                    <h3 className="font-bold text-blue-900 text-xl"><i className="fa-solid fa-pen text-blue-600 mr-3"></i>แก้ไขการลงเวลา</h3>
                                     <button onClick={() => setEditModalData(null)} className="text-blue-400 hover:text-blue-700 transition-colors"><i className="fa-solid fa-xmark text-2xl"></i></button>
                                 </div>
                                 <div className="p-8 space-y-5">
@@ -1761,58 +1759,59 @@
                                 </div>
                                 <div className="p-5 flex gap-4 bg-blue-50/50 border-t border-blue-100">
                                     <button onClick={() => setEditModalData(null)} className="flex-1 p-3.5 bg-white border-2 border-blue-200 text-blue-800 rounded-xl font-bold text-lg transition-colors hover:bg-blue-50">ยกเลิก</button>
-                                    <button onClick={handleSaveEdit} disabled={isSaving} className="flex-1 p-3.5 bg-blue-700 text-white rounded-xl font-bold text-lg transition-colors hover:bg-blue-800 shadow-md">{isSaving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}</button>
+                                    <button onClick={handleSaveEdit} disabled={isSaving} className="flex-1 p-3.5 bg-blue-600 text-white rounded-xl font-bold text-lg transition-colors hover:bg-blue-700 shadow-md">{isSaving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
+                    {/* ✅ นำปุ่ม "เพิ่มข้อมูลย้อนหลัง" กลับมา */}
                     {addModalData && (
-                        <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
-                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200 animate-fade-in">
-                                <div className="p-6 border-b border-blue-100 bg-emerald-50 flex justify-between items-center">
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
+                            <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-emerald-200 animate-fade-in">
+                                <div className="p-6 border-b border-emerald-100 bg-emerald-50 flex justify-between items-center">
                                     <h3 className="font-bold text-emerald-900 text-xl"><i className="fa-solid fa-plus-circle text-emerald-600 mr-3"></i>เพิ่มข้อมูลลงเวลาย้อนหลัง</h3>
                                     <button onClick={() => setAddModalData(null)} className="text-emerald-400 hover:text-emerald-700 transition-colors"><i className="fa-solid fa-xmark text-2xl"></i></button>
                                 </div>
                                 <div className="p-8 space-y-5">
                                     <div className="flex gap-4">
                                         <div className="flex-1">
-                                            <label className="block text-sm font-bold text-blue-800 mb-2">รหัสพนักงาน</label>
-                                            <input type="text" placeholder="เช่น EMP01" value={addModalData.empId} onChange={(e) => setAddModalData({...addModalData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 focus:border-emerald-500" />
+                                            <label className="block text-sm font-bold text-emerald-800 mb-2">รหัสพนักงาน</label>
+                                            <input type="text" placeholder="เช่น EMP01" value={addModalData.empId} onChange={(e) => setAddModalData({...addModalData, empId: e.target.value.toUpperCase()})} className="w-full p-3.5 border-2 border-emerald-100 rounded-xl outline-none text-base font-bold text-emerald-950 focus:border-emerald-500" />
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-sm font-bold text-blue-800 mb-2">วันที่</label>
-                                            <input type="date" value={addModalData.date} onChange={(e) => setAddModalData({...addModalData, date: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 focus:border-emerald-500" />
+                                            <label className="block text-sm font-bold text-emerald-800 mb-2">วันที่</label>
+                                            <input type="date" value={addModalData.date} onChange={(e) => setAddModalData({...addModalData, date: e.target.value})} className="w-full p-3.5 border-2 border-emerald-100 rounded-xl outline-none text-base font-bold text-emerald-950 focus:border-emerald-500" />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-blue-800 mb-2">กะการทำงาน</label>
-                                        <select value={addModalData.shiftId} onChange={(e) => setAddModalData({...addModalData, shiftId: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 bg-white focus:border-emerald-500">
+                                        <label className="block text-sm font-bold text-emerald-800 mb-2">กะการทำงาน</label>
+                                        <select value={addModalData.shiftId} onChange={(e) => setAddModalData({...addModalData, shiftId: e.target.value})} className="w-full p-3.5 border-2 border-emerald-100 rounded-xl outline-none text-base font-bold text-emerald-950 bg-white focus:border-emerald-500">
                                             <option value="">-- เลือกกะ --</option>
                                             {getSortedShiftKeys(employees[addModalData.empId]?.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key].label}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex gap-4">
                                         <div className="flex-1">
-                                            <label className="block text-sm font-bold text-blue-800 mb-2">เวลาเข้า</label>
-                                            <input type="time" value={addModalData.timeIn} onChange={(e) => setAddModalData({...addModalData, timeIn: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 focus:border-emerald-500" />
+                                            <label className="block text-sm font-bold text-emerald-800 mb-2">เวลาเข้า</label>
+                                            <input type="time" value={addModalData.timeIn} onChange={(e) => setAddModalData({...addModalData, timeIn: e.target.value})} className="w-full p-3.5 border-2 border-emerald-100 rounded-xl outline-none text-base font-bold text-emerald-950 focus:border-emerald-500" />
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-sm font-bold text-blue-800 mb-2">เวลาออก <span className="font-normal text-blue-500">(ถ้ามี)</span></label>
-                                            <input type="time" value={addModalData.timeOut} onChange={(e) => setAddModalData({...addModalData, timeOut: e.target.value})} className="w-full p-3.5 border-2 border-blue-100 rounded-xl outline-none text-base font-bold text-blue-950 focus:border-emerald-500" />
+                                            <label className="block text-sm font-bold text-emerald-800 mb-2">เวลาออก <span className="font-normal text-emerald-500">(ถ้ามี)</span></label>
+                                            <input type="time" value={addModalData.timeOut} onChange={(e) => setAddModalData({...addModalData, timeOut: e.target.value})} className="w-full p-3.5 border-2 border-emerald-100 rounded-xl outline-none text-base font-bold text-emerald-950 focus:border-emerald-500" />
                                         </div>
                                     </div>
                                 </div>
                                 <div className="p-5 flex gap-4 bg-emerald-50/50 border-t border-emerald-100">
                                     <button onClick={() => setAddModalData(null)} className="flex-1 p-3.5 bg-white border-2 border-emerald-200 text-emerald-800 rounded-xl font-bold text-lg transition-colors hover:bg-emerald-50">ยกเลิก</button>
-                                    <button onClick={handleSaveAdd} disabled={isSaving} className="flex-1 p-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg transition-colors shadow-md">{isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}</button>
+                                    <button onClick={handleSaveAdd} disabled={isSaving} className="flex-1 p-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-lg transition-colors shadow-md">{isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}</button>
                                 </div>
                             </div>
                         </div>
                     )}
                     
                     {scheduleModalData && (
-                        <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
                             <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-blue-200 animate-fade-in">
                                 <div className="p-6 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
                                     <h3 className="font-bold text-blue-900 text-xl"><i className="fa-solid fa-calendar-plus text-blue-600 mr-3"></i>จัดการเวร <span className="text-sm font-semibold text-blue-600 ml-1">(ออโต้เซฟตอนบันทึก)</span></h3>
@@ -1841,28 +1840,28 @@
                                         ))}
                                         {scheduleModalData.shifts.length === 0 && <div className="text-center py-6 text-blue-500 text-base font-semibold bg-blue-50/50 rounded-xl border-2 border-dashed border-blue-200">ยังไม่มีการจัดกะเวรในวันนี้</div>}
                                     </div>
-                                    <button onClick={handleAddScheduleShift} className="text-blue-700 hover:text-blue-900 text-base font-bold flex items-center justify-center w-full gap-2 bg-blue-100/50 hover:bg-blue-100 p-4 rounded-xl transition-colors shadow-sm border border-blue-200"><i className="fa-solid fa-plus text-lg"></i> เพิ่มกะเวร / สถานะใหม่</button>
+                                    <button onClick={handleAddScheduleShift} className="text-blue-600 hover:text-blue-800 text-base font-bold flex items-center justify-center w-full gap-2 bg-blue-100/50 hover:bg-blue-100 p-4 rounded-xl transition-colors shadow-sm border border-blue-200"><i className="fa-solid fa-plus text-lg"></i> เพิ่มกะเวร / สถานะใหม่</button>
                                 </div>
                                 <div className="p-5 flex gap-4 bg-blue-50/50 border-t border-blue-100">
                                     <button onClick={() => setScheduleModalData(null)} className="flex-1 p-3.5 bg-white border-2 border-blue-200 text-blue-800 rounded-xl font-bold text-lg transition-colors hover:bg-blue-50">ยกเลิก</button>
-                                    <button onClick={handleSaveScheduleCell} className="flex-1 p-3.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold text-lg transition-colors shadow-md">บันทึกตารางเวร</button>
+                                    <button onClick={handleSaveScheduleCell} className="flex-1 p-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg transition-colors shadow-md">บันทึกตารางเวร</button>
                                 </div>
                             </div>
                         </div>
                     )}
                     
-                    {/* 🌟 Modal: จัดเวรอัตโนมัติ (Smart Rostering) */}
+                    {/* ✅ นำระบบจัดเวรอัตโนมัติกลับมา 100% */}
                     {autoScheduleModal && (
-                        <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide">
                             <div className="bg-white rounded-3xl w-full max-w-lg shadow-floating overflow-hidden border border-indigo-200 animate-fade-in">
                                 <div className="p-6 border-b border-indigo-100 bg-indigo-50 flex justify-between items-center">
-                                    <h3 className="font-bold text-indigo-950 text-xl"><i className="fa-solid fa-wand-magic-sparkles text-indigo-600 mr-3"></i>จัดเวรอัตโนมัติ</h3>
+                                    <h3 className="font-bold text-indigo-900 text-xl"><i className="fa-solid fa-wand-magic-sparkles text-indigo-600 mr-3"></i>จัดเวรอัตโนมัติ</h3>
                                     <button onClick={() => setAutoScheduleModal(false)} className="text-indigo-400 hover:text-indigo-700 transition-colors"><i className="fa-solid fa-xmark text-2xl"></i></button>
                                 </div>
                                 <div className="p-6 sm:p-8 space-y-4 max-h-[70vh] overflow-y-auto">
                                     <div className="text-sm bg-white text-indigo-900 p-4 rounded-xl border border-indigo-100 shadow-sm mb-4">
                                         <span className="font-bold">ประจำเดือน:</span> {matrixMonth} <br/>
-                                        <span className="font-bold">แผนกเป้าหมาย:</span> <span className="font-extrabold text-blue-700">{filterDept || 'ทั้งหมด (โปรดเลือกแผนกก่อน)'}</span>
+                                        <span className="font-bold">แผนกเป้าหมาย:</span> <span className="font-extrabold text-blue-600">{filterDept || 'ทั้งหมด (โปรดเลือกแผนกก่อน)'}</span>
                                     </div>
                                     
                                     <div>
@@ -1991,6 +1990,7 @@
                                     <p className="text-sm font-medium text-slate-500 mt-1">พบข้อมูล <span className="font-bold text-blue-600">{filteredRecords.length}</span> รายการ • มาสาย <span className="text-red-500 font-bold">{totalLateMinutes} นาที</span></p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
+                                    {/* ✅ นำปุ่มกลับมาครบ */}
                                     <button onClick={() => setAddModalData({empId:'', date:'', shiftId:'', timeIn:'', timeOut:''})} className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm border border-emerald-200"><i className="fa-solid fa-plus mr-2"></i>เพิ่มข้อมูล</button>
                                     <button onClick={() => window.print()} className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"><i className="fa-solid fa-print mr-2"></i>พิมพ์</button>
                                     <button onClick={exportLogsToCSV} className="bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-csv mr-2"></i>ส่งออก CSV</button>
@@ -2107,15 +2107,15 @@
                                                     const isEmpty = uiElements.length === 0;
                                                     
                                                     return (
-                                                        <td key={day} className={`px-0.5 py-1.5 text-center text-xs font-bold border-r border-slate-50 align-middle ${isAbsentDay ? 'bg-red-50 ring-1 ring-inset ring-red-200' : (isEmpty ? '' : 'bg-slate-50/30')}`}>
+                                                        <td key={day} className={`px-0.5 py-1.5 text-center text-[10px] font-bold border-r border-slate-50 align-middle ${isAbsentDay ? 'bg-red-50 ring-1 ring-inset ring-red-200' : (isEmpty ? '' : 'bg-slate-50/30')}`}>
                                                             {isEmpty ? <span className="text-slate-300">-</span> : (
                                                                 <div className="flex flex-col gap-0.5 items-center justify-center my-0.5">
                                                                     {uiElements.map((el, idx) => {
-                                                                        let chipClass = "shift-chip text-sm font-bold px-1.5 py-0.5 rounded border ";
-                                                                        if (el.type === 'worked') chipClass += "text-blue-900 bg-blue-100 border-blue-300";
-                                                                        else if (el.type === 'pending') chipClass += "text-emerald-900 bg-emerald-50 border-emerald-200";
-                                                                        else if (el.type === 'absent') chipClass += "text-red-900 bg-red-100 border-red-300";
-                                                                        else if (el.type === 'leave') chipClass += "text-amber-900 bg-amber-50 border-amber-300";
+                                                                        let chipClass = "";
+                                                                        if (el.type === 'worked') chipClass = "text-blue-800 bg-blue-100 px-1 py-0.5 rounded border border-blue-200";
+                                                                        else if (el.type === 'pending') chipClass = "text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100";
+                                                                        else if (el.type === 'absent') chipClass = "text-red-700 bg-red-100 px-1 py-0.5 rounded font-extrabold";
+                                                                        else if (el.type === 'leave') chipClass = "text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200";
                                                                         
                                                                         return <span key={idx} className={chipClass} title={el.type === 'pending' ? 'กะล่วงหน้า/รอสแกน' : ''}>{el.shift}</span>;
                                                                     })}
@@ -2136,9 +2136,11 @@
                                                 {role === 'admin' && <td className="px-3 py-2 text-center font-bold text-red-600 bg-red-50/30 border-l border-red-100">{row.empTotalLate > 0 ? `${row.empTotalLate} น.` : '-'}</td>}
                                             </tr>
                                         ))}
+                                        
+                                        {/* ✅ แถวสรุปอัตรากำลัง/วัน นำกลับมาครบถ้วน */}
                                         {summaryMatrix.length > 0 && (
                                             <tr className="bg-amber-50/50 border-t-2 border-amber-200">
-                                                <td className="px-4 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-extrabold text-slate-800 text-right text-sm">
+                                                <td className="px-4 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-bold text-slate-800 text-right">
                                                     สรุปอัตรากำลัง/วัน
                                                 </td>
                                                 {daysArray.map(day => {
@@ -2149,8 +2151,8 @@
                                                             {Object.keys(counts).length > 0 ? (
                                                                 <div className="flex flex-col gap-0.5 mt-1">
                                                                     {Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([shift, count]) => (
-                                                                        <span key={shift} className="shift-chip text-xs sm:text-sm font-bold text-slate-800 bg-white border border-slate-300 px-1.5 py-0.5 rounded shadow-sm">
-                                                                            {shift}: <strong className="text-blue-700 text-sm sm:text-base">{count}</strong>
+                                                                        <span key={shift} className="text-[9px] font-bold text-slate-600 bg-white border border-slate-200 px-1 rounded shadow-sm">
+                                                                            {shift}: <span className="text-blue-600">{count}</span>
                                                                         </span>
                                                                     ))}
                                                                 </div>
@@ -2176,7 +2178,7 @@
                                     <p className="text-sm font-medium text-slate-500 mt-1">คลิกที่ช่องวันที่ในตารางเพื่อ <strong className="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">จัดเวร</strong> หรือระบุวันหยุดของพนักงาน</p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {/* 🌟 ปุ่มจัดเวรอัตโนมัติ (จะโชว์ก็ต่อเมื่อเลือกแผนกแล้ว) */}
+                                    {/* ✅ นำปุ่มจัดเวรออโต้กลับมา */}
                                     <button onClick={() => setAutoScheduleModal(true)} disabled={!filterDept} className={`border px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center ${!filterDept ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-indigo-50 border-indigo-200 text-indigo-800 hover:bg-indigo-100'}`}>
                                         <i className="fa-solid fa-wand-magic-sparkles mr-2"></i> จัดเวรอัตโนมัติ
                                     </button>
@@ -2225,11 +2227,11 @@
                                                             const hasShifts = shifts.length > 0;
                                                             
                                                             return (
-                                                        <td key={day} onClick={() => openScheduleModal(empId, dateStr)} title={isEdited ? `แก้ไขล่าสุดโดย: ${editedBy}` : ''} className={`px-0.5 py-1.5 text-center text-xs font-bold border-r border-slate-50 cursor-pointer transition-colors hover:ring-2 hover:ring-blue-400 hover:ring-inset relative ${hasShifts ? 'bg-slate-50/30' : 'text-slate-300 hover:bg-slate-50'}`}>
+                                                                <td key={day} onClick={() => openScheduleModal(empId, dateStr)} title={isEdited ? `แก้ไขล่าสุดโดย: ${editedBy}` : ''} className={`px-0.5 py-1.5 text-center text-[10px] font-bold border-r border-slate-50 cursor-pointer transition-colors hover:ring-2 hover:ring-blue-400 hover:ring-inset relative ${hasShifts ? 'bg-slate-50/30' : 'text-slate-300 hover:bg-slate-50'}`}>
                                                                     {isEdited && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-400 rounded-full print-hide" title={`แก้ไขล่าสุดโดย: ${editedBy}`}></div>}
                                                                     {hasShifts ? (
                                                                         <div className="flex flex-col gap-0.5 items-center justify-center my-0.5">
-                                                                            {shifts.map((s, idx) => <span key={idx} className="shift-chip bg-white text-slate-800 border border-slate-300 px-1.5 py-0.5 rounded shadow-sm text-sm font-bold">{s}</span>)}
+                                                                            {shifts.map((s, idx) => <span key={idx} className="bg-white text-slate-700 border border-slate-200 px-1 py-0.5 rounded shadow-sm">{s}</span>)}
                                                                         </div>
                                                                     ) : <span className="text-lg leading-none opacity-50 hover:opacity-100 print-hide">+</span>}
                                                                 </td>
@@ -2246,9 +2248,11 @@
                                                     </tr>
                                                 );
                                             })}
+                                            
+                                            {/* ✅ แถวสรุปอัตรากำลัง/วัน นำกลับมาครบถ้วน */}
                                             {summaryMatrix.length > 0 && (
                                                 <tr className="bg-amber-50/50 border-t-2 border-amber-200">
-                                                    <td className="px-4 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-extrabold text-slate-800 text-right text-sm">
+                                                    <td className="px-4 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-bold text-slate-800 text-right">
                                                         สรุปอัตรากำลัง/วัน
                                                     </td>
                                                     {daysArray.map(day => {
@@ -2259,8 +2263,8 @@
                                                                 {Object.keys(counts).length > 0 ? (
                                                                     <div className="flex flex-col gap-0.5 mt-1">
                                                                         {Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([shift, count]) => (
-                                                                            <span key={shift} className="shift-chip text-xs sm:text-sm font-bold text-slate-800 bg-white border border-slate-300 px-1.5 py-0.5 rounded shadow-sm">
-                                                                                {shift}: <strong className="text-blue-700 text-sm sm:text-base">{count}</strong>
+                                                                            <span key={shift} className="text-[9px] font-bold text-slate-600 bg-white border border-slate-200 px-1 rounded shadow-sm">
+                                                                                {shift}: <span className="text-blue-600">{count}</span>
                                                                             </span>
                                                                         ))}
                                                                     </div>
