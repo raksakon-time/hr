@@ -1111,121 +1111,121 @@
                                         <span className="text-sm font-bold">เปิดกล้องสแกนหน้า</span>
                                     </button>}
                                 </div>
-                    {(adminTab === 'summary' || adminTab === 'schedules') && filterDept && (
-                        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm print-table-wrapper">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full text-left">
-                                    <thead className="bg-gray-50 border-b border-gray-200">
-                                        <tr>
-                                            <th rowSpan="2" className="px-2 py-2 font-semibold text-gray-900 text-xs sticky left-0 bg-gray-50 z-20 border-r border-gray-200 w-[15%]">พนักงาน</th>
-                                            {daysArray.map(day => {
-                                                const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay());
-                                                return <th key={day} rowSpan="2" className={`day-col px-0.5 py-2 text-center text-[10px] font-semibold min-w-[20px] ${isWeekend ? 'text-rose-500' : 'text-gray-500'}`}>{day}</th>
+
+                                {showEarlyWarning ? (
+                                    <div className="bg-orange-50 p-5 rounded-2xl border border-orange-200 text-center">
+                                        <p className="font-bold text-orange-900 mb-4 text-base"><i className="fa-solid fa-triangle-exclamation mr-2"></i>ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
+                                        <div className="flex gap-3">
+                                            <button onClick={processClockOut} className="flex-1 bg-orange-600 text-white rounded-xl py-3 text-base font-bold shadow-sm hover:bg-orange-700">ยืนยันออก</button>
+                                            <button onClick={() => setShowEarlyWarning(false)} className="flex-1 bg-white border-2 border-slate-200 text-slate-700 rounded-xl py-3 text-base font-bold hover:bg-slate-50">ยกเลิก</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button onClick={handleClockOutAttempt} disabled={!cameraActive || isScanning} className={`w-full p-4 rounded-2xl font-bold text-lg text-white transition-all ${cameraActive ? 'bg-amber-600 hover:bg-amber-700 shadow-[0_8px_20px_-6px_rgba(217,119,6,0.5)]' : 'bg-slate-300 text-white cursor-not-allowed'}`}>
+                                        {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันออกงาน'}
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // Views: ปฏิทินเวรของฉัน (My Schedule)
+        // ==========================================
+        function MyCalendarView({ currentUser, schedules }) {
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [selectedDate, setSelectedDate] = useState(null);
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); 
+
+            const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+            const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+            const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+
+            const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i);
+            const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+            const todayDate = new Date();
+            const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
+
+            return (
+                <div className="max-w-2xl mx-auto space-y-6">
+                    <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-minimal border border-slate-100 flex items-center justify-between mt-6">
+                        <button onClick={prevMonth} className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 hover:bg-blue-100 hover:text-blue-700 flex items-center justify-center transition-colors"><i className="fa-solid fa-chevron-left"></i></button>
+                        <h2 className="text-lg sm:text-xl font-bold text-slate-800">{monthNames[month]} {year + 543}</h2>
+                        <button onClick={nextMonth} className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 hover:bg-blue-100 hover:text-blue-700 flex items-center justify-center transition-colors"><i className="fa-solid fa-chevron-right"></i></button>
+                    </div>
+
+                    <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-minimal border border-slate-100">
+                        <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 border-b border-slate-100 pb-2">
+                            {['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'].map((d, i) => (
+                                <div key={d} className={`text-center text-xs font-bold py-1 ${i === 0 || i === 6 ? 'text-rose-500' : 'text-slate-500'}`}>{d}</div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                            {blanks.map(b => <div key={`blank-${b}`} className="p-1 sm:p-2 min-h-[60px] sm:min-h-[80px]"></div>)}
+                            {days.map(day => {
+                                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                const dayShifts = schedules[dateStr]?.[currentUser.id]?.shifts || [];
+                                const isToday = dateStr === todayStr;
+
+                                return (
+                                    <div key={day} onClick={() => setSelectedDate({ dateStr, day, dayShifts })} className={`relative flex flex-col items-center justify-start p-1 sm:p-1.5 min-h-[60px] sm:min-h-[80px] rounded-xl cursor-pointer border-2 transition-all hover:border-blue-400 hover:shadow-md ${isToday ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-100'}`}>
+                                        <span className={`text-xs sm:text-sm font-bold ${isToday ? 'text-blue-700' : 'text-slate-700'} mb-1`}>{day}</span>
+                                        <div className="flex flex-col gap-0.5 w-full items-center overflow-hidden">
+                                            {dayShifts.map((s, i) => {
+                                                const isLeave = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s);
+                                                const chipColor = isLeave ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800';
+                                                return <span key={i} className={`text-[9px] sm:text-[10px] font-bold ${chipColor} px-0.5 sm:px-1 py-0.5 rounded w-full text-center truncate`}>{s}</span>
                                             })}
-                                            {/* ย่อคำหัวตารางเพื่อไม่ให้ดันคอลัมน์ให้กว้าง */}
-                                            <th colSpan={sortedShiftTypesUsed.length} className="px-1 py-1 font-semibold text-indigo-800 text-center bg-indigo-50/50 border-l border-b border-indigo-100 border-r border-gray-200 text-[10px]">สรุปกะเวร</th>
-                                            <th rowSpan="2" className="px-1 py-2 text-center text-[10px] font-semibold text-gray-700 bg-gray-100/50 border-l border-gray-200 w-[4%]">รวม</th>
-                                            <th rowSpan="2" className="px-1 py-2 text-center text-[10px] font-semibold text-gray-900 bg-gray-100/50 border-l border-gray-200 w-[4%]">ทำงาน</th>
-                                            <th rowSpan="2" className="px-1 py-2 text-center text-[10px] font-semibold text-blue-700 bg-blue-50/50 border-l border-blue-200 w-[4%]">OT</th>
-                                            {adminTab === 'summary' && role === 'admin' && <th rowSpan="2" className="px-1 py-2 text-center text-[10px] font-semibold text-red-700 bg-red-50/50 border-l border-red-200 w-[4%]">สาย</th>}
-                                        </tr>
-                                        <tr>
-                                            {sortedShiftTypesUsed.map(type => (
-                                                <th key={type} className="px-0.5 py-1 font-semibold text-indigo-700 text-center bg-indigo-50/50 border-x border-white text-[9px] min-w-[20px]">{type}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 text-sm">
-                                        {summaryMatrix.map(row => (
-                                            <tr key={row.empId} className="hover:bg-gray-50/50">
-                                                <td className="px-2 py-1 sticky left-0 bg-white z-10 border-r border-gray-200">
-                                                    <p className="font-medium text-gray-900 text-xs leading-tight truncate">{row.fname}</p>
-                                                    <p className="text-[9px] text-gray-400 truncate">{row.level}</p>
-                                                </td>
-                                                {daysArray.map(day => {
-                                                    const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay());
-                                                    
-                                                    if(adminTab === 'schedules') {
-                                                        const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                                                        const schedObj = schedules[dateStr]?.[row.empId];
-                                                        const shifts = schedObj?.shifts || [];
-                                                        const isEdited = schedObj?.isEdited;
-                                                        return (
-                                                            <td key={day} onClick={()=>openScheduleModal(row.empId, dateStr)} className={`day-col px-0.5 py-1 text-center cursor-pointer border-r border-gray-50 hover:bg-gray-100 transition-colors relative ${isWeekend?'bg-rose-50/20':''}`}>
-                                                                {isEdited && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-400 rounded-full print-hide"></div>}
-                                                                <div className="flex flex-col gap-0.5 items-center">
-                                                                    {shifts.map((s,i) => <span key={i} className="shift-chip bg-white text-slate-800 border border-slate-300 px-1 py-0.5 rounded shadow-sm text-[10px] font-bold">{s}</span>)}
-                                                                </div>
-                                                            </td>
-                                                        );
-                                                    } else {
-                                                        const el = row.shiftsByDay[day].uiElements;
-                                                        const shiftObj = row.shiftsByDay[day];
-                                                        const isAbsentDay = shiftObj.isAbsent;
-                                                        const isEmpty = el.length === 0;
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
 
-                                                        return (
-                                                            <td key={day} className={`day-col px-0.5 py-1 text-center text-[10px] font-bold border-r border-slate-50 align-middle ${isAbsentDay ? 'bg-red-50 ring-1 ring-inset ring-red-200' : (isEmpty ? '' : 'bg-slate-50/30')} ${isWeekend && isEmpty ? 'bg-rose-50/20' : ''}`}>
-                                                                {isEmpty ? <span className="text-slate-300">-</span> : (
-                                                                    <div className="flex flex-col gap-0.5 items-center justify-center">
-                                                                        {el.map((e,i) => {
-                                                                            let chipClass = "shift-chip text-[10px] font-bold px-1 py-0.5 rounded border ";
-                                                                            if (e.type === 'worked') chipClass += "text-blue-900 bg-blue-100 border-blue-300";
-                                                                            else if (e.type === 'pending') chipClass += "text-emerald-900 bg-emerald-50 border-emerald-200";
-                                                                            else if (e.type === 'absent') chipClass += "text-red-900 bg-red-100 border-red-300";
-                                                                            else if (e.type === 'leave') chipClass += "text-amber-900 bg-amber-50 border-amber-300";
-                                                                            
-                                                                            return <span key={i} className={chipClass} title={e.type === 'pending' ? 'กะล่วงหน้า/รอสแกน' : ''}>{e.shift}</span>;
-                                                                        })}
-                                                                    </div>
-                                                                )}
-                                                            </td>
-                                                        )
-                                                    }
-                                                })}
-                                                
-                                                {/* วนลูปแสดงจำนวนเวรแต่ละประเภท */}
-                                                {sortedShiftTypesUsed.map(type => (
-                                                    <td key={type} className="px-0.5 py-1 text-center font-semibold text-indigo-800 bg-indigo-50/20 border-x border-slate-50 text-[10px]">
-                                                        {row.shiftCounts[type] || 0}
-                                                    </td>
-                                                ))}
-
-                                                <td className="px-1 py-1 text-center font-semibold text-gray-800 bg-gray-50/50 border-l border-gray-200 text-xs">{row.empTotalCredit}</td>
-                                                <td className="px-1 py-1 text-center font-medium text-gray-600 bg-gray-50/50 border-l border-gray-200 text-xs">{localWorkDays}</td>
-                                                <td className="px-1 py-1 text-center font-bold text-blue-700 bg-blue-50/30 border-l border-blue-200 text-xs">{row.otShifts>0?`+${row.otShifts}`:row.otShifts}</td>
-                                                {adminTab === 'summary' && role === 'admin' && <td className="px-1 py-1 text-center font-medium text-red-600 bg-red-50/30 border-l border-red-200 text-[10px]">{row.empTotalLate > 0 ? `${row.empTotalLate} น.` : '-'}</td>}
-                                            </tr>
-                                        ))}
-                                        
-                                        {/* แถวสรุปอัตรากำลัง/วัน (เปลี่ยนการแสดงผลให้ประหยัดพื้นที่) */}
-                                        {summaryMatrix.length > 0 && (
-                                            <tr className="bg-amber-50/50 border-t-2 border-amber-200">
-                                                <td className="px-2 py-2 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-bold text-slate-800 text-right text-xs">
-                                                    สรุปอัตรากำลัง
-                                                </td>
-                                                {daysArray.map(day => {
-                                                    const counts = getDailyShiftCounts(day);
-                                                    const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay());
-                                                    return (
-                                                        <td key={`sum-${day}`} className={`day-col px-0.5 py-1 text-center border-r border-slate-200 align-top ${isWeekend ? 'bg-rose-50/30' : ''}`}>
-                                                            {Object.keys(counts).length > 0 ? (
-                                                                <div className="flex flex-col gap-0.5 mt-0.5">
-                                                                    {Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([shift, count]) => (
-                                                                        <div key={shift} className="text-[8px] font-bold text-slate-700 leading-tight">
-                                                                            {shift}: <span className="text-blue-700">{count}</span>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            ) : <span className="text-slate-300 text-[10px]">-</span>}
-                                                        </td>
-                                                    );
-                                                })}
-                                                <td colSpan={sortedShiftTypesUsed.length + 3 + (adminTab === 'summary' && role === 'admin' ? 1 : 0)} className="bg-amber-50 border-l border-slate-200"></td>
-                                            </tr>
+                    {/* Modal แสดงรายละเอียดเวร */}
+                    {selectedDate && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in" onClick={() => setSelectedDate(null)}>
+                            <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-floating overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                    <h3 className="font-bold text-slate-800 text-xl">รายละเอียดเวร</h3>
+                                    <button onClick={() => setSelectedDate(null)} className="w-8 h-8 rounded-full bg-white text-slate-400 hover:text-rose-500 shadow-sm flex items-center justify-center transition-colors"><i className="fa-solid fa-xmark"></i></button>
+                                </div>
+                                <div className="p-8 text-center">
+                                    <div className="text-5xl font-extrabold text-blue-600 mb-2">{selectedDate.day}</div>
+                                    <div className="text-slate-500 font-medium mb-6">{monthNames[month]} {year + 543}</div>
+                                    
+                                    <div className="space-y-3">
+                                        {selectedDate.dayShifts.length > 0 ? (
+                                            selectedDate.dayShifts.map((s, i) => {
+                                                const isLeave = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s);
+                                                return (
+                                                    <div key={i} className={`border-2 rounded-xl p-4 flex flex-col items-center justify-center gap-1 ${isLeave ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'}`}>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <i className={`fa-solid ${isLeave ? 'fa-bed text-amber-500' : 'fa-clock text-blue-500'} text-xl`}></i>
+                                                            <span className={`font-bold text-xl ${isLeave ? 'text-amber-900' : 'text-blue-900'}`}>{s}</span>
+                                                        </div>
+                                                        <span className="font-semibold text-slate-600 text-sm">{SHIFT_TYPES[s]?.label || 'ไม่ระบุเวลา'}</span>
+                                                    </div>
+                                                )
+                                            })
+                                        ) : (
+                                            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-6 text-slate-400 font-bold">
+                                                ไม่มีตารางเวรในวันนี้
+                                            </div>
                                         )}
-                                    </tbody>
-                                </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
