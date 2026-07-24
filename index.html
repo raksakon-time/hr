@@ -1628,20 +1628,46 @@
                 let grandTotalCredit = 0;
                 let grandTotalOT = 0;
                 
+                // 1. ใส่ข้อมูลพนักงานรายบุคคล
                 summaryMatrix.forEach(row => {
                     grandTotalCredit += row.empTotalCredit;
                     grandTotalOT += row.otShifts;
                     const rowData = [row.empId, `${row.fname} ${row.lname}`, row.dept];
-                    daysArray.forEach(day => rowData.push(row.shiftsByDay[day].display));
+                    daysArray.forEach(day => rowData.push(row.shiftsByDay[day].display.replace(/,/g, ' '))); // ระวังลูกน้ำในเซลล์
                     sortedShiftTypesUsed.forEach(type => rowData.push(row.shiftCounts[type] || 0));
                     rowData.push(row.empTotalCredit, localWorkDays, row.otShifts);
                     if (role === 'admin') rowData.push(row.empTotalLate);
                     csvContent += `"${rowData.join('","')}"\n`;
                 });
                 
+                // 2. ใส่แถวสรุปยอดทั้งแผนก (ยอด OT)
                 const emptyColsCount = 3 + daysArray.length + sortedShiftTypesUsed.length - 1;
                 const emptyCols = Array(emptyColsCount).fill('""').join(',');
-                csvContent += `\n"รวมยอดทั้งแผนก",${emptyCols},"${grandTotalCredit}","", "${grandTotalOT}"\n`;
+                csvContent += `\n"รวมยอดทั้งแผนก",${emptyCols},"${grandTotalCredit}","", "${grandTotalOT}"\n\n`;
+
+                // 3. 🌟 เพิ่มแถวสรุปอัตรากำลัง/วัน ลงใน Excel
+                csvContent += `"สรุปอัตรากำลัง/วัน","",""\n`;
+                
+                // เนื่องจากใน Excel เขียนสรุปเป็นก้อนๆ ยาก เราจึงแยกเป็นบรรทัดตามประเภทกะที่มี
+                // สร้าง Object เก็บยอดรวมตามประเภทกะและตามวัน
+                const dailyTotals = {};
+                daysArray.forEach(day => {
+                    const counts = getDailyShiftCounts(day);
+                    Object.entries(counts).forEach(([shift, count]) => {
+                        if (!dailyTotals[shift]) dailyTotals[shift] = {};
+                        dailyTotals[shift][day] = count;
+                    });
+                });
+
+                // วนลูปสร้างแถวสรุปใน Excel ตามกะที่มีคนเข้าเวร
+                Object.keys(dailyTotals).forEach(shift => {
+                     const summaryRow = ["", `ยอดกะ ${shift}`, ""];
+                     daysArray.forEach(day => {
+                         summaryRow.push(dailyTotals[shift][day] || 0); // ถ้ายอดไม่มี ให้โชว์ 0
+                     });
+                     csvContent += `"${summaryRow.join('","')}"\n`;
+                });
+
 
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
@@ -1654,6 +1680,8 @@
                 let csvContent = "\uFEFF";
                 csvContent += `"ตารางเวรแผนก: ${filterDept || 'ทุกแผนก'}","ประจำเดือน: ${matrixMonth}"\n\n`;
                 csvContent += "รหัสพนักงาน,ชื่อ-สกุล,แผนก," + daysArray.join(',') + "\n";
+                
+                // 1. ใส่ข้อมูลพนักงานรายบุคคล
                 matrixEmployees.forEach(empId => {
                     const emp = employees[empId];
                     const rowData = [empId, `${emp.fname} ${emp.lname}`, emp.dept];
@@ -1661,10 +1689,34 @@
                         const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const schedObj = schedules[dateStr]?.[empId];
                         const shifts = schedObj?.shifts || (Array.isArray(schedObj) ? schedObj : []);
-                        rowData.push(shifts.join(', ') || '-');
+                        rowData.push(shifts.join(' ') || '-'); // เอาลูกน้ำออกกันพังใน csv
                     });
                     csvContent += `"${rowData.join('","')}"\n`;
                 });
+
+                csvContent += `\n`;
+
+                // 2. 🌟 เพิ่มแถวสรุปอัตรากำลัง/วัน สำหรับหน้าจัดเวร
+                csvContent += `"สรุปอัตรากำลัง/วัน","",""\n`;
+                
+                const dailyTotals = {};
+                daysArray.forEach(day => {
+                    const counts = getDailyShiftCounts(day);
+                    Object.entries(counts).forEach(([shift, count]) => {
+                        if (!dailyTotals[shift]) dailyTotals[shift] = {};
+                        dailyTotals[shift][day] = count;
+                    });
+                });
+
+                Object.keys(dailyTotals).forEach(shift => {
+                     const summaryRow = ["", `ยอดกะ ${shift}`, ""];
+                     daysArray.forEach(day => {
+                         summaryRow.push(dailyTotals[shift][day] || 0);
+                     });
+                     csvContent += `"${summaryRow.join('","')}"\n`;
+                });
+
+
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
                 link.download = `ตารางเวร_${matrixMonth}.csv`;
