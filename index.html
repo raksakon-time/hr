@@ -39,33 +39,77 @@
     <script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased; color: #0f172a; font-size: 16px; margin: 0; padding: 0;}
+        body { font-family: 'Sarabun', sans-serif; background-color: #ffffff; -webkit-font-smoothing: antialiased; color: #1f2937; font-size: 15px; margin: 0; padding: 0;}
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .input-autofill-fix:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px white inset !important; }
-        select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
         
-        /* 🌟 CSS สำหรับการสั่งพิมพ์ A4 แนวนอน (Print) */
+        /* Modern Inputs */
+        input[type="text"], input[type="password"], input[type="time"], input[type="date"], input[type="month"], select {
+            transition: all 0.2s ease;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #7895a2 !important;
+            box-shadow: 0 0 0 3px rgba(120, 149, 162, 0.2);
+        }
+        select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1.25em 1.25em; padding-right: 2.5rem; }
+        
+        /* 🌟 CSS สำหรับการสั่งพิมพ์ A4 แนวนอน (บังคับย่อให้พอดี 1 หน้า 100%) */
         .print-show { display: none; }
-        
         @media print {
-            body { font-size: 10pt; background: white; color: black; margin: 0; padding: 0; }
+            /* ตั้งค่าหน้ากระดาษ ลด Margin ให้เหลือ 5mm เพื่อเพิ่มพื้นที่ตาราง */
+            @page { size: A4 landscape; margin: 5mm; }
+            
+            body { font-size: 9pt; background: white; color: black; margin: 0; padding: 0; }
             nav, .print-hide, .bottom-nav-hide { display: none !important; }
             .print-show { display: block !important; }
             main.max-w-7xl { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
-            .print-container { width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; max-width: none !important; border-radius: 0 !important; }
-            .print-table-wrapper { overflow-x: visible !important; border: none !important; }
             
-            table { width: 100% !important; border-collapse: collapse !important; page-break-inside: auto; }
+            /* ล้างความกว้าง กรอบ และเงาของ Container */
+            .print-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; }
+            .print-table-wrapper { overflow: visible !important; width: 100% !important; border: none !important; }
+            
+            /* บังคับตารางให้ยืดตามหน้ากระดาษ */
+            table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; page-break-inside: auto; }
             tr { page-break-inside: avoid; page-break-after: auto; }
-            th, td { border: 1px solid #94a3b8 !important; padding: 4px 6px !important; font-size: 11px !important; color: black !important; }
-            th { background-color: #f1f5f9 !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            /* ⚠️ หัวใจสำคัญ: บีบ Padding และลบ Min-width ที่ทำให้ล้นกระดาษทิ้ง */
+            th, td { 
+                border: 1px solid #9ca3af !important; /* สีเส้นขอบเข้มขึ้นนิดนึงเวลาพิมพ์ */
+                padding: 1px 0px !important; /* ลด Padding ให้เล็กสุด */
+                font-size: 9px !important; /* ลดขนาดตัวอักษรปกติในตาราง */
+                color: black !important; 
+                min-width: 0 !important; /* ล้างค่าขั้นต่ำของ Tailwind */
+                text-align: center !important;
+            }
+            
+            /* จัดการคอลัมน์แรก (ชื่อพนักงาน) ให้มีพื้นที่อ่านได้ และชิดซ้าย */
+            th:first-child, td:first-child {
+                width: 14% !important;
+                text-align: left !important;
+                padding-left: 4px !important;
+                font-size: 10px !important;
+            }
+            
+            th { background-color: #f3f4f6 !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            /* การปรับสไตล์ตัวหนังสือในตาราง (กะเวร / ตัวเลขสรุป) */
             td span:not(.shift-chip) { background: none !important; border: none !important; color: black !important; box-shadow: none !important; padding: 0 !important; }
             
-            td .shift-chip { font-size: 13pt !important; font-weight: 800 !important; color: black !important; background: transparent !important; border: none !important; box-shadow: none !important; display: inline-block; padding: 1px !important; }
-            td .shift-chip strong { font-size: 14pt !important; font-weight: 900 !important; }
+            /* ⚠️ ชิปเวรและตัวเลข ทำให้หนาและชัด แต่กะทัดรัด */
+            td .shift-chip, td span.shift-chip { 
+                font-size: 9px !important; 
+                font-weight: 800 !important; 
+                color: black !important; 
+                background: transparent !important; 
+                border: none !important; 
+                box-shadow: none !important; 
+                display: inline-block; 
+                padding: 1px !important; 
+                line-height: 1 !important;
+            }
+            td .shift-chip strong { font-size: 10px !important; font-weight: 900 !important; }
             
-            @page { size: A4 landscape; margin: 8mm; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
