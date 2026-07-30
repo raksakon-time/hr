@@ -141,7 +141,1552 @@
             "NA OPD": ['ช6', 'ช7', 'ช716','ช917', 'ช21', 'ช', 'ชบ', 'ช9', 'บ', 'ด', 'บ4'],
             "IPD": ['ช', 'บ', 'ด', 'ชบ', 'บด'],
             "NA IPD": ['ช', 'บ', 'ด', 'ชบ', 'บด'],
-            "ห้องยา": ['ช', 'บ', 'ด', 'ชบ', 'บด', 'ช20'],
+            <!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ระบบลงเวลา รพ.รักษ์สกล</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Sarabun', 'sans-serif'] },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0,0,0,0.04)',
+                        'subtle': '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
+                    },
+                    colors: {
+                        /* สีสดใส Vibrant Theme */
+                        primary: '#2563eb', 
+                        secondary: '#0ea5e9', 
+                        dark: '#1e293b', 
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased; color: #1e293b; font-size: 15px; margin: 0; padding: 0;}
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        input[type="text"], input[type="password"], input[type="time"], input[type="date"], input[type="month"], select { 
+            transition: all 0.2s ease; 
+        }
+        input:focus, select:focus { 
+            outline: none; 
+            border-color: #2563eb !important; 
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); 
+        }
+        select { 
+            -webkit-appearance: none; 
+            appearance: none; 
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); 
+            background-position: right 0.75rem center; 
+            background-repeat: no-repeat; 
+            background-size: 1.25em 1.25em; 
+            padding-right: 2.5rem; 
+        }
+        
+        .print-show { display: none; }
+        @media print {
+            /* บังคับขอบกระดาษให้เหลือน้อยที่สุด เพื่อเพิ่มพื้นที่ให้ตาราง */
+            @page { size: A4 landscape; margin: 5mm; }
+            
+            body { font-size: 9pt; background: white; color: black; margin: 0; padding: 0; }
+            nav, .print-hide, .bottom-nav-hide { display: none !important; }
+            .print-show { display: block !important; }
+            main.max-w-7xl { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+            
+            .print-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; }
+            .print-table-wrapper { overflow: visible !important; width: 100% !important; border: none !important; }
+            
+            /* ล้างค่าความกว้าง และบังคับให้ตารางย่อลงให้พอดี 1 หน้า */
+            table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; page-break-inside: auto; min-width: 0 !important; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            
+            /* ลดขนาด padding และฟอนต์ เพื่อให้ยัดลง A4 แนวนอนได้ */
+            th, td { 
+                border: 1px solid #9ca3af !important; 
+                padding: 1px 1px !important; 
+                font-size: 8pt !important; 
+                color: black !important; 
+                text-align: center !important;
+                overflow: hidden;
+                word-wrap: break-word;
+            }
+            
+            th:first-child, td:first-child { width: 14% !important; text-align: left !important; padding-left: 2px !important; font-size: 9pt !important; font-weight: bold !important; }
+            .day-col { width: 2.2% !important; } 
+            
+            th { background-color: #f3f4f6 !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            td span:not(.shift-chip) { background: none !important; border: none !important; color: black !important; box-shadow: none !important; padding: 0 !important; }
+            
+            td .shift-chip, td span.shift-chip { 
+                font-size: 9pt !important; 
+                font-weight: 900 !important; 
+                color: black !important; 
+                background: transparent !important; 
+                border: none !important; 
+                box-shadow: none !important; 
+                display: inline-block; 
+                padding: 0 !important; 
+                line-height: 1 !important;
+                text-align: center;
+            }
+            td .shift-chip strong { font-size: 11pt !important; font-weight: 900 !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // ==========================================
+        // ⚠️ ใส่ URL ของท่านที่นี่
+        // ==========================================
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec"; 
+        const LEAVE_SYSTEM_URL = "https://script.google.com/macros/s/AKfycbzZvLTxd5MtGo7_5BQISe8b7KU-759zTWbHeIwsnhlGXI-nte9OwWvfporBCtoeAGk3/exec"; 
+
+        const HOSPITAL_LAT = 17.162383247325145;
+        const HOSPITAL_LON = 104.14513206230059;
+        const ALLOWED_RADIUS = 100;
+
+        const DEPARTMENTS = [
+            "HR-IT", "บัญชี", "การเงินผู้ป่วย-สิทธิประโยชน์", "OPD", "NA OPD", "IPD", "NA IPD", "ห้องยา",
+            "ห้องปฏิบัติการทางการแพทย์", "เอกซเรย์", "OR-LR", "แม่บ้าน", "ซักฟอก",
+            "หน่วยจ่ายกลาง", "โภชนาการ", "เปล-ยานยนต์", "ช่าง", "เวชระเบียน", "ส่งเสริมสุขภาพ",
+            "ADMIN"
+        ];
+
+        const DEPT_SHIFTS = {
+            "HR-IT": ['ช7', 'ช'],
+            "บัญชี": ['ช', 'ช83'],
+            "การเงินผู้ป่วย-สิทธิประโยชน์": ['ช', 'ชบ'],
+            "OPD": ['ช6', 'ช7', 'ช716','ช917', 'ช21', 'ช', 'ชบ', 'ช9', 'บ', 'ด', 'บ4'],
+            "NA OPD": ['ช6', 'ช7', 'ช716','ช917', 'ช21', 'ช', 'ชบ', 'ช9', 'บ', 'ด', 'บ4'],
+            "IPD": ['ช', 'บ', 'ด', 'ชบ', 'บด'],
+            "NA IPD": ['ช', 'บ', 'ด', 'ชบ', 'บด'],
+            "ห้องยา": ['ช716','ช', 'บ', 'ด', 'ชบ', 'บด', 'ช20'],
+            "ห้องปฏิบัติการทางการแพทย์": ['ช', 'ช7', 'ชบ7', 'บ15', 'ช20', 'ช719'],
+            "เอกซเรย์": ['ช', 'ชบ', 'ช7','บ'],
+            "OR-LR": ['ช'],
+            "แม่บ้าน": ['ช7', 'ชบ7', 'บ15'],
+            "ซักฟอก": ['ช'],
+            "หน่วยจ่ายกลาง": ['ช', 'ช716', 'ช7'],
+            "โภชนาการ": ['ช6', 'ช', 'ช616', 'ช618'],
+            "เปล-ยานยนต์": ['ช', 'ชบ', 'บ' , 'ด'],
+            "ช่าง": ['ช'],
+            "เวชระเบียน": ['ช7', 'ช', 'ช20', 'ชบ', 'ช917', 'บ', 'ด'],
+            "ส่งเสริมสุขภาพ": ['ช7', 'ช'],
+            "ADMIN": ['ช', 'ช83']
+        };
+
+        const SHIFT_TYPES = {
+            'ด': { start: '00:00', end: '08:00', credit: 1, label: '00.00 - 08.00 (ด)' },
+            'ช616': { start: '06:00', end: '16:00', credit: 1.25, label: '06.00 - 16.00 (ช616)' },
+            'ช618': { start: '06:00', end: '18:00', credit: 1.5, label: '06.00 - 18.00 (ช618)' },
+            'ช619': { start: '06:00', end: '19:00', credit: 1.625, label: '06.00 - 19.00 (ช619)' },
+            'ช6': { start: '06:00', end: '14:00', credit: 1, label: '06.00 - 14.00 (ช6)' },
+            'ช716': { start: '07:00', end: '16:00', credit: 1.125, label: '07.00 - 16.00 (ช716)' },
+            'ช719': { start: '07:00', end: '19:00', credit: 1.5, label: '07.00 - 19.00 (ช719)' },
+            'ช7': { start: '07:00', end: '15:00', credit: 1, label: '07.00 - 15.00 (ช7)' },
+            'ช21': { start: '07:00', end: '21:00', credit: 1.75, label: '07.00 - 21.00 (ช21)' },
+            'ชบ7': { start: '07:00', end: '23:00', credit: 2, label: '07.00 - 23.00 (ชบ7)' },
+            'ช': { start: '08:00', end: '16:00', credit: 1, label: '08.00 - 16.00 (ช)' },
+            'ชบ': { start: '08:00', end: '00:00', credit: 2, label: '08.00 - 00.00 (ชบ)' },
+            'ช20': { start: '08:00', end: '20:00', credit: 1.5, label: '08.00 - 20.00 (ช20)' },
+            'ช83': { start: '08:30', end: '16:30', credit: 1, label: '08.30 - 16.30 (ช83)' },
+            'ช9': { start: '09:00', end: '21:00', credit: 1.5, label: '09.00 - 21.00 (ช9)' },
+            'ช917': { start: '09:00', end: '17:00', credit: 1, label: '09.00 - 17.00 (ช917)' },
+            'บ15': { start: '15:00', end: '23:00', credit: 1, label: '15.00 - 23.00 (บ15)' },
+            'บ': { start: '16:00', end: '00:00', credit: 1, label: '16.00 - 00.00 (บ)' },
+            'บด': { start: '16:00', end: '08:00', credit: 2, label: '16.00 - 08.00 (บด)' },
+            'บ4': { start: '17:00', end: '21:00', credit: 0.5, label: '17.00 - 21.00 (บ4)' },
+        };
+
+        const getSortedShiftKeys = (deptName) => {
+            let keys = Object.keys(SHIFT_TYPES);
+            if (deptName && DEPT_SHIFTS[deptName]) {
+                keys = keys.filter(k => DEPT_SHIFTS[deptName].includes(k));
+            }
+            return keys.sort((a, b) => {
+                const startCmp = SHIFT_TYPES[a].start.localeCompare(SHIFT_TYPES[b].start);
+                if (startCmp !== 0) return startCmp;
+                return SHIFT_TYPES[a].label.localeCompare(SHIFT_TYPES[b].label);
+            });
+        };
+
+        const sendToGoogleSheet = async (action, payload = {}, retries = 3) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(GAS_URL, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                        body: JSON.stringify({ action: action, payload: payload }) 
+                    });
+                    const data = await response.json();
+                    if (data.status === 'error') {
+                        Swal.fire({ title: 'แจ้งเตือน', text: data.message, icon: 'warning', confirmButtonColor: '#2563eb' });
+                    }
+                    return data; 
+                } catch (error) {
+                    console.warn(`การเชื่อมต่อล้มเหลวครั้งที่ ${i + 1}: ${error.message}`);
+                    if (i === retries - 1) {
+                        Swal.fire({ 
+                            title: 'ข้อผิดพลาดเครือข่าย', 
+                            text: 'การเชื่อมต่อล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ตของท่าน', 
+                            icon: 'error', 
+                            confirmButtonColor: '#2563eb' 
+                        });
+                        return { status: 'error', message: error.message };
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
+            }
+        };
+
+        const captureImage = (videoElement) => {
+            if (!videoElement || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) return null;
+            const canvas = document.createElement('canvas');
+            const scale = 0.5; 
+            canvas.width = videoElement.videoWidth * scale; 
+            canvas.height = videoElement.videoHeight * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0); 
+            ctx.scale(-1, 1);
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+        };
+
+        const formatDisplayDate = (dateStr) => {
+            if (!dateStr) return '';
+            const [year, month, day] = dateStr.split('-');
+            const thaiYear = parseInt(year, 10) + 543; 
+            return `${day}/${month}/${thaiYear}`;
+        };
+
+        const formatFullThaiDate = (dateObj) => {
+            if (!dateObj) return '';
+            const days = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
+            const months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+            return `${days[dateObj.getDay()]}ที่ ${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear() + 543}`;
+        };
+
+        const formatTime24 = (dateObj) => {
+            if (!dateObj) return '';
+            const h = String(dateObj.getHours()).padStart(2, '0'); 
+            const m = String(dateObj.getMinutes()).padStart(2, '0');
+            return `${h}:${m}`;
+        };
+
+        const displaySafeTime = (timeStr) => {
+            if (!timeStr) return '-';
+            if (timeStr.includes('T')) return timeStr.split('T')[1].substring(0, 5) + ' น.';
+            return timeStr + ' น.';
+        };
+
+        const MapModal = ({ lat, lon, onClose }) => (
+            <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl w-full max-w-lg shadow-soft overflow-hidden border border-gray-200 animate-fade-in">
+                    <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                        <h3 className="font-semibold text-gray-900 text-lg">พิกัดลงเวลา</h3>
+                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors">
+                            <i className="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <iframe src={`https://maps.google.com/maps?q=${lat},${lon}&hl=th&z=17&output=embed`} width="100%" height="350" frameBorder="0" className="bg-gray-50" />
+                </div>
+            </div>
+        );
+
+        const PhotoModal = ({ record, employees, onClose }) => {
+            const emp = employees[record.empId] || {};
+            const getPreviewUrl = (url) => {
+                if (!url) return null;
+                const match = url.match(/[-\w]{25,}/);
+                if (match && match[0]) return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w800`;
+                return url;
+            };
+
+            return (
+                <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-soft overflow-hidden flex flex-col border border-gray-200 animate-fade-in">
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 shrink-0">
+                            <h3 className="font-semibold text-gray-900 text-lg">รูปสแกนใบหน้า</h3>
+                            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors">
+                                <i className="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+                        <div className="p-6 bg-gray-50 flex gap-5 h-72 overflow-hidden">
+                            {record.photoInUrl ? (
+                                <div className="flex-1 flex flex-col">
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 text-center">เข้างาน</p>
+                                    <div className="w-full flex-1 border border-gray-200 rounded-xl bg-white shadow-subtle overflow-hidden flex items-center justify-center">
+                                        <img src={getPreviewUrl(record.photoInUrl)} className="w-full h-full object-cover transform scale-x-[-1]" alt="Check In" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-image text-gray-300 text-2xl"></i>'; }} />
+                                    </div>
+                                </div>
+                            ) : <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-gray-200 rounded-xl bg-white"><i className="fa-regular fa-image text-gray-300 text-2xl"></i></div>}
+                            
+                            {record.photoOutUrl ? (
+                                <div className="flex-1 flex flex-col">
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 text-center">ออกงาน</p>
+                                    <div className="w-full flex-1 border border-gray-200 rounded-xl bg-white shadow-subtle overflow-hidden flex items-center justify-center">
+                                        <img src={getPreviewUrl(record.photoOutUrl)} className="w-full h-full object-cover transform scale-x-[-1]" alt="Check Out" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-image text-gray-300 text-2xl"></i>'; }} />
+                                    </div>
+                                </div>
+                            ) : <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-gray-200 rounded-xl bg-white"><i className="fa-regular fa-image text-gray-300 text-2xl"></i></div>}
+                        </div>
+                        <div className="p-5 border-t border-gray-100 text-base shrink-0 bg-white">
+                            <p className="font-semibold text-gray-900">{emp.fname} {emp.lname} <span className="font-normal text-gray-500 text-sm ml-1">({record.empId})</span></p>
+                            <p className="text-sm mt-1 text-gray-600">วันที่: {formatDisplayDate(record.date)}</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            const [currentUser, setCurrentUser] = useState(null); 
+            const [activeTab, setActiveTab] = useState('home'); 
+            const [avatarImgError, setAvatarImgError] = useState(false); 
+            
+            const [currentTime, setCurrentTime] = useState(new Date());
+            const [records, setRecords] = useState([]);
+            const [employees, setEmployees] = useState({});
+            const [schedules, setSchedules] = useState({});
+            const [isLoading, setIsLoading] = useState(true);
+            const [settings, setSettings] = useState({ standardWorkDays: {} });
+
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            useEffect(() => {
+                const fetchInitialData = async () => {
+                    if (GAS_URL.includes("ใส่_URL")) { 
+                        setIsLoading(false); 
+                        return; 
+                    }
+                    const res = await sendToGoogleSheet('getInitialData');
+                    if (res && res.status === 'success') {
+                        setEmployees(res.data.employees || {}); 
+                        setRecords(res.data.records || []); 
+                        setSchedules(res.data.schedules || {});
+                        if (res.data.settings) setSettings(res.data.settings);
+                    }
+                    setIsLoading(false);
+                };
+                fetchInitialData();
+            }, []);
+
+            const formatDateForInput = (date) => {
+                const d = new Date(date); 
+                const month = '' + (d.getMonth() + 1); 
+                const day = '' + d.getDate(); 
+                const year = d.getFullYear();
+                return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
+            };
+
+            const handleLogout = () => { 
+                setCurrentUser(null); 
+                setActiveTab('home'); 
+                setAvatarImgError(false); 
+            };
+
+            if (isLoading) return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+                    <div className="w-10 h-10 border-4 border-gray-200 border-t-primary rounded-full animate-spin mb-4"></div>
+                    <h2 className="text-gray-600 font-medium">กำลังโหลดข้อมูล...</h2>
+                </div>
+            );
+
+            if (!currentUser && activeTab === 'register') {
+                return <RegisterView employees={employees} setEmployees={setEmployees} onCancel={() => setActiveTab('home')} sendToGoogleSheet={sendToGoogleSheet} />;
+            }
+
+            if (!currentUser) {
+                return <UnifiedLoginView employees={employees} onLogin={(user) => { setCurrentUser(user); setAvatarImgError(false); }} onRegisterClick={() => setActiveTab('register')} />;
+            }
+
+            const isManager = currentUser.level === 'หัวหน้า' || currentUser.dept === 'ADMIN';
+            const role = currentUser.dept === 'ADMIN' ? 'admin' : (currentUser.level === 'หัวหน้า' ? 'supervisor' : 'employee');
+            
+            const getDriveImageUrl = (url) => {
+                if (!url) return null;
+                const match = url.match(/[-\w]{25,}/);
+                if (match && match[0]) return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w400-h400`;
+                return url;
+            };
+            
+            const latestRecordWithPhoto = records.filter(r => r.empId === currentUser.id && r.photoInUrl).sort((a,b) => b.id.localeCompare(a.id))[0];
+            const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${currentUser.fname}+${currentUser.lname}&background=e2e8f0&color=1e293b&size=150`;
+            const avatarUrl = (latestRecordWithPhoto && !avatarImgError) ? getDriveImageUrl(latestRecordWithPhoto.photoInUrl) : defaultAvatarUrl;
+
+            return (
+                <div className="min-h-screen flex flex-col bg-slate-50 pb-20 font-sans text-slate-900 relative">
+                    <div className="bg-primary h-40 w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm"></div>
+                    <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col h-full">
+                        <header className="flex justify-between items-center px-6 pt-5 pb-2 text-white print-hide">
+                            <div className="flex flex-col">
+                                {activeTab !== 'home' && <span className="font-semibold tracking-wider">รักษ์สกล Time</span>}
+                            </div>
+                            <button onClick={handleLogout} className="text-white/90 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors">
+                                <i className="fa-solid fa-arrow-right-from-bracket text-lg"></i>
+                            </button>
+                        </header>
+
+                        <main className="flex-grow px-4 sm:px-6 lg:px-8 mt-4">
+                            {activeTab === 'home' && <ActionPanelView currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} avatarUrl={avatarUrl} setActiveTab={setActiveTab} formatFullThaiDate={formatFullThaiDate} />}
+                            {activeTab === 'calendar' && <MyCalendarView currentUser={currentUser} schedules={schedules} />}
+                            {activeTab === 'history' && <MyHistoryView currentUser={currentUser} records={records} formatDateForInput={formatDateForInput} currentTime={currentTime} />}
+                            {activeTab === 'manager' && isManager && <ReportView role={role} user={currentUser} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} />}
+                        </main>
+                    </div>
+
+                    <a href={LEAVE_SYSTEM_URL} target="_blank" className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 bg-white text-primary border border-primary/20 px-4 py-3 rounded-full shadow-soft hover:shadow-md transition-all z-[100] flex items-center gap-2 print-hide" style={{ textDecoration: 'none' }}>
+                        <i className="fa-solid fa-notes-medical"></i><span className="text-sm font-medium">ลางาน</span>
+                    </a>
+
+                    <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 pb-safe print-hide bottom-nav-hide z-50">
+                        <div className="max-w-md mx-auto flex justify-around px-2">
+                            <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center justify-center w-full py-3 gap-1 transition-colors ${activeTab === 'home' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}>
+                                <i className={`fa-solid fa-clock text-lg ${activeTab === 'home' ? 'scale-110 transition-transform' : ''}`}></i>
+                                <span className="text-[10px] font-semibold">ลงเวลา</span>
+                            </button>
+                            <button onClick={() => setActiveTab('calendar')} className={`flex flex-col items-center justify-center w-full py-3 gap-1 transition-colors ${activeTab === 'calendar' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}>
+                                <i className={`fa-regular fa-calendar-days text-lg ${activeTab === 'calendar' ? 'scale-110 transition-transform' : ''}`}></i>
+                                <span className="text-[10px] font-semibold">ตารางเวร</span>
+                            </button>
+                            <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center justify-center w-full py-3 gap-1 transition-colors ${activeTab === 'history' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}>
+                                <i className={`fa-solid fa-clock-rotate-left text-lg ${activeTab === 'history' ? 'scale-110 transition-transform' : ''}`}></i>
+                                <span className="text-[10px] font-semibold">ประวัติ</span>
+                            </button>
+                            {isManager && (
+                                <button onClick={() => setActiveTab('manager')} className={`flex flex-col items-center justify-center w-full py-3 gap-1 transition-colors ${activeTab === 'manager' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}>
+                                    <i className={`fa-solid fa-layer-group text-lg ${activeTab === 'manager' ? 'scale-110 transition-transform' : ''}`}></i>
+                                    <span className="text-[10px] font-semibold">จัดการ</span>
+                                </button>
+                            )}
+                        </div>
+                    </nav>
+                </div>
+            );
+        }
+
+        function UnifiedLoginView({ employees, onLogin, onRegisterClick }) {
+            const [empId, setEmpId] = useState('');
+            const [password, setPassword] = useState('');
+            const [needsPassword, setNeedsPassword] = useState(false);
+            const [errorMsg, setErrorMsg] = useState('');
+
+            const handleNext = (e) => {
+                e?.preventDefault(); 
+                setErrorMsg('');
+                const id = empId.trim().toUpperCase();
+                if (!id) return setErrorMsg('กรุณากรอกรหัสพนักงาน');
+                
+                const emp = employees[id];
+                if (!emp) return setErrorMsg('ไม่พบรหัสพนักงานนี้ในระบบ');
+
+                const sheetPassword = emp.password || '';
+                
+                if (sheetPassword !== '' && !needsPassword) { 
+                    setNeedsPassword(true); 
+                    return; 
+                }
+                
+                if (needsPassword && password !== sheetPassword) {
+                    return setErrorMsg('รหัสผ่านไม่ถูกต้อง');
+                }
+                
+                onLogin({ id, ...emp });
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 relative">
+                    <div className="w-full max-w-md bg-white rounded-2xl shadow-soft border border-slate-100 p-8 sm:p-10 text-center">
+                        <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-6 border border-primary/20">
+                            <i className="fa-solid fa-fingerprint text-2xl text-primary"></i>
+                        </div>
+                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">รักษ์สกล Time</h1>
+                        <p className="text-slate-500 text-sm mt-1 mb-8">เข้าสู่ระบบเพื่อปฏิบัติงาน</p>
+
+                        {errorMsg && <div className="mb-6 p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100 flex items-center justify-center gap-2"><i className="fa-solid fa-circle-exclamation"></i>{errorMsg}</div>}
+
+                        <form onSubmit={handleNext} className="space-y-4 text-left">
+                            {!needsPassword ? (
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">รหัสพนักงาน</label>
+                                    <input type="text" placeholder="เช่น EMP01" value={empId} onChange={e => setEmpId(e.target.value.toUpperCase())} className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 outline-none text-slate-800 font-medium focus:bg-white focus:border-primary transition-all input-autofill-fix" />
+                                    <button type="submit" className="w-full mt-6 p-3.5 bg-primary hover:bg-blue-700 text-white rounded-xl font-medium text-base transition-colors shadow-sm">ดำเนินการต่อ</button>
+                                </div>
+                            ) : (
+                                <div className="animate-fade-in">
+                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">รหัสผ่านสำหรับ {employees[empId.toUpperCase()]?.fname}</label>
+                                    <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 outline-none text-slate-800 font-medium tracking-widest focus:bg-white focus:border-primary transition-all input-autofill-fix" autoFocus />
+                                    <div className="flex gap-3 mt-6">
+                                        <button type="button" onClick={() => {setNeedsPassword(false); setPassword('');}} className="w-1/3 p-3.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-medium transition-colors">กลับ</button>
+                                        <button type="submit" className="w-2/3 p-3.5 bg-primary hover:bg-blue-700 text-white rounded-xl font-medium transition-colors shadow-sm">เข้าสู่ระบบ</button>
+                                    </div>
+                                </div>
+                            )}
+                        </form>
+                        {!needsPassword && <div className="mt-8 pt-6 border-t border-slate-100"><p className="text-sm text-slate-500">พนักงานใหม่? <button onClick={onRegisterClick} className="text-primary font-semibold hover:underline ml-1">ลงทะเบียนใช้งาน</button></p></div>}
+                    </div>
+                </div>
+            );
+        }
+
+        function RegisterView({ employees, setEmployees, onCancel, sendToGoogleSheet }) {
+            const [formData, setFormData] = useState({ empId: '', fname: '', lname: '', dept: 'OPD', level: 'พนักงาน', password: '' });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!formData.empId.trim() || !formData.fname.trim() || !formData.lname.trim()) return Swal.fire({ icon: 'warning', text: 'กรุณากรอกข้อมูลให้ครบถ้วน', confirmButtonColor: '#2563eb' });
+                
+                const upperEmpId = formData.empId.trim().toUpperCase();
+                if (employees[upperEmpId]) return Swal.fire({ icon: 'warning', text: 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว', confirmButtonColor: '#2563eb' });
+
+                setIsSubmitting(true);
+                const res = await sendToGoogleSheet('register', { ...formData, empId: upperEmpId });
+                if (res && res.status === 'success') { 
+                    Swal.fire({ icon: 'success', text: 'ลงทะเบียนสำเร็จ', confirmButtonColor: '#2563eb', timer: 1500 }); 
+                    setEmployees({ ...employees, [upperEmpId]: { ...formData } }); 
+                    onCancel(); 
+                } else if (res && res.status === 'error') { 
+                    Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#2563eb' }); 
+                }
+                setIsSubmitting(false);
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+                    <div className="max-w-lg w-full bg-white rounded-2xl shadow-soft border border-slate-200 p-8 sm:p-10">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-xl font-bold text-slate-800">ลงทะเบียนพนักงาน</h2>
+                            <button onClick={onCancel} className="text-slate-400 hover:text-slate-800"><i className="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 mb-1.5">รหัสพนักงาน</label>
+                                <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none" placeholder="EMP01" />
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">ชื่อ</label>
+                                    <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none" />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">นามสกุล</label>
+                                    <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none" />
+                                </div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">แผนก</label>
+                                    <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none bg-white">
+                                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">ระดับ</label>
+                                    <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none bg-white">
+                                        <option value="พนักงาน">พนักงาน</option><option value="หัวหน้า">หัวหน้า</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 mb-1.5">รหัสผ่าน (Option)</label>
+                                <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none" placeholder="ปล่อยว่างได้ถ้าระดับพนักงาน" />
+                            </div>
+                            <button type="submit" disabled={isSubmitting} className="w-full p-3.5 bg-primary hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors mt-6 shadow-sm">
+                                {isSubmitting ? 'กำลังบันทึก...' : 'สร้างบัญชี'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        function ActionPanelView({ currentUser, currentTime, records, setRecords, schedules, formatDateForInput, sendToGoogleSheet, avatarUrl, setActiveTab, formatFullThaiDate }) {
+            const [actionType, setActionType] = useState(null); 
+            
+            if (!actionType) {
+                return (
+                    <div className="max-w-md mx-auto flex flex-col items-center mt-4">
+                        <div className="w-28 h-28 rounded-full border-4 border-white overflow-hidden bg-slate-100 shadow-md mb-3 shrink-0 relative">
+                            <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover transform scale-x-[-1]" />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-800">{currentUser.fname} {currentUser.lname}</h2>
+                        <p className="text-sm text-slate-500 mb-8 font-medium">แผนก{currentUser.dept}</p>
+                        
+                        <div className="text-7xl leading-none font-medium text-primary tracking-tighter mb-2 font-mono">
+                            {formatTime24(currentTime)}
+                        </div>
+                        <p className="text-sm font-semibold text-slate-500 mb-12">
+                            {formatFullThaiDate(currentTime)}
+                        </p>
+                        
+                        <div className="flex gap-4 w-full px-4 mb-5">
+                            <button onClick={() => setActionType('in')} className="flex-1 bg-primary text-white py-4 rounded-2xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all text-sm tracking-wide">
+                                ลงเวลาเข้า
+                            </button>
+                            <button onClick={() => setActionType('out')} className="flex-1 bg-secondary text-white py-4 rounded-2xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all text-sm tracking-wide">
+                                ลงเวลาออก
+                            </button>
+                        </div>
+                        <div className="w-full px-4">
+                            <button onClick={() => setActiveTab('history')} className="w-full bg-white border shadow-sm border-slate-200 text-slate-600 py-3.5 rounded-2xl font-semibold hover:bg-slate-50 transition-colors text-sm tracking-wide">
+                                ประวัติการลงเวลา
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+            return (
+                <div className="max-w-md mx-auto mt-4">
+                    <button onClick={() => setActionType(null)} className="mb-4 text-slate-500 text-sm hover:text-slate-900 flex items-center transition-colors font-semibold">
+                        <i className="fa-solid fa-arrow-left mr-2"></i> ย้อนกลับ
+                    </button>
+                    {actionType === 'in' && <ClockInModule currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} onDone={() => setActionType(null)} />}
+                    {actionType === 'out' && <ClockOutModule currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} onDone={() => setActionType(null)} />}
+                </div>
+            );
+        }
+
+        function ClockInModule({ currentUser, currentTime, records, setRecords, schedules, formatDateForInput, sendToGoogleSheet, onDone }) {
+            const [selectedShift, setSelectedShift] = useState(''); 
+            const [validShifts, setValidShifts] = useState([]);
+            const [locationStatus, setLocationStatus] = useState('checking'); 
+            const [currentLocation, setCurrentLocation] = useState(null);
+            const [cameraActive, setCameraActive] = useState(false); 
+            const [isScanning, setIsScanning] = useState(false);
+            const [result, setResult] = useState(null); 
+            const [errorMsg, setErrorMsg] = useState('');
+            const videoRef = useRef(null);
+            
+            const todayStrRaw = formatDateForInput(currentTime); 
+            let effectiveTargetDate = todayStrRaw;
+            
+            if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
+                const yesterday = new Date(currentTime); yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = formatDateForInput(yesterday);
+                const yestObj = schedules[yesterdayStr]?.[currentUser.id];
+                const yesterdayShifts = yestObj?.shifts || (Array.isArray(yestObj) ? yestObj : []);
+                if (yesterdayShifts.includes(selectedShift)) {
+                    effectiveTargetDate = yesterdayStr; 
+                }
+            }
+            
+            const isAlreadyClockedIn = selectedShift ? records.some(r => r.empId === currentUser.id && r.date === effectiveTargetDate && r.shiftId === selectedShift) : false;
+
+            useEffect(() => { initializeSetup(); }, []);
+
+            useEffect(() => {
+                if (cameraActive && !result && locationStatus === 'ok') {
+                    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(stream => { if (videoRef.current) videoRef.current.srcObject = stream; }).catch(() => { setErrorMsg("ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาต"); setCameraActive(false); });
+                } else { 
+                    const stream = videoRef.current?.srcObject; 
+                    if (stream) stream.getTracks().forEach(track => track.stop()); 
+                }
+                return () => { const stream = videoRef.current?.srcObject; if (stream) stream.getTracks().forEach(track => track.stop()); }
+            }, [cameraActive, result, locationStatus]);
+
+            const getDistance = (lat1, lon1, lat2, lon2) => {
+                const R = 6371; 
+                const dLat = (lat2 - lat1) * Math.PI / 180; 
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+                return R * c * 1000; 
+            };
+
+            const checkLocation = () => {
+                setLocationStatus('checking'); setErrorMsg('');
+                if (!navigator.geolocation) { setErrorMsg("เบราว์เซอร์ไม่รองรับ GPS"); setLocationStatus('error'); return; }
+                
+                const fallbackTimeout = setTimeout(() => { setErrorMsg("GPS ไม่ตอบสนอง ลองสลับเน็ตหรือรีเฟรชหน้าเว็บ"); setLocationStatus('error'); }, 15000);
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => { 
+                        clearTimeout(fallbackTimeout); 
+                        const lat = position.coords.latitude; const lon = position.coords.longitude; 
+                        setCurrentLocation({ lat, lon });
+                        const dist = getDistance(lat, lon, HOSPITAL_LAT, HOSPITAL_LON);
+                        if (dist <= ALLOWED_RADIUS) { setLocationStatus('ok'); setErrorMsg(''); } else { setErrorMsg(`อยู่นอกพื้นที่ (${Math.round(dist)}ม.)`); setLocationStatus('error'); }
+                    },
+                    (err) => { clearTimeout(fallbackTimeout); let msg = "ไม่สามารถระบุตำแหน่งได้"; if (err.code === 1) msg = "กรุณาอนุญาตการเข้าถึงตำแหน่ง (Location)"; if (err.code === 2) msg = "สัญญาณ GPS ขัดข้อง"; if (err.code === 3) msg = "หมดเวลาการค้นหาพิกัด"; setErrorMsg(msg); setLocationStatus('error'); },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            };
+
+            const initializeSetup = () => {
+                const todayStr = formatDateForInput(currentTime);
+                const activeRecord = records.find(r => r.empId === currentUser.id && (r.date === todayStr || (currentTime.getHours() <= 8 && r.date === formatDateForInput(new Date(currentTime.getTime() - 86400000)))) && !r.timeOut);
+                
+                if (activeRecord) { setErrorMsg(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[activeRecord.shiftId]?.label || activeRecord.shiftId}"`); setLocationStatus('error'); return; }
+                
+                let targetDate = todayStr; 
+                const schedObjToday = schedules[todayStr]?.[currentUser.id]; 
+                let scheduledShifts = schedObjToday?.shifts || (Array.isArray(schedObjToday) ? schedObjToday : []);
+                
+                if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
+                    const yesterday = new Date(currentTime); yesterday.setDate(yesterday.getDate() - 1); 
+                    const yesterdayStr = formatDateForInput(yesterday);
+                    const yestObj = schedules[yesterdayStr]?.[currentUser.id]; 
+                    const yesterdayShifts = yestObj?.shifts || (Array.isArray(yestObj) ? yestObj : []);
+                    if (yesterdayShifts.length > 0) { scheduledShifts = yesterdayShifts; targetDate = yesterdayStr; }
+                }
+                
+                const completedShifts = records.filter(r => r.empId === currentUser.id && r.date === targetDate).map(r => r.shiftId);
+                const validScheduledShifts = scheduledShifts.filter(s => s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s) && !completedShifts.includes(s));
+                
+                setValidShifts(validScheduledShifts);
+                if(validScheduledShifts.length > 0) { 
+                    setSelectedShift(validScheduledShifts[0]); checkLocation(); 
+                } else { 
+                    setSelectedShift(''); 
+                    if (scheduledShifts.length > 0 && completedShifts.length > 0) { setErrorMsg('ลงเวลาครบทุกกะของวันนี้แล้ว'); } 
+                    else { setErrorMsg('ไม่พบตารางเวรของคุณในระบบ'); } 
+                    setLocationStatus('error'); 
+                }
+            };
+
+            const handleClockIn = async () => {
+                if (isAlreadyClockedIn) { setErrorMsg(`ไม่อนุญาต: คุณได้ลงเวลาสำหรับกะนี้ไปแล้ว`); setIsScanning(false); setCameraActive(false); return; }
+                
+                setErrorMsg(''); setIsScanning(true);
+                const todayStr = formatDateForInput(currentTime); 
+                let targetDate = todayStr; 
+                
+                const schedObjToday = schedules[todayStr]?.[currentUser.id]; 
+                let scheduledShifts = schedObjToday?.shifts || (Array.isArray(schedObjToday) ? schedObjToday : []);
+                
+                if (currentTime.getHours() >= 0 && currentTime.getHours() <= 3) {
+                    const yesterday = new Date(currentTime); yesterday.setDate(yesterday.getDate() - 1); 
+                    const yesterdayStr = formatDateForInput(yesterday);
+                    const yestObj = schedules[yesterdayStr]?.[currentUser.id]; 
+                    const yesterdayShifts = yestObj?.shifts || (Array.isArray(yestObj) ? yestObj : []);
+                    if (yesterdayShifts.includes(selectedShift)) { scheduledShifts = yesterdayShifts; targetDate = yesterdayStr; }
+                }
+                
+                const photoBase64 = captureImage(videoRef.current);
+                if (!photoBase64) { setErrorMsg(`จับภาพล้มเหลว รอให้กล้องชัดเจนก่อนกดสแกน`); setIsScanning(false); return; }
+                
+                const shiftData = SHIFT_TYPES[selectedShift]; 
+                const [shiftHour, shiftMinute] = shiftData.start.split(':').map(Number);
+                const actualMins = currentTime.getHours() * 60 + currentTime.getMinutes(); 
+                const deadlineMins = (shiftHour * 60) + shiftMinute + 5; 
+                const isLate = actualMins > deadlineMins && actualMins < deadlineMins + 720; 
+                const lateMinutes = isLate ? (actualMins - deadlineMins) : 0; 
+                const timeInStr = formatTime24(currentTime);
+                
+                const newRecord = { id: Date.now().toString(), date: targetDate, empId: currentUser.id, shiftId: selectedShift, timeIn: timeInStr, timeOut: null, isLate: isLate, lateMinutes: lateMinutes, credit: shiftData.credit, lat: currentLocation?.lat, lon: currentLocation?.lon, photoBase64: photoBase64 };
+                
+                const res = await sendToGoogleSheet('clockIn', newRecord, 3);
+                if (res && res.status === 'success') { setRecords([...records, newRecord]); setResult({ ...newRecord, shiftName: shiftData.label }); } 
+                else if (res && res.status === 'error') { Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#2563eb' }); }
+                
+                setIsScanning(false); setCameraActive(false);
+            };
+
+            if (result) return (
+                <div className="bg-white rounded-2xl p-8 shadow-soft border border-slate-100 text-center animate-fade-in">
+                    <div className="w-16 h-16 bg-blue-50 text-primary rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100"><i className="fa-solid fa-check text-3xl"></i></div>
+                    <h2 className="text-xl font-bold text-slate-800">บันทึกเข้างานสำเร็จ</h2>
+                    <div className="my-6">
+                        <p className="text-5xl font-semibold text-primary mb-2 tracking-tight">{displaySafeTime(result.timeIn)}</p>
+                        <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-md border border-slate-200">{result.shiftName}</p>
+                    </div>
+                    {result.isLate && <div className="mb-6 text-sm text-red-600 font-bold bg-red-50 py-2 rounded-lg border border-red-100">บันทึกสาย {result.lateMinutes} นาที</div>}
+                    <button onClick={onDone} className="w-full p-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold transition-colors">เสร็จสิ้น</button>
+                </div>
+            );
+
+            return (
+                <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fade-in">
+                    <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 text-primary flex items-center justify-center"><i className="fa-solid fa-arrow-right-to-bracket text-sm"></i></div>
+                        <h2 className="text-lg font-bold text-slate-800">เข้างาน</h2>
+                    </div>
+                    <div className="p-6 space-y-5">
+                        {errorMsg && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{errorMsg}</span></div>}
+                        
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">กะการทำงาน</label>
+                            {validShifts.length > 0 ? (
+                                <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)} className="w-full p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800 focus:border-primary">
+                                    {validShifts.map(key => <option key={key} value={key}>{SHIFT_TYPES[key]?.label || key}</option>)}
+                                </select>
+                            ) : (
+                                <div className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 text-sm font-medium">ไม่พบตารางเวรที่ลงได้</div>
+                            )}
+                        </div>
+                        
+                        <div className={`p-3 rounded-lg flex items-center gap-2 text-sm border font-medium ${locationStatus === 'ok' ? 'bg-blue-50 border-blue-200 text-primary' : locationStatus === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                            {locationStatus === 'ok' ? <><i className="fa-solid fa-location-dot"></i> พิกัดถูกต้อง</> : locationStatus === 'error' ? <><i className="fa-solid fa-location-xmark"></i> {errorMsg || 'พิกัดอยู่นอกพื้นที่'}</> : <><i className="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบพิกัด...</>}
+                        </div>
+                        
+                        <div className="border border-slate-200 rounded-xl h-64 flex items-center justify-center bg-slate-100 overflow-hidden relative shadow-inner">
+                            {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
+                            <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className="flex flex-col items-center text-slate-400 hover:text-slate-600 transition-colors">
+                                <i className="fa-solid fa-camera text-4xl mb-3"></i>
+                                <span className="text-sm font-semibold">เปิดกล้องสแกนใบหน้า</span>
+                            </button>}
+                        </div>
+                        
+                        <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className={`w-full p-4 rounded-xl font-bold text-base text-white transition-all ${(cameraActive && locationStatus === 'ok' && validShifts.length > 0 && !isAlreadyClockedIn) ? 'bg-primary hover:bg-blue-700 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
+                            {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันเข้างาน'}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function ClockOutModule({ currentUser, currentTime, records, setRecords, formatDateForInput, sendToGoogleSheet, onDone }) {
+            const [outDate, setOutDate] = useState(formatDateForInput(currentTime)); 
+            const [foundRecord, setFoundRecord] = useState(null);
+            const [errorMsg, setErrorMsg] = useState(''); 
+            const [cameraActive, setCameraActive] = useState(false);
+            const [isScanning, setIsScanning] = useState(false); 
+            const [showEarlyWarning, setShowEarlyWarning] = useState(false);
+            const [successResult, setSuccessResult] = useState(null); 
+            const videoRef = useRef(null);
+
+            useEffect(() => { searchRecord(outDate); }, []);
+            
+            useEffect(() => {
+                if (cameraActive && !successResult) { 
+                    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(stream => { if (videoRef.current) videoRef.current.srcObject = stream; }).catch(() => { setErrorMsg("ไม่สามารถเข้าถึงกล้องได้"); setCameraActive(false); }); 
+                } else { 
+                    const stream = videoRef.current?.srcObject; if (stream) stream.getTracks().forEach(track => track.stop()); 
+                }
+                return () => { const stream = videoRef.current?.srcObject; if (stream) stream.getTracks().forEach(track => track.stop()); }
+            }, [cameraActive, successResult]);
+
+            const searchRecord = (searchDate) => { 
+                setErrorMsg(''); setFoundRecord(null); setCameraActive(false); 
+                const record = records.find(r => r.empId === currentUser.id && r.date === searchDate && !r.timeOut); 
+                if (!record) { setErrorMsg(`ไม่พบประวัติค้างออกของวันที่เลือก`); return; } 
+                setFoundRecord(record); 
+            };
+            
+            const handleDateChange = (e) => { const newDate = e.target.value; setOutDate(newDate); searchRecord(newDate); };
+            
+            const handleClockOutAttempt = () => {
+                if (!cameraActive) return;
+                const shiftData = SHIFT_TYPES[foundRecord.shiftId]; 
+                let shiftEndStr = shiftData.end === '24:00' ? '23:59' : shiftData.end;
+                const [endH, endM] = shiftEndStr.split(':').map(Number); 
+                const [startH, startM] = shiftData.start.split(':').map(Number);
+                
+                const endTime = new Date(currentTime); 
+                endTime.setHours(endH, endM, 0, 0);
+                if (endH < startH) if (currentTime.getHours() >= 12) endTime.setDate(endTime.getDate() + 1);
+                
+                if (currentTime < endTime) setShowEarlyWarning(true); 
+                else processClockOut();
+            };
+            
+            const processClockOut = async () => {
+                setShowEarlyWarning(false); setIsScanning(true); setErrorMsg('');
+                const photoBase64 = captureImage(videoRef.current); 
+                if (!photoBase64) { setIsScanning(false); return; }
+                
+                const timeOutStr = formatTime24(currentTime);
+                const res = await sendToGoogleSheet('clockOut', { id: foundRecord.id, timeOut: timeOutStr, photoBase64: photoBase64 }, 3);
+                
+                if (res && res.status === 'success') { 
+                    setRecords(records.map(r => r.id === foundRecord.id ? { ...r, timeOut: timeOutStr } : r)); 
+                    setSuccessResult({ timeOut: timeOutStr, shiftName: SHIFT_TYPES[foundRecord.shiftId]?.label }); 
+                } else if (res && res.status === 'error') { 
+                    Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#0ea5e9' }); 
+                }
+                
+                setIsScanning(false); setCameraActive(false);
+            };
+
+            if (successResult) return (
+                <div className="bg-white rounded-2xl p-8 shadow-soft border border-slate-100 text-center animate-fade-in">
+                    <div className="w-16 h-16 bg-sky-50 text-secondary rounded-full flex items-center justify-center mx-auto mb-4 border border-sky-100"><i className="fa-solid fa-arrow-right-from-bracket text-3xl"></i></div>
+                    <h2 className="text-xl font-bold text-slate-800">บันทึกออกงานสำเร็จ</h2>
+                    <div className="my-6">
+                        <p className="text-5xl font-semibold text-secondary mb-2 tracking-tight">{displaySafeTime(successResult.timeOut)}</p>
+                        <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-md border border-slate-200">{successResult.shiftName}</p>
+                    </div>
+                    <button onClick={onDone} className="w-full p-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold transition-colors">เสร็จสิ้น</button>
+                </div>
+            );
+
+            return (
+                <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fade-in">
+                    <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
+                        <div className="w-8 h-8 rounded-full bg-sky-100 text-secondary flex items-center justify-center"><i className="fa-solid fa-arrow-right-from-bracket text-sm"></i></div>
+                        <h2 className="text-lg font-bold text-slate-800">ออกงาน</h2>
+                    </div>
+                    <div className="p-6 space-y-5">
+                        {errorMsg && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{errorMsg}</span></div>}
+                        
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">วันที่เข้างาน</label>
+                            <input type="date" value={outDate} onChange={handleDateChange} className="w-full p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800 focus:border-secondary" />
+                        </div>
+                        
+                        {!foundRecord ? (
+                            <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-400 text-sm font-medium">ไม่พบประวัติเข้างานของวันที่เลือก</div>
+                        ) : (
+                            <div className="space-y-5 animate-in fade-in">
+                                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between items-center">
+                                    <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">กะที่บันทึก</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{SHIFT_TYPES[foundRecord.shiftId]?.label}</p></div>
+                                    <div className="text-right"><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">เข้าเมื่อ</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{displaySafeTime(foundRecord.timeIn)}</p></div>
+                                </div>
+                                
+                                <div className="border border-slate-200 rounded-xl h-64 flex items-center justify-center bg-slate-100 overflow-hidden relative shadow-inner">
+                                    {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
+                                    <button onClick={() => setCameraActive(true)} className="flex flex-col items-center text-slate-400 hover:text-slate-600 transition-colors">
+                                        <i className="fa-solid fa-camera text-4xl mb-3"></i><span className="text-sm font-semibold">เปิดกล้องสแกนหน้า</span>
+                                    </button>}
+                                </div>
+                                
+                                {showEarlyWarning ? (
+                                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-sm">
+                                        <p className="text-amber-800 mb-4 text-sm font-bold">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
+                                        <div className="flex gap-2">
+                                            <button onClick={processClockOut} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-2.5 text-sm font-bold transition-colors">ยืนยัน</button>
+                                            <button onClick={() => setShowEarlyWarning(false)} className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg py-2.5 text-sm font-bold transition-colors">ยกเลิก</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button onClick={handleClockOutAttempt} disabled={!cameraActive || isScanning} className={`w-full p-4 rounded-xl font-bold text-base text-white transition-all ${cameraActive ? 'bg-secondary hover:bg-sky-600 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
+                                        {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันออกงาน'}
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function MyCalendarView({ currentUser, schedules }) {
+            const [currentDate, setCurrentDate] = useState(new Date()); 
+            const [selectedDate, setSelectedDate] = useState(null);
+            
+            const year = currentDate.getFullYear(); const month = currentDate.getMonth(); 
+            const daysInMonth = new Date(year, month + 1, 0).getDate(); 
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); 
+            const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            
+            const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i); 
+            const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+            const todayDate = new Date(); 
+            const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
+
+            return (
+                <div className="max-w-3xl mx-auto space-y-4 mt-2">
+                    <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors"><i className="fa-solid fa-chevron-left text-sm"></i></button>
+                        <h2 className="text-lg font-bold text-slate-800">{monthNames[month]} {year + 543}</h2>
+                        <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors"><i className="fa-solid fa-chevron-right text-sm"></i></button>
+                    </div>
+                    <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
+                        <div className="grid grid-cols-7 gap-2 mb-3 border-b border-slate-100 pb-2">
+                            {['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map((d, i) => (<div key={d} className={`text-center text-xs font-bold py-1 ${i === 0 || i === 6 ? 'text-rose-500' : 'text-slate-500'}`}>{d}</div>))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                            {blanks.map(b => <div key={`blank-${b}`} className="min-h-[70px]"></div>)}
+                            {days.map(day => {
+                                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                const dayShifts = schedules[dateStr]?.[currentUser.id]?.shifts || []; 
+                                const isToday = dateStr === todayStr; 
+                                const isWeekend = [0, 6].includes(new Date(year, month, day).getDay());
+                                return (
+                                    <div key={day} onClick={() => setSelectedDate({ dateStr, day, dayShifts })} className={`relative flex flex-col p-1.5 sm:p-2 min-h-[60px] sm:min-h-[70px] rounded-xl cursor-pointer border transition-all ${isToday ? 'bg-blue-50 border-blue-300 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'} ${isWeekend && !isToday ? 'bg-rose-50/30' : ''}`}>
+                                        <span className={`text-[10px] sm:text-xs font-bold mb-1 ${isToday ? 'text-primary' : isWeekend ? 'text-rose-500' : 'text-slate-600'}`}>{day}</span>
+                                        <div className="flex flex-col gap-1 w-full overflow-hidden">
+                                            {dayShifts.map((s, i) => { 
+                                                const isLeave = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s); 
+                                                return <span key={i} className={`text-[9px] sm:text-[10px] font-bold px-1 py-0.5 rounded text-center truncate border ${isLeave ? 'bg-slate-100 text-slate-600 border-slate-300' : 'bg-white text-slate-800 border-slate-300 shadow-sm'}`}>{s}</span> 
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    {selectedDate && (
+                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in" onClick={() => setSelectedDate(null)}>
+                            <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft overflow-hidden border border-slate-200" onClick={e => e.stopPropagation()}>
+                                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50"><h3 className="font-bold text-slate-800">เวรวันที่ {selectedDate.day} {monthNames[month]} {year + 543}</h3><button onClick={() => setSelectedDate(null)} className="text-slate-400 hover:text-slate-800"><i className="fa-solid fa-xmark"></i></button></div>
+                                <div className="p-6">
+                                    <div className="space-y-3">
+                                        {selectedDate.dayShifts.length > 0 ? (
+                                            selectedDate.dayShifts.map((s, i) => { 
+                                                const isLeave = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s); 
+                                                return (
+                                                    <div key={i} className={`border rounded-xl p-4 flex justify-between items-center ${isLeave ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                                        <span className="font-bold text-slate-800 text-lg">{s}</span><span className="text-slate-500 text-sm font-medium">{SHIFT_TYPES[s]?.label || 'ไม่ระบุเวลา'}</span>
+                                                    </div>
+                                                ) 
+                                            })
+                                        ) : (<div className="text-center py-6 text-slate-400 text-sm font-medium">ไม่มีกะเวรในวันนี้</div>)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function MyHistoryView({ currentUser, records, formatDateForInput, currentTime }) {
+            const [filterMonth, setFilterMonth] = useState(`${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, '0')}`);
+            const myRecords = records.filter(r => r.empId === currentUser.id && r.date.startsWith(filterMonth)).sort((a, b) => b.date.localeCompare(a.date) || b.timeIn.localeCompare(a.timeIn));
+            const totalCredit = myRecords.reduce((sum, r) => sum + (r.credit || 0), 0); 
+            const totalLate = myRecords.filter(r => r.isLate).length;
+
+            return (
+                <div className="max-w-3xl mx-auto space-y-4 mt-2">
+                    <div className="flex flex-wrap gap-4 items-center justify-between bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
+                        <h2 className="text-lg font-bold text-slate-800">ประวัติของฉัน</h2>
+                        <input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="p-2 border border-slate-300 rounded-lg bg-white text-sm font-semibold text-slate-700 outline-none focus:border-primary" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-primary text-white rounded-2xl p-5 shadow-md">
+                            <p className="text-white/80 text-xs uppercase tracking-wider mb-1 font-bold">เครดิตเวร</p>
+                            <p className="text-4xl font-semibold tracking-tight">{totalCredit}</p>
+                        </div>
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                            <p className="text-slate-500 text-xs uppercase tracking-wider mb-1 font-bold">สาย</p>
+                            <p className="text-4xl font-semibold tracking-tight text-slate-800">{totalLate} <span className="text-sm font-medium text-slate-400">ครั้ง</span></p>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        {myRecords.map((r, i) => (
+                            <div key={r.id} className={`p-4 flex flex-col sm:flex-row gap-3 justify-between sm:items-center ${i !== myRecords.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-slate-50 transition-colors`}>
+                                <div className="flex items-center gap-4">
+                                    <div className="text-center min-w-[50px]">
+                                        <span className="block text-xs font-bold text-slate-400">{formatDisplayDate(r.date).slice(0,5)}</span>
+                                        <span className="block font-bold text-slate-800 mt-0.5">{SHIFT_TYPES[r.shiftId]?.label.split(' ')[0] || r.shiftId}</span>
+                                    </div>
+                                    <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
+                                    <div className="flex items-center gap-3 text-sm">
+                                        <div><span className="text-slate-400 text-xs font-bold block mb-0.5">เข้า</span><span className="font-semibold text-slate-800">{displaySafeTime(r.timeIn)}</span></div>
+                                        <div><span className="text-slate-400 text-xs font-bold block mb-0.5">ออก</span><span className="font-semibold text-slate-800">{displaySafeTime(r.timeOut)}</span></div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {r.isLate && <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded text-xs font-bold border border-red-200">สาย {r.lateMinutes} นาที</span>}
+                                    <span className="text-slate-600 text-xs font-bold px-2 py-0.5 bg-slate-100 rounded border border-slate-200">เครดิต: {r.credit}</span>
+                                </div>
+                            </div>
+                        ))}
+                        {myRecords.length === 0 && <div className="p-8 text-center text-slate-400 text-sm font-medium">ไม่พบประวัติในเดือนนี้</div>}
+                    </div>
+                </div>
+            );
+        }
+
+        function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
+            const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs'); 
+            const [startDate, setStartDate] = useState(''); 
+            const [endDate, setEndDate] = useState('');
+            const now = new Date(); 
+            const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const [matrixMonth, setMatrixMonth] = useState(defaultMonth);
+            const [filterDept, setFilterDept] = useState(role === 'supervisor' ? user.dept : ''); 
+            const [filterEmp, setFilterEmp] = useState('');
+            
+            const [localWorkDays, setLocalWorkDays] = useState(22);
+            useEffect(() => { setLocalWorkDays(parseInt(settings?.standardWorkDays?.[matrixMonth]) || 22); }, [settings, matrixMonth]);
+            
+            const [selectedMapRecord, setSelectedMapRecord] = useState(null); 
+            const [selectedPhotoRecord, setSelectedPhotoRecord] = useState(null);
+            const [editModalData, setEditModalData] = useState(null); 
+            const [addModalData, setAddModalData] = useState(null);
+            const [isSaving, setIsSaving] = useState(false); 
+            const [scheduleModalData, setScheduleModalData] = useState(null);
+            const [autoScheduleModal, setAutoScheduleModal] = useState(false); 
+            const [autoScheduleData, setAutoScheduleData] = useState({ empId: 'all', shiftId: '', dayPattern: 'all', overwrite: false, assignMode: 'all', requiredCount: 1 });
+
+            const filteredRecords = records.filter(r => {
+                const emp = employees[r.empId]; 
+                if (!emp) return false; 
+                if (startDate && r.date < startDate) return false; 
+                if (endDate && r.date > endDate) return false; 
+                if (filterDept && emp.dept !== filterDept) return false;
+                if (filterEmp) { 
+                    const search = filterEmp.toLowerCase(); 
+                    if (!r.empId.toLowerCase().includes(search) && !`${emp.fname} ${emp.lname}`.toLowerCase().includes(search)) return false; 
+                }
+                return true;
+            });
+
+            const matrixYear = parseInt(matrixMonth.split('-')[0], 10); 
+            const matrixMonthNum = parseInt(matrixMonth.split('-')[1], 10); 
+            const daysInMonth = new Date(matrixYear, matrixMonthNum, 0).getDate(); 
+            const daysArray = Array.from({length: daysInMonth}, (_, i) => i + 1);
+
+            const matrixEmployees = Object.keys(employees).filter(id => {
+                const emp = employees[id]; 
+                if (filterDept && emp.dept !== filterDept) return false;
+                if (filterEmp) { 
+                    const search = filterEmp.toLowerCase(); 
+                    if (!id.toLowerCase().includes(search) && !`${emp.fname} ${emp.lname}`.toLowerCase().includes(search)) return false; 
+                } 
+                return true;
+            });
+
+            const summaryMatrix = matrixEmployees.map(empId => {
+                const empRecords = records.filter(r => r.empId === empId && r.date.startsWith(matrixMonth)); 
+                const shiftsByDay = {}; const shiftCounts = {}; 
+                let empTotalCredit = 0, empTotalLate = 0; 
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                
+                daysArray.forEach(day => {
+                    const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayRecords = empRecords.filter(r => r.date === dateStr); 
+                    const schedObj = schedules[dateStr]?.[empId]; 
+                    const scheduledShifts = schedObj?.shifts || [];
+                    let shiftDisplay = '-', isAbsent = false, uiElements = []; 
+
+                    if (adminTab === 'schedules') {
+                        if (scheduledShifts.length > 0) {
+                            shiftDisplay = scheduledShifts.join(', ');
+                            scheduledShifts.forEach(s => { 
+                                if (s) shiftCounts[s] = (shiftCounts[s] || 0) + 1; 
+                                if (SHIFT_TYPES[s]) empTotalCredit += SHIFT_TYPES[s].credit; 
+                                else if (['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) empTotalCredit += 1; 
+                            });
+                        }
+                        shiftsByDay[day] = { display: shiftDisplay, isAbsent: false, uiElements: [] };
+                    } else {
+                        const workedShifts = dayRecords.map(r => r.shiftId).filter(Boolean); 
+                        const pendingShifts = scheduledShifts.filter(s => s && !workedShifts.includes(s)); 
+                        let displayArr = [];
+                        
+                        workedShifts.forEach(s => { 
+                            shiftCounts[s] = (shiftCounts[s] || 0) + 1; 
+                            displayArr.push(s); 
+                            uiElements.push({ shift: s, type: 'worked' }); 
+                        });
+                        empTotalCredit += dayRecords.reduce((sum, r) => sum + (r.credit || 0), 0); 
+                        empTotalLate += dayRecords.reduce((sum, r) => sum + (r.isLate ? Number(r.lateMinutes) : 0), 0);
+
+                        if (dateStr < todayStr) {
+                            pendingShifts.forEach(s => {
+                                if (['Vac', 'พักร้อน', 'ป่วย', 'ลา', 'Off'].includes(s)) { 
+                                    shiftCounts[s] = (shiftCounts[s] || 0) + 1; 
+                                    if (['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) empTotalCredit += 1; 
+                                    displayArr.push(s); 
+                                    uiElements.push({ shift: s, type: 'leave' }); 
+                                } else { 
+                                    shiftCounts['ขาด'] = (shiftCounts['ขาด'] || 0) + 1; 
+                                    isAbsent = true; 
+                                    displayArr.push(`${s} (ขาด)`); 
+                                    uiElements.push({ shift: s, type: 'absent' }); 
+                                }
+                            });
+                        } else {
+                            pendingShifts.forEach(s => { 
+                                shiftCounts[s] = (shiftCounts[s] || 0) + 1; 
+                                if (SHIFT_TYPES[s]) empTotalCredit += SHIFT_TYPES[s].credit; 
+                                else if (['Vac', 'พักร้อน', 'ป่วย', 'ลา'].includes(s)) empTotalCredit += 1; 
+                                displayArr.push(s); 
+                                uiElements.push({ shift: s, type: 'pending' }); 
+                            });
+                        }
+                        shiftsByDay[day] = { display: displayArr.join(', ') || '-', isAbsent, uiElements };
+                    }
+                });
+                return { empId, fname: employees[empId].fname, lname: employees[empId].lname, dept: employees[empId].dept, level: employees[empId].level, shiftsByDay, empTotalCredit, empTotalLate, otShifts: empTotalCredit - localWorkDays, shiftCounts };
+            });
+
+            const getDailyShiftCounts = (day) => {
+                const counts = {};
+                summaryMatrix.forEach(row => {
+                    if (adminTab === 'schedules') { 
+                        const shifts = schedules[`${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`]?.[row.empId]?.shifts || []; 
+                        shifts.forEach(s => { if (s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s)) counts[s] = (counts[s] || 0) + 1; }); 
+                    } 
+                    else if (adminTab === 'summary') { 
+                        (row.shiftsByDay[day]?.uiElements || []).forEach(el => { 
+                            if ((el.type === 'worked' || el.type === 'pending') && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(el.shift)) counts[el.shift] = (counts[el.shift] || 0) + 1; 
+                        }); 
+                    }
+                });
+                return counts;
+            };
+
+            const allShiftTypesUsed = new Set(); 
+            summaryMatrix.forEach(emp => Object.keys(emp.shiftCounts).forEach(type => allShiftTypesUsed.add(type)));
+            const sortedShiftTypesUsed = Array.from(allShiftTypesUsed).sort((a, b) => {
+                const nonWorkA = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(a), nonWorkB = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(b);
+                if (!nonWorkA && nonWorkB) return -1; if (nonWorkA && !nonWorkB) return 1; return a.localeCompare(b);
+            });
+
+            const handleSaveSettings = async () => { const res = await sendToGoogleSheet('saveSettings', { standardWorkDays: localWorkDays, monthYear: matrixMonth }); if(res?.status === 'success') { setSettings({...settings, standardWorkDays: { ...settings.standardWorkDays, [matrixMonth]: localWorkDays }}); Swal.fire({ icon: 'success', text: 'บันทึกวันทำการสำเร็จ', timer: 1500, showConfirmButton: false }); } };
+            
+            const handleSaveEdit = async () => { 
+                setIsSaving(true); 
+                const shiftData = SHIFT_TYPES[editModalData.shiftId]; 
+                const res = await sendToGoogleSheet('editRecord', { id: editModalData.id, timeIn: editModalData.timeIn || '', timeOut: editModalData.timeOut || '', shiftId: editModalData.shiftId, credit: shiftData ? shiftData.credit : 0 }); 
+                if (res?.status === 'success') { 
+                    setRecords(records.map(r => r.id === editModalData.id ? { ...r, timeIn: editModalData.timeIn, timeOut: editModalData.timeOut, shiftId: editModalData.shiftId, credit: shiftData?.credit || 0 } : r)); 
+                    setEditModalData(null); 
+                } 
+                setIsSaving(false); 
+            };
+            
+            const handleSaveAdd = async () => { 
+                const upperEmp = addModalData.empId.trim().toUpperCase(); 
+                if(!employees[upperEmp]) return Swal.fire({icon:'warning', text:'ไม่พบรหัสพนักงานนี้'}); 
+                setIsSaving(true); 
+                const newRecord = { id: Date.now().toString(), date: addModalData.date, empId: upperEmp, shiftId: addModalData.shiftId, timeIn: addModalData.timeIn, timeOut: addModalData.timeOut || '', isLate: false, lateMinutes: 0, credit: SHIFT_TYPES[addModalData.shiftId]?.credit || 0, lat: null, lon: null, photoBase64: null }; 
+                const res = await sendToGoogleSheet('adminAddRecord', newRecord); 
+                if(res?.status === 'success') { 
+                    setRecords([...records, newRecord]); setAddModalData(null); 
+                } 
+                setIsSaving(false); 
+            };
+            
+            const handleDelete = async (id) => { 
+                const confirm = await Swal.fire({ text: "ยืนยันการลบ?", showCancelButton: true, confirmButtonColor: '#1e293b', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก' }); 
+                if (confirm.isConfirmed) { 
+                    const res = await sendToGoogleSheet('deleteRecord', { id }); 
+                    if (res?.status === 'success') setRecords(records.filter(r => r.id !== id)); 
+                } 
+            };
+
+            const handleRunAutoSchedule = async () => {
+                setIsSaving(true); 
+                const targetEmps = autoScheduleData.empId === 'all' ? matrixEmployees : [autoScheduleData.empId]; 
+                const isQuotaMode = autoScheduleData.assignMode === 'quota'; 
+                const reqCount = autoScheduleData.requiredCount || 1; 
+                const updates = []; const newSchedules = { ...schedules }; const assignedCounts = {};
+                
+                if (isQuotaMode) {
+                    targetEmps.forEach(empId => { 
+                        assignedCounts[empId] = 0; 
+                        daysArray.forEach(day => { 
+                            if ((newSchedules[`${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`]?.[empId]?.shifts || []).includes(autoScheduleData.shiftId)) assignedCounts[empId]++; 
+                        }); 
+                    });
+                }
+                
+                daysArray.forEach(day => {
+                    const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`; 
+                    const dayOfWeek = new Date(matrixYear, matrixMonthNum - 1, day).getDay(); 
+                    if (autoScheduleData.dayPattern === 'all' || (autoScheduleData.dayPattern === 'weekdays' && dayOfWeek >= 1 && dayOfWeek <= 5) || (autoScheduleData.dayPattern === 'weekends' && (dayOfWeek === 0 || dayOfWeek === 6))) {
+                        let eligible = targetEmps.filter(empId => { const s = newSchedules[dateStr]?.[empId]?.shifts || []; return (s.length === 0 || s[0] === '' || autoScheduleData.overwrite) && !(isQuotaMode && s.includes(autoScheduleData.shiftId)); });
+                        if (isQuotaMode) { eligible.sort((a, b) => assignedCounts[a] - assignedCounts[b] || Math.random() - 0.5); eligible = eligible.slice(0, reqCount); }
+                        eligible.forEach(empId => {
+                            if (!newSchedules[dateStr]) newSchedules[dateStr] = {}; 
+                            newSchedules[dateStr][empId] = { shifts: [autoScheduleData.shiftId], isEdited: true, editedBy: user.id }; 
+                            updates.push({ date: dateStr, empId, shifts: [autoScheduleData.shiftId] }); 
+                            if (isQuotaMode) assignedCounts[empId]++;
+                        });
+                    }
+                });
+                if (updates.length > 0) { 
+                    setSchedules(newSchedules); setAutoScheduleModal(false); 
+                    const res = await sendToGoogleSheet('saveScheduleBulk', { updates, editorId: user.id, editorName: `${user.fname} ${user.lname}` }); 
+                    if (res?.status === 'success') Swal.fire({ icon: 'success', text: `บันทึกสำเร็จ ${updates.length} ช่อง`, timer: 1500, showConfirmButton: false }); 
+                }
+                setIsSaving(false);
+            };
+
+            const openScheduleModal = (empId, dateStr) => setScheduleModalData({ empId, dateStr, shifts: [...(schedules[dateStr]?.[empId]?.shifts || [])] });
+            const handleSaveScheduleCell = async () => { const { empId, dateStr, shifts } = scheduleModalData; const filtered = shifts.filter(s => s !== ''); const newSchedules = { ...schedules }; if (!newSchedules[dateStr]) newSchedules[dateStr] = {}; newSchedules[dateStr][empId] = { shifts: filtered, isEdited: true, editedBy: user.id }; setSchedules(newSchedules); setScheduleModalData(null); await sendToGoogleSheet('saveSchedule', { date: dateStr, empId, shifts: filtered, editorId: user.id, editorName: `${user.fname} ${user.lname}` }); };
+            
+            const exportLogsToCSV = () => {
+                if(filteredRecords.length === 0) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสำหรับส่งออก", "info");
+                let csvContent = "\uFEFF"; csvContent += `"ประวัติลงเวลาทั้งหมด","แผนก: ${filterDept || 'ทั้งหมด'}","ตั้งแต่วันที่: ${startDate || '-'}","ถึงวันที่: ${endDate || '-'}"\n\n`; csvContent += "วันที่,รหัสพนักงาน,ชื่อ-สกุล,แผนก,กะ,เวลาเข้า,เวลาออก,สถานะ,สาย (นาที),จำนวนเวร\n";
+                filteredRecords.forEach(r => { const emp = employees[r.empId] || {}; const shift = SHIFT_TYPES[r.shiftId]?.label || ''; const lateStatus = r.isLate ? 'สาย' : 'ปกติ'; const lateMins = r.isLate ? r.lateMinutes : '0'; csvContent += `"${formatDisplayDate(r.date)}","${r.empId}","${emp.fname} ${emp.lname}","${emp.dept}","${shift}","${r.timeIn}","${r.timeOut || '-'}","${lateStatus}","${lateMins}","${r.credit}"\n`; });
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `ประวัติลงเวลา_${new Date().getTime()}.csv`; link.click();
+            };
+
+            const exportSummaryToCSV = () => {
+                if(summaryMatrix.length === 0) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสรุปสำหรับส่งออก", "info");
+                let csvContent = "\uFEFF"; csvContent += `"สรุปภาพรวมแผนก: ${filterDept || 'ทุกแผนก'}","ประจำเดือน: ${matrixMonth}"\n\n`;
+                const headers = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'แผนก', ...daysArray]; sortedShiftTypesUsed.forEach(type => headers.push(type)); headers.push('รวมเวรทั้งหมด', 'วันทำการ', 'เวร OT'); if (role === 'admin') headers.push('รวมสาย (นาที)'); csvContent += headers.join(',') + '\n';
+                let grandTotalCredit = 0; let grandTotalOT = 0;
+                summaryMatrix.forEach(row => {
+                    grandTotalCredit += row.empTotalCredit; grandTotalOT += row.otShifts; const rowData = [row.empId, `${row.fname} ${row.lname}`, row.dept];
+                    daysArray.forEach(day => { const el = row.shiftsByDay[day]?.uiElements || []; const shifts = el.map(e => e.shift).join(','); rowData.push(shifts || '-'); });
+                    sortedShiftTypesUsed.forEach(type => rowData.push(row.shiftCounts[type] || 0)); rowData.push(row.empTotalCredit, localWorkDays, row.otShifts); if (role === 'admin') rowData.push(row.empTotalLate);
+                    csvContent += `"${rowData.join('","')}"\n`;
+                });
+                const emptyColsCount = 3 + daysArray.length + sortedShiftTypesUsed.length - 1; const emptyCols = Array(emptyColsCount).fill('""').join(','); csvContent += `\n"รวมยอดทั้งแผนก",${emptyCols},"${grandTotalCredit}","", "${grandTotalOT}"\n\n`;
+                csvContent += `"สรุปอัตรากำลัง/วัน"\n`; const dailyTotals = {};
+                daysArray.forEach(day => { const counts = getDailyShiftCounts(day); Object.entries(counts).forEach(([shift, count]) => { if (!dailyTotals[shift]) dailyTotals[shift] = {}; dailyTotals[shift][day] = count; }); });
+                Object.keys(dailyTotals).forEach(shift => { const summaryRow = ["", `ยอดกะ ${shift}`, ""]; daysArray.forEach(day => summaryRow.push(dailyTotals[shift][day] || 0)); csvContent += `"${summaryRow.join('","')}"\n`; });
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `สรุปภาพรวมแผนก_${matrixMonth}.csv`; link.click();
+            };
+            
+            const exportScheduleToCSV = () => {
+                if(matrixEmployees.length === 0) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลพนักงานสำหรับส่งออก", "info");
+                let csvContent = "\uFEFF"; csvContent += `"ตารางเวรแผนก: ${filterDept || 'ทุกแผนก'}","ประจำเดือน: ${matrixMonth}"\n\n`; csvContent += "รหัสพนักงาน,ชื่อ-สกุล,แผนก," + daysArray.join(',') + "\n";
+                matrixEmployees.forEach(empId => { const emp = employees[empId]; const rowData = [empId, `${emp.fname} ${emp.lname}`, emp.dept]; daysArray.forEach(day => { const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`; const schedObj = schedules[dateStr]?.[empId]; const shifts = schedObj?.shifts || []; rowData.push(shifts.join(', ') || '-'); }); csvContent += `"${rowData.join('","')}"\n`; });
+                csvContent += `\n`; csvContent += `"สรุปอัตรากำลัง/วัน"\n`; const dailyTotals = {};
+                daysArray.forEach(day => { const counts = getDailyShiftCounts(day); Object.entries(counts).forEach(([shift, count]) => { if (!dailyTotals[shift]) dailyTotals[shift] = {}; dailyTotals[shift][day] = count; }); });
+                Object.keys(dailyTotals).forEach(shift => { const summaryRow = ["", `ยอดกะ ${shift}`, ""]; daysArray.forEach(day => summaryRow.push(dailyTotals[shift][day] || 0)); csvContent += `"${summaryRow.join('","')}"\n`; });
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `ตารางเวร_${matrixMonth}.csv`; link.click();
+            };
+
+            return (
+                <div className="mt-2 pb-12">
+                    <div className="hidden print-show text-center mb-6">
+                        <h2 className="text-2xl font-bold text-black mb-1">{adminTab === 'logs' ? 'ประวัติลงเวลา' : adminTab === 'summary' ? 'สรุปภาพรวมแผนกและการเบิก OT' : 'ตารางเวรปฏิบัติงาน'}</h2>
+                        <p className="text-base font-bold text-gray-700">แผนก: {filterDept || 'ทั้งหมด'} | ประจำเดือน: {matrixMonth}</p>
+                    </div>
+
+                    {selectedMapRecord && <MapModal lat={selectedMapRecord.lat} lon={selectedMapRecord.lon} onClose={() => setSelectedMapRecord(null)} />}
+                    {selectedPhotoRecord && <PhotoModal record={selectedPhotoRecord} employees={employees} onClose={() => setSelectedPhotoRecord(null)} />}
+                    
+                    {editModalData && (
+                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide animate-fade-in">
+                            <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft overflow-hidden p-6 border border-slate-200">
+                                <h3 className="font-bold text-slate-800 mb-4">แก้ไขประวัติ</h3>
+                                <div className="space-y-4 text-sm">
+                                    <select value={editModalData.shiftId} onChange={e => setEditModalData({...editModalData, shiftId: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold text-slate-800">
+                                        <optgroup label="กะเวรปกติ">
+                                            {getSortedShiftKeys(employees[editModalData.empId]?.dept).map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}
+                                        </optgroup>
+                                        <optgroup label="วันหยุด/อื่นๆ">
+                                            {['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}
+                                        </optgroup>
+                                    </select>
+                                    <div className="flex gap-2"><input type="time" value={editModalData.timeIn} onChange={e => setEditModalData({...editModalData, timeIn: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" /><input type="time" value={editModalData.timeOut || ''} onChange={e => setEditModalData({...editModalData, timeOut: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" /></div>
+                                    <div className="flex gap-2 pt-2"><button onClick={() => setEditModalData(null)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ยกเลิก</button><button onClick={handleSaveEdit} className="flex-1 p-3 bg-primary hover:bg-blue-700 text-white rounded-xl font-bold transition-colors">บันทึก</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {addModalData && (
+                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide animate-fade-in">
+                            <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft overflow-hidden p-6 border border-slate-200">
+                                <h3 className="font-bold text-slate-800 mb-4">เพิ่มข้อมูลย้อนหลัง</h3>
+                                <div className="space-y-3 text-sm">
+                                    <input type="text" placeholder="รหัสพนักงาน (EMP01)" value={addModalData.empId} onChange={(e) => setAddModalData({...addModalData, empId: e.target.value.toUpperCase()})} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold outline-none focus:border-primary" />
+                                    <input type="date" value={addModalData.date} onChange={(e) => setAddModalData({...addModalData, date: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold outline-none focus:border-primary" />
+                                    <select value={addModalData.shiftId} onChange={(e) => setAddModalData({...addModalData, shiftId: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold bg-white outline-none focus:border-primary">
+                                        <option value="">-- เลือกกะ --</option>
+                                        <optgroup label="กะเวรปกติ">
+                                            {getSortedShiftKeys(employees[addModalData.empId]?.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key]?.label || key}</option>)}
+                                        </optgroup>
+                                        <optgroup label="วันหยุด/อื่นๆ">
+                                            {['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}
+                                        </optgroup>
+                                    </select>
+                                    <div className="flex gap-2"><input type="time" placeholder="เวลาเข้า" value={addModalData.timeIn} onChange={(e) => setAddModalData({...addModalData, timeIn: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold outline-none focus:border-primary" /><input type="time" placeholder="เวลาออก" value={addModalData.timeOut} onChange={(e) => setAddModalData({...addModalData, timeOut: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold outline-none focus:border-primary" /></div>
+                                    <div className="flex gap-2 pt-3 border-t border-slate-100"><button onClick={() => setAddModalData(null)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ยกเลิก</button><button onClick={handleSaveAdd} disabled={isSaving} className="flex-1 p-3 bg-primary hover:bg-blue-700 text-white rounded-xl font-bold transition-colors">{isSaving ? 'บันทึก...' : 'เพิ่มข้อมูล'}</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {scheduleModalData && (
+                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide animate-fade-in">
+                            <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft overflow-hidden p-6 border border-slate-200">
+                                <h3 className="font-bold text-slate-800 mb-1">จัดการเวร <span className="text-slate-500 font-semibold text-sm ml-2">{formatDisplayDate(scheduleModalData.dateStr)}</span></h3>
+                                <p className="text-xs font-bold text-primary mb-4">{employees[scheduleModalData.empId]?.fname}</p>
+                                <div className="space-y-2 max-h-48 overflow-y-auto mb-4 pr-1">
+                                    {scheduleModalData.shifts.map((shift, i) => (
+                                        <div key={i} className="flex gap-2"><select value={shift} onChange={e => {const s=[...scheduleModalData.shifts]; s[i]=e.target.value; setScheduleModalData({...scheduleModalData, shifts: s})}} className="flex-1 p-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50"><option value="">- ว่าง -</option><optgroup label="กะ">{getSortedShiftKeys(employees[scheduleModalData.empId]?.dept).map(k => <option key={k} value={k}>{k}</option>)}</optgroup><optgroup label="อื่นๆ">{['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}</optgroup></select><button onClick={() => {const s=[...scheduleModalData.shifts]; s.splice(i,1); setScheduleModalData({...scheduleModalData, shifts: s})}} className="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"><i className="fa-solid fa-trash-can"></i></button></div>
+                                    ))}
+                                </div>
+                                <button onClick={() => setScheduleModalData({...scheduleModalData, shifts: [...scheduleModalData.shifts, '']})} className="w-full p-2.5 border-2 border-dashed border-slate-300 text-slate-500 font-bold rounded-xl text-sm mb-4 hover:bg-slate-50 transition-colors">+ เพิ่มกะ</button>
+                                <div className="flex gap-2"><button onClick={() => setScheduleModalData(null)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors">ยกเลิก</button><button onClick={handleSaveScheduleCell} className="flex-1 p-3 bg-primary hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-colors">บันทึก</button></div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {autoScheduleModal && (
+                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-hide animate-fade-in">
+                            <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft overflow-hidden p-6 border border-slate-200">
+                                <h3 className="font-bold text-slate-800 mb-4">จัดเวรอัตโนมัติ</h3>
+                                <div className="space-y-3 text-sm">
+                                    <select value={autoScheduleData.shiftId} onChange={e => setAutoScheduleData({...autoScheduleData, shiftId: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="">-- เลือกกะ --</option><optgroup label="กะ">{getSortedShiftKeys(filterDept).map(k => <option key={k} value={k}>{k}</option>)}</optgroup><optgroup label="อื่นๆ">{['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}</optgroup></select>
+                                    <select value={autoScheduleData.dayPattern} onChange={e => setAutoScheduleData({...autoScheduleData, dayPattern: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="all">ทุกวัน</option><option value="weekdays">วันธรรมดา</option><option value="weekends">วันหยุด (ส-อา)</option></select>
+                                    <select value={autoScheduleData.assignMode} onChange={e => setAutoScheduleData({...autoScheduleData, assignMode: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="all">ใส่ให้ทุกคน</option><option value="quota">จำกัดโควต้าคน/วัน</option></select>
+                                    {autoScheduleData.assignMode === 'quota' && <input type="number" min="1" placeholder="จำนวนคน/วัน" value={autoScheduleData.requiredCount} onChange={e => setAutoScheduleData({...autoScheduleData, requiredCount: parseInt(e.target.value)||1})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold" />}
+                                    <label className="flex items-center gap-2 mt-2 font-semibold text-slate-700 cursor-pointer"><input type="checkbox" checked={autoScheduleData.overwrite} onChange={e => setAutoScheduleData({...autoScheduleData, overwrite: e.target.checked})} className="rounded border-slate-300 w-4 h-4 text-primary" /> เขียนทับกะเดิม</label>
+                                    <div className="flex gap-2 pt-4 border-t border-slate-100"><button onClick={() => setAutoScheduleModal(false)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ยกเลิก</button><button onClick={handleRunAutoSchedule} className="flex-1 p-3 bg-primary hover:bg-blue-700 text-white rounded-xl font-bold transition-colors">เริ่มจัดเวร</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-4 print-hide">
+                        <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between mb-4 border-b border-slate-100 pb-4">
+                            <div className="flex bg-slate-100 p-1.5 rounded-xl w-fit">
+                                {role === 'admin' && <button onClick={() => setAdminTab('logs')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab==='logs'?'bg-white text-primary shadow-sm':'text-slate-500 hover:text-slate-700'}`}>ประวัติ</button>}
+                                <button onClick={() => setAdminTab('summary')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab==='summary'?'bg-white text-primary shadow-sm':'text-slate-500 hover:text-slate-700'}`}>สรุป OT</button>
+                                <button onClick={() => setAdminTab('schedules')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab==='schedules'?'bg-white text-primary shadow-sm':'text-slate-500 hover:text-slate-700'}`}>ตารางเวร</button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {adminTab === 'logs' && role === 'admin' && (<><button onClick={() => setAddModalData({empId:'', date:'', shiftId:'', timeIn:'', timeOut:''})} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-plus mr-1.5"></i>เพิ่มย้อนหลัง</button><button onClick={exportLogsToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-csv mr-1.5 text-emerald-600"></i>ส่งออก</button></>)}
+                                {adminTab === 'summary' && (<button onClick={exportSummaryToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-csv mr-1.5 text-emerald-600"></i>ส่งออก</button>)}
+                                {adminTab === 'schedules' && (<><button onClick={() => setAutoScheduleModal(true)} disabled={!filterDept} className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-primary border border-blue-200 rounded-lg text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"><i className="fa-solid fa-wand-magic-sparkles mr-1.5"></i>จัดเวรออโต้</button><button onClick={exportScheduleToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-excel mr-1.5 text-emerald-600"></i>ส่งออก</button></>)}
+                                <button onClick={() => window.print()} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-print mr-1.5 text-slate-400"></i>พิมพ์</button>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            {adminTab === 'logs' ? (<><input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700" /><input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700" /></>) : (<input type="month" value={matrixMonth} onChange={e=>setMatrixMonth(e.target.value)} className="col-span-2 p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700" />)}
+                            <select value={filterDept} onChange={e=>setFilterDept(e.target.value)} disabled={role==='supervisor'} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 bg-white disabled:bg-slate-100 disabled:text-slate-400">{role==='admin' && <option value="">ทุกแผนก</option>}{DEPARTMENTS.map(d=><option key={d} value={d}>{d}</option>)}</select>
+                            <input type="text" placeholder="ค้นหาชื่อ..." value={filterEmp} onChange={e=>setFilterEmp(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700" />
+                        </div>
+                        {adminTab === 'summary' && role === 'admin' && (
+                            <div className="mt-4 flex items-center gap-3 text-sm bg-blue-50 p-3 rounded-xl border border-blue-100 w-fit">
+                                <span className="text-primary font-bold"><i className="fa-solid fa-gear mr-2"></i>วันทำการปกติ:</span><input type="number" min="0" value={localWorkDays} onChange={e=>setLocalWorkDays(Number(e.target.value))} className="w-16 p-1.5 border border-blue-200 rounded-lg text-center font-bold bg-white text-slate-800" /><button onClick={handleSaveSettings} className="px-3 py-1.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors">บันทึก</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {}
+                    {adminTab === 'logs' && role === 'admin' && (
+                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                            <div className="overflow-x-auto print-table-wrapper">
+                                <table className="min-w-full text-sm text-left">
+                                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-xs tracking-wider">
+                                        <tr><th className="px-4 py-4">วันที่</th><th className="px-4 py-4">พนักงาน</th><th className="px-4 py-4">กะ</th><th className="px-4 py-4 text-center">เข้า</th><th className="px-4 py-4 text-center">ออก</th><th className="px-4 py-4 text-center">สาย</th><th className="px-4 py-4 text-center print-hide">รูป</th><th className="px-4 py-4 text-right print-hide">จัดการ</th></tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {filteredRecords.map(r => (
+                                            <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="px-4 py-3 text-slate-500 font-semibold">{formatDisplayDate(r.date).slice(0,5)}</td><td className="px-4 py-3 font-bold text-slate-800">{employees[r.empId]?.fname}</td>
+                                                <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs">{r.shiftId}</span></td>
+                                                <td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeIn)}</td><td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeOut)}</td>
+                                                <td className="px-4 py-3 text-center">{r.isLate ? <span className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded text-xs font-bold">{r.lateMinutes} น.</span> : '-'}</td>
+                                                <td className="px-4 py-3 text-center print-hide">{(r.photoInUrl||r.photoOutUrl)?<button onClick={()=>setSelectedPhotoRecord(r)} className="text-primary hover:text-blue-700 bg-blue-50 w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors"><i className="fa-solid fa-image"></i></button>:'-'}</td>
+                                                <td className="px-4 py-3 text-right print-hide"><button onClick={()=>setEditModalData({...r})} className="text-slate-400 hover:text-primary mr-3 transition-colors"><i className="fa-solid fa-pen"></i></button><button onClick={()=>handleDelete(r.id)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fa-solid fa-trash"></i></button></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {(adminTab === 'summary' || adminTab === 'schedules') && filterDept && (
+                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print-table-wrapper">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full text-left" style={{ tableLayout: 'fixed' }}>
+                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                        <tr>
+                                            <th rowSpan="2" className="px-2 py-3 font-extrabold text-slate-800 text-sm sticky left-0 bg-slate-50 z-20 border-r border-slate-200" style={{ width: '13%' }}>พนักงาน</th>
+                                            {daysArray.map(day => { const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay()); return <th key={day} rowSpan="2" className={`day-col px-1 py-3 text-center text-xs font-extrabold ${isWeekend ? 'text-rose-600 bg-rose-50/50' : 'text-slate-500'}`}>{day}</th> })}
+                                            
+                                            {/* เปลี่ยนคำว่า จำนวนเวรแยกประเภท เป็น สรุปกะเวร เพื่อประหยัดพื้นที่ */}
+                                            <th colSpan={sortedShiftTypesUsed.length} className="px-1 py-1.5 font-extrabold text-primary text-center bg-blue-50/50 border-l border-b border-blue-100 border-r border-slate-200 text-[10px] uppercase tracking-widest" style={{ width: `${sortedShiftTypesUsed.length * 2.5}%` }}>สรุปกะเวร</th>
+                                            
+                                            <th rowSpan="2" className="px-1 py-3 text-center text-xs font-extrabold text-slate-700 bg-slate-100/50 border-l border-slate-200" style={{ width: '4%' }}>รวม</th>
+                                            <th rowSpan="2" className="px-1 py-3 text-center text-xs font-extrabold text-slate-800 bg-slate-100/50 border-l border-slate-200" style={{ width: '4%' }}>ทำงาน</th>
+                                            <th rowSpan="2" className="px-1 py-3 text-center text-[10px] font-extrabold text-white bg-primary border-l border-blue-600" style={{ width: '4%' }}>OT</th>
+                                            
+                                            {/* คอลัมน์สรุปสาย สำหรับ Admin */}
+                                            {adminTab === 'summary' && role === 'admin' && <th rowSpan="2" className="px-1 py-3 text-center text-[10px] font-extrabold text-red-700 bg-red-50 border-l border-red-200" style={{ width: '4%' }}>สาย<br/>(นาที)</th>}
+                                        </tr>
+                                        <tr>{sortedShiftTypesUsed.map(type => (<th key={type} className="px-1 py-1 font-extrabold text-primary text-center bg-blue-50/50 border-x border-white text-[10px]">{type}</th>))}</tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                        {summaryMatrix.map(row => (
+                                            <tr key={row.empId} className="hover:bg-blue-50/30 transition-colors">
+                                                <td className="px-2 py-2 sticky left-0 bg-white z-10 border-r border-slate-200"><p className="font-bold text-slate-800 leading-tight truncate">{row.fname}</p><p className="text-[9px] font-semibold text-slate-400 truncate mt-0.5">{row.empId} • {row.level}</p></td>
+                                                {daysArray.map(day => {
+                                                    const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay());
+                                                    if(adminTab === 'schedules') {
+                                                        const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`; const schedObj = schedules[dateStr]?.[row.empId]; const shifts = schedObj?.shifts || []; const isEdited = schedObj?.isEdited;
+                                                        return (<td key={day} onClick={()=>openScheduleModal(row.empId, dateStr)} className={`day-col px-0.5 py-2 text-center cursor-pointer border-r border-slate-50 hover:bg-slate-100 transition-colors relative ${isWeekend?'bg-rose-50/30':''}`}>{isEdited && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-400 rounded-full print-hide"></div>}<div className="flex flex-col gap-0.5 items-center">{shifts.map((s,i) => <span key={i} className="shift-chip bg-white text-slate-800 border border-slate-300 px-1 py-0.5 rounded shadow-sm text-[10px] font-bold">{s}</span>)}</div></td>);
+                                                    } else {
+                                                        const el = row.shiftsByDay[day].uiElements; const shiftObj = row.shiftsByDay[day]; const isAbsentDay = shiftObj.isAbsent; const isEmpty = el.length === 0;
+                                                        return (
+                                                            <td key={day} className={`day-col px-0.5 py-1.5 text-center text-xs font-bold border-r border-slate-50 align-middle ${isAbsentDay ? 'bg-red-50 ring-1 ring-inset ring-red-200' : (isEmpty ? '' : 'bg-slate-50/40')} ${isWeekend && isEmpty ? 'bg-rose-50/30' : ''}`}>
+                                                                {isEmpty ? <span className="text-slate-300">-</span> : (<div className="flex flex-col gap-0.5 items-center justify-center my-0.5">{el.map((e,i) => {
+                                                                    let chipClass = "shift-chip text-[10px] font-bold px-1 py-0.5 rounded border ";
+                                                                    if (e.type === 'worked') chipClass += "text-blue-900 bg-blue-100 border-blue-300"; else if (e.type === 'pending') chipClass += "text-emerald-900 bg-emerald-50 border-emerald-200"; else if (e.type === 'absent') chipClass += "text-red-900 bg-red-100 border-red-300"; else if (e.type === 'leave') chipClass += "text-amber-900 bg-amber-50 border-amber-300";
+                                                                    return <span key={i} className={chipClass} title={e.type === 'pending' ? 'กะล่วงหน้า/รอสแกน' : ''}>{e.shift}</span>;
+                                                                })}</div>)}
+                                                            </td>
+                                                        )
+                                                    }
+                                                })}
+                                                {sortedShiftTypesUsed.map(type => (<td key={type} className="px-1 py-2 text-center font-bold text-primary bg-blue-50/30 border-x border-slate-50 text-[10px]">{row.shiftCounts[type] || 0}</td>))}
+                                                <td className="px-1 py-2 text-center font-extrabold text-slate-800 bg-slate-50/50 border-l border-slate-200">{row.empTotalCredit}</td>
+                                                <td className="px-1 py-2 text-center font-bold text-slate-500 bg-slate-50/50 border-l border-slate-200 text-xs">{localWorkDays}</td>
+                                                <td className="px-1 py-2 text-center font-extrabold text-primary bg-blue-50 border-l border-blue-100">{row.otShifts>0?`+${row.otShifts}`:row.otShifts}</td>
+                                                
+                                                {/* คอลัมน์สรุปสาย สำหรับ Admin */}
+                                                {adminTab === 'summary' && role === 'admin' && <td className="px-1 py-2 text-center font-extrabold text-red-600 bg-red-50 border-l border-red-200">{row.empTotalLate > 0 ? row.empTotalLate : '-'}</td>}
+                                            </tr>
+                                        ))}
+                                        
+                                        {/* แถวสรุปอัตรากำลัง/วัน แบบเรียงบรรทัดเพื่อประหยัดพื้นที่ความกว้าง */}
+                                        {summaryMatrix.length > 0 && (
+                                            <tr className="bg-amber-50/80 border-t-2 border-amber-200">
+                                                <td className="px-2 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-extrabold text-slate-800 text-right text-xs">สรุปอัตรากำลัง/วัน</td>
+                                                {daysArray.map(day => {
+                                                    const counts = getDailyShiftCounts(day); const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay());
+                                                    return (
+                                                        <td key={`sum-${day}`} className={`day-col px-0.5 py-1 text-center border-r border-slate-200 align-top ${isWeekend ? 'bg-rose-50/50' : ''}`}>
+                                                            {Object.keys(counts).length > 0 ? (
+                                                                <div className="flex flex-col gap-0.5 mt-1 pb-1">
+                                                                    {Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([shift, count]) => (
+                                                                        <div key={shift} className="text-[9px] font-extrabold text-slate-700 leading-tight">
+                                                                            {shift}: <strong className="text-primary">{count}</strong>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : <span className="text-slate-300">-</span>}
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td colSpan={sortedShiftTypesUsed.length + (adminTab === 'summary' && role === 'admin' ? 4 : 3)} className="bg-amber-50 border-l border-slate-200"></td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                    {((adminTab === 'summary' || adminTab === 'schedules') && !filterDept) && (
+                        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm print-hide">
+                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100"><i className="fa-solid fa-building text-3xl text-primary/50"></i></div>
+                            <h3 className="text-lg font-bold text-slate-800 mb-1">ยังไม่ได้เลือกแผนก</h3>
+                            <p className="text-slate-500 font-medium">กรุณาเลือกแผนกจากเมนูด้านบนเพื่อดูตารางเวร</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
             "ห้องปฏิบัติการทางการแพทย์": ['ช', 'ช7', 'ชบ7', 'บ15', 'ช20', 'ช719'],
             "เอกซเรย์": ['ช', 'ชบ', 'ช7','บ'],
             "OR-LR": ['ช'],
