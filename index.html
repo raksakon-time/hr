@@ -179,6 +179,30 @@
             'บ4': { start: '17:00', end: '21:00', credit: 0.5, label: '17.00 - 21.00 (บ4)' },
         };
 
+        // 🌟 ตั้งค่าการกระจายเครดิต สำหรับสรุปอัตรากำลัง (รวบยอด ช บ ด)
+        const SHIFT_CATEGORY_MAP = {
+            'ด': { 'ด': 1 },
+            'ช616': { 'ช': 1, 'บ': 0.25 },
+            'ช618': { 'ช': 1, 'บ': 0.5 },
+            'ช619': { 'ช': 1, 'บ': 0.625 },
+            'ช6': { 'ช': 1 },
+            'ช716': { 'ช': 1, 'บ': 0.125 },
+            'ช719': { 'ช': 1, 'บ': 0.5 },
+            'ช7': { 'ช': 1 },
+            'ช21': { 'ช': 1, 'บ': 0.75 },
+            'ชบ7': { 'ช': 1, 'บ': 1 },
+            'ช': { 'ช': 1 },
+            'ชบ': { 'ช': 1, 'บ': 1 },
+            'ช20': { 'ช': 1, 'บ': 0.5 },
+            'ช83': { 'ช': 1 },
+            'ช9': { 'ช': 1, 'บ': 0.5 },
+            'ช917': { 'ช': 1 },
+            'บ15': { 'บ': 1 },
+            'บ': { 'บ': 1 },
+            'บด': { 'บ': 1, 'ด': 1 },
+            'บ4': { 'บ': 0.5 }
+        };
+
         const getSortedShiftKeys = (deptName) => {
             let keys = Object.keys(SHIFT_TYPES);
             if (deptName && DEPT_SHIFTS[deptName]) {
@@ -1196,18 +1220,26 @@
                 return { empId, fname: employees[empId].fname, lname: employees[empId].lname, dept: employees[empId].dept, level: employees[empId].level, shiftsByDay, empTotalCredit, empTotalLate, otShifts: empTotalCredit - localWorkDays, shiftCounts };
             });
 
+            // 🌟 คำนวณสรุปอัตรากำลังใหม่ (แยกชิ้นส่วนตาม SHIFT_CATEGORY_MAP)
             const getDailyShiftCounts = (day) => {
                 const counts = {};
                 summaryMatrix.forEach(row => {
+                    let shiftsToProcess = [];
                     if (adminTab === 'schedules') { 
-                        const shifts = schedules[`${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`]?.[row.empId]?.shifts || []; 
-                        shifts.forEach(s => { if (s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s)) counts[s] = (counts[s] || 0) + 1; }); 
+                        shiftsToProcess = schedules[`${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`]?.[row.empId]?.shifts || []; 
                     } 
                     else if (adminTab === 'summary') { 
-                        (row.shiftsByDay[day]?.uiElements || []).forEach(el => { 
-                            if ((el.type === 'worked' || el.type === 'pending') && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(el.shift)) counts[el.shift] = (counts[el.shift] || 0) + 1; 
-                        }); 
+                        shiftsToProcess = (row.shiftsByDay[day]?.uiElements || []).filter(el => el.type === 'worked' || el.type === 'pending').map(el => el.shift);
                     }
+                    
+                    shiftsToProcess.forEach(s => { 
+                        if (s && !['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].includes(s)) { 
+                            const mapping = SHIFT_CATEGORY_MAP[s] || { [s]: 1 };
+                            Object.keys(mapping).forEach(cat => {
+                                counts[cat] = (counts[cat] || 0) + mapping[cat];
+                            });
+                        } 
+                    }); 
                 });
                 return counts;
             };
@@ -1241,7 +1273,6 @@
                 if(res?.status === 'success') { 
                     setRecords([...records, newRecord]); 
                     setAddModalData(null); 
-                    // เพิ่ม Popup แจ้งเตือนเมื่อเพิ่มข้อมูลสำเร็จ
                     Swal.fire({
                         icon: 'success',
                         title: 'สำเร็จ!',
@@ -1322,9 +1353,22 @@
                     csvContent += `"${rowData.join('","')}"\n`;
                 });
                 const emptyColsCount = 3 + daysArray.length + sortedShiftTypesUsed.length - 1; const emptyCols = Array(emptyColsCount).fill('""').join(','); csvContent += `\n"รวมยอดทั้งแผนก",${emptyCols},"${grandTotalCredit}","", "${grandTotalOT}"\n\n`;
-                csvContent += `"สรุปอัตรากำลัง/วัน"\n`; const dailyTotals = {};
-                daysArray.forEach(day => { const counts = getDailyShiftCounts(day); Object.entries(counts).forEach(([shift, count]) => { if (!dailyTotals[shift]) dailyTotals[shift] = {}; dailyTotals[shift][day] = count; }); });
-                Object.keys(dailyTotals).forEach(shift => { const summaryRow = ["", `ยอดกะ ${shift}`, ""]; daysArray.forEach(day => summaryRow.push(dailyTotals[shift][day] || 0)); csvContent += `"${summaryRow.join('","')}"\n`; });
+                
+                csvContent += `"สรุปอัตรากำลัง/วัน"\n`; 
+                const dailyTotals = {};
+                daysArray.forEach(day => { 
+                    const counts = getDailyShiftCounts(day); 
+                    Object.entries(counts).forEach(([shift, count]) => { 
+                        if (!dailyTotals[shift]) dailyTotals[shift] = {}; 
+                        dailyTotals[shift][day] = count; 
+                    }); 
+                });
+                Object.keys(dailyTotals).sort((a,b) => { const order = { 'ช': 1, 'บ': 2, 'ด': 3 }; return (order[a] || 99) - (order[b] || 99); }).forEach(shift => { 
+                    const summaryRow = ["", `ยอดกะ ${shift}`, ""]; 
+                    daysArray.forEach(day => summaryRow.push(dailyTotals[shift][day] || 0)); 
+                    csvContent += `"${summaryRow.join('","')}"\n`; 
+                });
+                
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `สรุปภาพรวมแผนก_${matrixMonth}.csv`; link.click();
             };
             
@@ -1332,9 +1376,23 @@
                 if(matrixEmployees.length === 0) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลพนักงานสำหรับส่งออก", "info");
                 let csvContent = "\uFEFF"; csvContent += `"ตารางเวรแผนก: ${filterDept || 'ทุกแผนก'}","ประจำเดือน: ${matrixMonth}"\n\n`; csvContent += "รหัสพนักงาน,ชื่อ-สกุล,แผนก," + daysArray.join(',') + "\n";
                 matrixEmployees.forEach(empId => { const emp = employees[empId]; const rowData = [empId, `${emp.fname} ${emp.lname}`, emp.dept]; daysArray.forEach(day => { const dateStr = `${matrixYear}-${String(matrixMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`; const schedObj = schedules[dateStr]?.[empId]; const shifts = schedObj?.shifts || []; rowData.push(shifts.join(', ') || '-'); }); csvContent += `"${rowData.join('","')}"\n`; });
-                csvContent += `\n`; csvContent += `"สรุปอัตรากำลัง/วัน"\n`; const dailyTotals = {};
-                daysArray.forEach(day => { const counts = getDailyShiftCounts(day); Object.entries(counts).forEach(([shift, count]) => { if (!dailyTotals[shift]) dailyTotals[shift] = {}; dailyTotals[shift][day] = count; }); });
-                Object.keys(dailyTotals).forEach(shift => { const summaryRow = ["", `ยอดกะ ${shift}`, ""]; daysArray.forEach(day => summaryRow.push(dailyTotals[shift][day] || 0)); csvContent += `"${summaryRow.join('","')}"\n`; });
+                csvContent += `\n`; 
+                
+                csvContent += `"สรุปอัตรากำลัง/วัน"\n`; 
+                const dailyTotals = {};
+                daysArray.forEach(day => { 
+                    const counts = getDailyShiftCounts(day); 
+                    Object.entries(counts).forEach(([shift, count]) => { 
+                        if (!dailyTotals[shift]) dailyTotals[shift] = {}; 
+                        dailyTotals[shift][day] = count; 
+                    }); 
+                });
+                Object.keys(dailyTotals).sort((a,b) => { const order = { 'ช': 1, 'บ': 2, 'ด': 3 }; return (order[a] || 99) - (order[b] || 99); }).forEach(shift => { 
+                    const summaryRow = ["", `ยอดกะ ${shift}`, ""]; 
+                    daysArray.forEach(day => summaryRow.push(dailyTotals[shift][day] || 0)); 
+                    csvContent += `"${summaryRow.join('","')}"\n`; 
+                });
+
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `ตารางเวร_${matrixMonth}.csv`; link.click();
             };
 
@@ -1402,7 +1460,6 @@
                                             <select value={shift} onChange={e => {const s=[...scheduleModalData.shifts]; s[i]=e.target.value; setScheduleModalData({...scheduleModalData, shifts: s})}} className="flex-1 p-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50">
                                                 <option value="">- ว่าง -</option>
                                                 <optgroup label="กะ">
-                                                    {/* แก้ไขให้แสดง เวลากำกับ ด้วย */}
                                                     {getSortedShiftKeys(employees[scheduleModalData.empId]?.dept).map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}
                                                 </optgroup>
                                                 <optgroup label="อื่นๆ">
@@ -1486,6 +1543,7 @@
                         </div>
                     )}
 
+                    {}
                     {(adminTab === 'summary' || adminTab === 'schedules') && filterDept && (
                         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print-table-wrapper">
                             <div className="overflow-x-auto">
@@ -1539,17 +1597,23 @@
                                             </tr>
                                         ))}
                                         
-                                        {/* แถวสรุปอัตรากำลัง/วัน แบบเรียงบรรทัดเพื่อประหยัดพื้นที่ความกว้าง */}
+                                        {}
                                         {summaryMatrix.length > 0 && (
                                             <tr className="bg-amber-50/80 border-t-2 border-amber-200">
                                                 <td className="px-2 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-extrabold text-slate-800 text-right text-xs">สรุปอัตรากำลัง/วัน</td>
                                                 {daysArray.map(day => {
-                                                    const counts = getDailyShiftCounts(day); const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay());
+                                                    const counts = getDailyShiftCounts(day); 
+                                                    const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay());
                                                     return (
                                                         <td key={`sum-${day}`} className={`day-col px-0.5 py-1 text-center border-r border-slate-200 align-top ${isWeekend ? 'bg-rose-50/50' : ''}`}>
                                                             {Object.keys(counts).length > 0 ? (
                                                                 <div className="flex flex-col gap-0.5 mt-1 pb-1">
-                                                                    {Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([shift, count]) => (
+                                                                    {Object.entries(counts)
+                                                                        .sort((a,b) => {
+                                                                            const order = { 'ช': 1, 'บ': 2, 'ด': 3 };
+                                                                            return (order[a[0]] || 99) - (order[b[0]] || 99);
+                                                                        })
+                                                                        .map(([shift, count]) => (
                                                                         <div key={shift} className="text-[9px] font-extrabold text-slate-700 leading-tight">
                                                                             {shift}: <strong className="text-primary">{count}</strong>
                                                                         </div>
