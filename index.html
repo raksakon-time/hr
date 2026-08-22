@@ -776,16 +776,16 @@
                     {result && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
                             <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft p-8 text-center border border-slate-100 relative">
-                                <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-5 border border-green-100">
+                                <div className="w-20 h-20 bg-blue-50 text-primary rounded-full flex items-center justify-center mx-auto mb-5 border border-blue-100">
                                     <i className="fa-solid fa-check text-4xl"></i>
                                 </div>
                                 <h2 className="text-2xl font-bold text-slate-800">บันทึกเข้างานสำเร็จ</h2>
                                 <div className="my-6">
-                                    <p className="text-5xl font-semibold text-green-600 mb-2 tracking-tight">{displaySafeTime(result.timeIn)}</p>
+                                    <p className="text-5xl font-semibold text-primary mb-2 tracking-tight">{displaySafeTime(result.timeIn)}</p>
                                     <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-md border border-slate-200">{result.shiftName}</p>
                                 </div>
                                 {result.isLate && <div className="mb-6 text-sm text-red-600 font-bold bg-red-50 py-2 rounded-lg border border-red-100">บันทึกสาย {result.lateMinutes} นาที</div>}
-                                <button onClick={onDone} className="w-full p-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors shadow-sm text-lg">เสร็จสิ้น</button>
+                                <button onClick={onDone} className="w-full p-4 bg-primary hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-sm text-lg">เสร็จสิ้น</button>
                             </div>
                         </div>
                     )}
@@ -899,15 +899,15 @@
                     {successResult && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
                             <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft p-8 text-center border border-slate-100 relative">
-                                <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-5 border border-rose-100">
+                                <div className="w-20 h-20 bg-sky-50 text-secondary rounded-full flex items-center justify-center mx-auto mb-5 border border-sky-100">
                                     <i className="fa-solid fa-arrow-right-from-bracket text-4xl"></i>
                                 </div>
                                 <h2 className="text-2xl font-bold text-slate-800">บันทึกออกงานสำเร็จ</h2>
                                 <div className="my-6">
-                                    <p className="text-5xl font-semibold text-rose-600 mb-2 tracking-tight">{displaySafeTime(successResult.timeOut)}</p>
+                                    <p className="text-5xl font-semibold text-secondary mb-2 tracking-tight">{displaySafeTime(successResult.timeOut)}</p>
                                     <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-md border border-slate-200">{successResult.shiftName}</p>
                                 </div>
-                                <button onClick={onDone} className="w-full p-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-colors shadow-sm text-lg">เสร็จสิ้น</button>
+                                <button onClick={onDone} className="w-full p-4 bg-secondary hover:bg-sky-600 text-white rounded-xl font-bold transition-colors shadow-sm text-lg">เสร็จสิ้น</button>
                             </div>
                         </div>
                     )}
@@ -1239,7 +1239,17 @@
                 const newRecord = { id: Date.now().toString(), date: addModalData.date, empId: upperEmp, shiftId: addModalData.shiftId, timeIn: addModalData.timeIn, timeOut: addModalData.timeOut || '', isLate: false, lateMinutes: 0, credit: SHIFT_TYPES[addModalData.shiftId]?.credit || 0, lat: null, lon: null, photoBase64: null }; 
                 const res = await sendToGoogleSheet('adminAddRecord', newRecord); 
                 if(res?.status === 'success') { 
-                    setRecords([...records, newRecord]); setAddModalData(null); 
+                    setRecords([...records, newRecord]); 
+                    setAddModalData(null); 
+                    // เพิ่ม Popup แจ้งเตือนเมื่อเพิ่มข้อมูลสำเร็จ
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ!',
+                        text: 'เพิ่มข้อมูลประวัติย้อนหลังเรียบร้อยแล้ว',
+                        confirmButtonColor: '#2563eb',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
                 } 
                 setIsSaving(false); 
             };
@@ -1388,7 +1398,19 @@
                                 <p className="text-xs font-bold text-primary mb-4">{employees[scheduleModalData.empId]?.fname}</p>
                                 <div className="space-y-2 max-h-48 overflow-y-auto mb-4 pr-1">
                                     {scheduleModalData.shifts.map((shift, i) => (
-                                        <div key={i} className="flex gap-2"><select value={shift} onChange={e => {const s=[...scheduleModalData.shifts]; s[i]=e.target.value; setScheduleModalData({...scheduleModalData, shifts: s})}} className="flex-1 p-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50"><option value="">- ว่าง -</option><optgroup label="กะ">{getSortedShiftKeys(employees[scheduleModalData.empId]?.dept).map(k => <option key={k} value={k}>{k}</option>)}</optgroup><optgroup label="อื่นๆ">{['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}</optgroup></select><button onClick={() => {const s=[...scheduleModalData.shifts]; s.splice(i,1); setScheduleModalData({...scheduleModalData, shifts: s})}} className="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"><i className="fa-solid fa-trash-can"></i></button></div>
+                                        <div key={i} className="flex gap-2">
+                                            <select value={shift} onChange={e => {const s=[...scheduleModalData.shifts]; s[i]=e.target.value; setScheduleModalData({...scheduleModalData, shifts: s})}} className="flex-1 p-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50">
+                                                <option value="">- ว่าง -</option>
+                                                <optgroup label="กะ">
+                                                    {/* แก้ไขให้แสดง เวลากำกับ ด้วย */}
+                                                    {getSortedShiftKeys(employees[scheduleModalData.empId]?.dept).map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}
+                                                </optgroup>
+                                                <optgroup label="อื่นๆ">
+                                                    {['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}
+                                                </optgroup>
+                                            </select>
+                                            <button onClick={() => {const s=[...scheduleModalData.shifts]; s.splice(i,1); setScheduleModalData({...scheduleModalData, shifts: s})}} className="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"><i className="fa-solid fa-trash-can"></i></button>
+                                        </div>
                                     ))}
                                 </div>
                                 <button onClick={() => setScheduleModalData({...scheduleModalData, shifts: [...scheduleModalData.shifts, '']})} className="w-full p-2.5 border-2 border-dashed border-slate-300 text-slate-500 font-bold rounded-xl text-sm mb-4 hover:bg-slate-50 transition-colors">+ เพิ่มกะ</button>
