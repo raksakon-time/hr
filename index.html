@@ -646,7 +646,7 @@
             }
             return (
                 <div className="max-w-md mx-auto mt-4">
-                    <button onClick={() => setActionType(null)} className="mb-4 text-slate-500 text-sm hover:text-slate-900 flex items-center transition-colors font-semibold">
+                    <button onClick={() => setActionType(null)} className="mb-4 text-white drop-shadow-sm text-sm hover:text-blue-100 flex items-center transition-colors font-semibold">
                         <i className="fa-solid fa-arrow-left mr-2"></i> ย้อนกลับ
                     </button>
                     {actionType === 'in' && <ClockInModule currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} onDone={() => setActionType(null)} />}
@@ -1260,6 +1260,14 @@
                 if (res?.status === 'success') { 
                     setRecords(records.map(r => r.id === editModalData.id ? { ...r, timeIn: editModalData.timeIn, timeOut: editModalData.timeOut, shiftId: editModalData.shiftId, credit: shiftData?.credit || 0 } : r)); 
                     setEditModalData(null); 
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ!',
+                        text: 'แก้ไขข้อมูลประวัติเรียบร้อยแล้ว',
+                        confirmButtonColor: '#2563eb',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
                 } 
                 setIsSaving(false); 
             };
