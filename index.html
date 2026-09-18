@@ -20,9 +20,9 @@
                         'subtle': '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
                     },
                     colors: {
-                        /* สีสดใส Vibrant Theme */
-                        primary: '#2563eb', 
-                        secondary: '#0ea5e9', 
+                        /* 🌸 ธีมสีชมพูพาสเทล Pastel Pink Theme 🌸 */
+                        primary: '#ec4899', /* Pink 500 */
+                        secondary: '#fb7185', /* Rose 400 */
                         dark: '#1e293b', 
                     }
                 }
@@ -46,8 +46,8 @@
         }
         input:focus, select:focus { 
             outline: none; 
-            border-color: #2563eb !important; 
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); 
+            border-color: #ec4899 !important; 
+            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2); 
         }
         select { 
             -webkit-appearance: none; 
@@ -61,22 +61,17 @@
         
         .print-show { display: none; }
         @media print {
-            /* บังคับขอบกระดาษให้เหลือน้อยที่สุด เพื่อเพิ่มพื้นที่ให้ตาราง */
             @page { size: A4 landscape; margin: 5mm; }
-            
             body { font-size: 9pt; background: white; color: black; margin: 0; padding: 0; }
             nav, .print-hide, .bottom-nav-hide { display: none !important; }
             .print-show { display: block !important; }
             main.max-w-7xl { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
-            
             .print-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; }
             .print-table-wrapper { overflow: visible !important; width: 100% !important; border: none !important; }
             
-            /* ล้างค่าความกว้าง และบังคับให้ตารางย่อลงให้พอดี 1 หน้า */
             table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; page-break-inside: auto; min-width: 0 !important; }
             tr { page-break-inside: avoid; page-break-after: auto; }
             
-            /* ลดขนาด padding และฟอนต์ เพื่อให้ยัดลง A4 แนวนอนได้ */
             th, td { 
                 border: 1px solid #9ca3af !important; 
                 padding: 1px 1px !important; 
@@ -116,9 +111,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // ==========================================
-        // ⚠️ ใส่ URL ของท่านที่นี่
-        // ==========================================
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec"; 
         const LEAVE_SYSTEM_URL = "https://script.google.com/macros/s/AKfycbzZvLTxd5MtGo7_5BQISe8b7KU-759zTWbHeIwsnhlGXI-nte9OwWvfporBCtoeAGk3/exec"; 
 
@@ -179,7 +171,6 @@
             'บ4': { start: '17:00', end: '21:00', credit: 0.5, label: '17.00 - 21.00 (บ4)' },
         };
 
-        // 🌟 ตั้งค่าการกระจายเครดิต สำหรับสรุปอัตรากำลัง (รวบยอด ช บ ด)
         const SHIFT_CATEGORY_MAP = {
             'ด': { 'ด': 1 },
             'ช616': { 'ช': 1, 'บ': 0.25 },
@@ -225,7 +216,7 @@
                     });
                     const data = await response.json();
                     if (data.status === 'error') {
-                        Swal.fire({ title: 'แจ้งเตือน', text: data.message, icon: 'warning', confirmButtonColor: '#2563eb' });
+                        Swal.fire({ title: 'แจ้งเตือน', text: data.message, icon: 'warning', confirmButtonColor: '#ec4899' });
                     }
                     return data; 
                 } catch (error) {
@@ -235,7 +226,7 @@
                             title: 'ข้อผิดพลาดเครือข่าย', 
                             text: 'การเชื่อมต่อล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ตของท่าน', 
                             icon: 'error', 
-                            confirmButtonColor: '#2563eb' 
+                            confirmButtonColor: '#ec4899' 
                         });
                         return { status: 'error', message: error.message };
                     }
@@ -419,7 +410,7 @@
             };
             
             const latestRecordWithPhoto = records.filter(r => r.empId === currentUser.id && r.photoInUrl).sort((a,b) => b.id.localeCompare(a.id))[0];
-            const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${currentUser.fname}+${currentUser.lname}&background=e2e8f0&color=1e293b&size=150`;
+            const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${currentUser.fname}+${currentUser.lname}&background=fbcfe8&color=1e293b&size=150`;
             const avatarUrl = (latestRecordWithPhoto && !avatarImgError) ? getDriveImageUrl(latestRecordWithPhoto.photoInUrl) : defaultAvatarUrl;
 
             return (
@@ -517,16 +508,16 @@
                         .animation-delay-4000 { animation-delay: 4s; }
                     `}</style>
 
-                    {/* Animated Background Orbs */}
+                    {/* Animated Background Orbs for Pastel Pink Theme */}
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none flex justify-center items-center">
-                        <div className="absolute -top-20 -left-20 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-                        <div className="absolute top-40 -right-20 w-72 h-72 bg-sky-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-                        <div className="absolute -bottom-20 left-20 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+                        <div className="absolute -top-20 -left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+                        <div className="absolute top-40 -right-20 w-72 h-72 bg-rose-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+                        <div className="absolute -bottom-20 left-20 w-72 h-72 bg-fuchsia-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
                     </div>
 
                     {/* Modern Login Card */}
                     <div className="w-full max-w-md bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/60 p-8 sm:p-10 text-center relative z-10">
-                        <div className="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/30 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+                        <div className="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-pink-500/30 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
                             <i className="fa-solid fa-fingerprint text-4xl text-white"></i>
                         </div>
                         <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">
@@ -550,7 +541,7 @@
                                         </div>
                                         <input type="text" placeholder="เช่น EMP01" value={empId} onChange={e => setEmpId(e.target.value.toUpperCase())} className="w-full pl-12 pr-4 py-4 border-2 border-slate-100 rounded-2xl bg-white/50 outline-none text-slate-800 font-bold focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all input-autofill-fix shadow-inner" />
                                     </div>
-                                    <button type="submit" className="w-full mt-8 py-4 bg-gradient-to-r from-primary to-secondary hover:from-blue-700 hover:to-sky-600 text-white rounded-2xl font-bold text-base transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                                    <button type="submit" className="w-full mt-8 py-4 bg-gradient-to-r from-primary to-secondary hover:from-pink-600 hover:to-rose-500 text-white rounded-2xl font-bold text-base transition-all shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2">
                                         ดำเนินการต่อ <i className="fa-solid fa-arrow-right"></i>
                                     </button>
                                 </div>
@@ -565,7 +556,7 @@
                                     </div>
                                     <div className="flex gap-3 mt-8">
                                         <button type="button" onClick={() => {setNeedsPassword(false); setPassword('');}} className="w-1/3 py-4 bg-white border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-600 rounded-2xl font-bold transition-all">กลับ</button>
-                                        <button type="submit" className="w-2/3 py-4 bg-gradient-to-r from-primary to-secondary hover:from-blue-700 hover:to-sky-600 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                                        <button type="submit" className="w-2/3 py-4 bg-gradient-to-r from-primary to-secondary hover:from-pink-600 hover:to-rose-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2">
                                             เข้าสู่ระบบ <i className="fa-solid fa-arrow-right-to-bracket"></i>
                                         </button>
                                     </div>
@@ -588,19 +579,19 @@
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
-                if (!formData.empId.trim() || !formData.fname.trim() || !formData.lname.trim()) return Swal.fire({ icon: 'warning', text: 'กรุณากรอกข้อมูลให้ครบถ้วน', confirmButtonColor: '#2563eb' });
+                if (!formData.empId.trim() || !formData.fname.trim() || !formData.lname.trim()) return Swal.fire({ icon: 'warning', text: 'กรุณากรอกข้อมูลให้ครบถ้วน', confirmButtonColor: '#ec4899' });
                 
                 const upperEmpId = formData.empId.trim().toUpperCase();
-                if (employees[upperEmpId]) return Swal.fire({ icon: 'warning', text: 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว', confirmButtonColor: '#2563eb' });
+                if (employees[upperEmpId]) return Swal.fire({ icon: 'warning', text: 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว', confirmButtonColor: '#ec4899' });
 
                 setIsSubmitting(true);
                 const res = await sendToGoogleSheet('register', { ...formData, empId: upperEmpId });
                 if (res && res.status === 'success') { 
-                    Swal.fire({ icon: 'success', text: 'ลงทะเบียนสำเร็จ', confirmButtonColor: '#2563eb', timer: 1500 }); 
+                    Swal.fire({ icon: 'success', text: 'ลงทะเบียนสำเร็จ', confirmButtonColor: '#ec4899', timer: 1500 }); 
                     setEmployees({ ...employees, [upperEmpId]: { ...formData } }); 
                     onCancel(); 
                 } else if (res && res.status === 'error') { 
-                    Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#2563eb' }); 
+                    Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#ec4899' }); 
                 }
                 setIsSubmitting(false);
             };
@@ -645,7 +636,7 @@
                                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">รหัสผ่าน (Option)</label>
                                 <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none" placeholder="ปล่อยว่างได้ถ้าระดับพนักงาน" />
                             </div>
-                            <button type="submit" disabled={isSubmitting} className="w-full p-3.5 bg-primary hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors mt-6 shadow-sm">
+                            <button type="submit" disabled={isSubmitting} className="w-full p-3.5 bg-primary hover:bg-pink-600 text-white rounded-lg font-semibold transition-colors mt-6 shadow-sm">
                                 {isSubmitting ? 'กำลังบันทึก...' : 'สร้างบัญชี'}
                             </button>
                         </form>
@@ -691,7 +682,7 @@
             }
             return (
                 <div className="max-w-md mx-auto mt-4">
-                    <button onClick={() => setActionType(null)} className="mb-4 text-white drop-shadow-sm text-sm hover:text-blue-100 flex items-center transition-colors font-semibold">
+                    <button onClick={() => setActionType(null)} className="mb-4 text-white drop-shadow-sm text-sm hover:text-pink-100 flex items-center transition-colors font-semibold">
                         <i className="fa-solid fa-arrow-left mr-2"></i> ย้อนกลับ
                     </button>
                     {actionType === 'in' && <ClockInModule currentUser={currentUser} currentTime={currentTime} records={records} setRecords={setRecords} schedules={schedules} formatDateForInput={formatDateForInput} sendToGoogleSheet={sendToGoogleSheet} onDone={() => setActionType(null)} />}
@@ -834,68 +825,65 @@
                     setRecords([...records, newRecord]); 
                     setResult({ ...newRecord, shiftName: shiftData.label }); 
                 } 
-                else if (res && res.status === 'error') { Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#2563eb' }); }
+                else if (res && res.status === 'error') { Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#ec4899' }); }
                 
                 setIsScanning(false); setCameraActive(false);
             };
 
-            return (
-                <>
-                    {/* 🌟 แสดง Popup เมื่อเข้างานสำเร็จ 🌟 */}
-                    {result && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
-                            <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft p-8 text-center border border-slate-100 relative">
-                                <div className="w-20 h-20 bg-blue-50 text-primary rounded-full flex items-center justify-center mx-auto mb-5 border border-blue-100">
-                                    <i className="fa-solid fa-check text-4xl"></i>
-                                </div>
-                                <h2 className="text-2xl font-bold text-slate-800">บันทึกเข้างานสำเร็จ</h2>
-                                <div className="my-6">
-                                    <p className="text-5xl font-semibold text-primary mb-2 tracking-tight">{displaySafeTime(result.timeIn)}</p>
-                                    <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-md border border-slate-200">{result.shiftName}</p>
-                                </div>
-                                {result.isLate && <div className="mb-6 text-sm text-red-600 font-bold bg-red-50 py-2 rounded-lg border border-red-100">บันทึกสาย {result.lateMinutes} นาที</div>}
-                                <button onClick={onDone} className="w-full p-4 bg-primary hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-sm text-lg">เสร็จสิ้น</button>
-                            </div>
+            if (result) return (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft p-8 text-center border border-slate-100 relative">
+                        <div className="w-20 h-20 bg-pink-50 text-primary rounded-full flex items-center justify-center mx-auto mb-5 border border-pink-100">
+                            <i className="fa-solid fa-check text-4xl"></i>
                         </div>
-                    )}
-
-                    <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fade-in">
-                        <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 text-primary flex items-center justify-center"><i className="fa-solid fa-arrow-right-to-bracket text-sm"></i></div>
-                            <h2 className="text-lg font-bold text-slate-800">เข้างาน</h2>
+                        <h2 className="text-2xl font-bold text-slate-800">บันทึกเข้างานสำเร็จ</h2>
+                        <div className="my-6">
+                            <p className="text-5xl font-semibold text-primary mb-2 tracking-tight">{displaySafeTime(result.timeIn)}</p>
+                            <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-md border border-slate-200">{result.shiftName}</p>
                         </div>
-                        <div className="p-6 space-y-5">
-                            {errorMsg && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{errorMsg}</span></div>}
-                            
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">กะการทำงาน</label>
-                                {validShifts.length > 0 ? (
-                                    <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)} className="w-full p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800 focus:border-primary">
-                                        {validShifts.map(key => <option key={key} value={key}>{SHIFT_TYPES[key]?.label || key}</option>)}
-                                    </select>
-                                ) : (
-                                    <div className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 text-sm font-medium">ไม่พบตารางเวรที่ลงได้</div>
-                                )}
-                            </div>
-                            
-                            <div className={`p-3 rounded-lg flex items-center gap-2 text-sm border font-medium ${locationStatus === 'ok' ? 'bg-blue-50 border-blue-200 text-primary' : locationStatus === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
-                                {locationStatus === 'ok' ? <><i className="fa-solid fa-location-dot"></i> พิกัดถูกต้อง</> : locationStatus === 'error' ? <><i className="fa-solid fa-location-xmark"></i> {errorMsg || 'พิกัดอยู่นอกพื้นที่'}</> : <><i className="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบพิกัด...</>}
-                            </div>
-                            
-                            <div className="border border-slate-200 rounded-xl h-64 flex items-center justify-center bg-slate-100 overflow-hidden relative shadow-inner">
-                                {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
-                                <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className="flex flex-col items-center text-slate-400 hover:text-slate-600 transition-colors">
-                                    <i className="fa-solid fa-camera text-4xl mb-3"></i>
-                                    <span className="text-sm font-semibold">เปิดกล้องสแกนใบหน้า</span>
-                                </button>}
-                            </div>
-                            
-                            <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className={`w-full p-4 rounded-xl font-bold text-base text-white transition-all ${(cameraActive && locationStatus === 'ok' && validShifts.length > 0 && !isAlreadyClockedIn) ? 'bg-primary hover:bg-blue-700 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
-                                {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันเข้างาน'}
-                            </button>
-                        </div>
+                        {result.isLate && <div className="mb-6 text-sm text-red-600 font-bold bg-red-50 py-2 rounded-lg border border-red-100">บันทึกสาย {result.lateMinutes} นาที</div>}
+                        <button onClick={onDone} className="w-full p-4 bg-primary hover:bg-pink-600 text-white rounded-xl font-bold transition-colors shadow-sm text-lg">เสร็จสิ้น</button>
                     </div>
-                </>
+                </div>
+            );
+
+            return (
+                <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fade-in">
+                    <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
+                        <div className="w-8 h-8 rounded-full bg-pink-100 text-primary flex items-center justify-center"><i className="fa-solid fa-arrow-right-to-bracket text-sm"></i></div>
+                        <h2 className="text-lg font-bold text-slate-800">เข้างาน</h2>
+                    </div>
+                    <div className="p-6 space-y-5">
+                        {errorMsg && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{errorMsg}</span></div>}
+                        
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">กะการทำงาน</label>
+                            {validShifts.length > 0 ? (
+                                <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)} className="w-full p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800 focus:border-primary">
+                                    {validShifts.map(key => <option key={key} value={key}>{SHIFT_TYPES[key]?.label || key}</option>)}
+                                </select>
+                            ) : (
+                                <div className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 text-sm font-medium">ไม่พบตารางเวรที่ลงได้</div>
+                            )}
+                        </div>
+                        
+                        <div className={`p-3 rounded-lg flex items-center gap-2 text-sm border font-medium ${locationStatus === 'ok' ? 'bg-pink-50 border-pink-200 text-primary' : locationStatus === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                            {locationStatus === 'ok' ? <><i className="fa-solid fa-location-dot"></i> พิกัดถูกต้อง</> : locationStatus === 'error' ? <><i className="fa-solid fa-location-xmark"></i> {errorMsg || 'พิกัดอยู่นอกพื้นที่'}</> : <><i className="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบพิกัด...</>}
+                        </div>
+                        
+                        <div className="border border-slate-200 rounded-xl h-64 flex items-center justify-center bg-slate-100 overflow-hidden relative shadow-inner">
+                            {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
+                            <button onClick={() => setCameraActive(true)} disabled={locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className="flex flex-col items-center text-slate-400 hover:text-slate-600 transition-colors">
+                                <i className="fa-solid fa-camera text-4xl mb-3"></i>
+                                <span className="text-sm font-semibold">เปิดกล้องสแกนใบหน้า</span>
+                            </button>}
+                        </div>
+                        
+                        <button onClick={handleClockIn} disabled={!cameraActive || isScanning || locationStatus !== 'ok' || validShifts.length === 0 || isAlreadyClockedIn} className={`w-full p-4 rounded-xl font-bold text-base text-white transition-all ${(cameraActive && locationStatus === 'ok' && validShifts.length > 0 && !isAlreadyClockedIn) ? 'bg-primary hover:bg-pink-600 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
+                            {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันเข้างาน'}
+                        </button>
+                    </div>
+                </div>
             );
         }
 
@@ -956,78 +944,75 @@
                     setRecords(records.map(r => r.id === foundRecord.id ? { ...r, timeOut: timeOutStr } : r)); 
                     setSuccessResult({ timeOut: timeOutStr, shiftName: SHIFT_TYPES[foundRecord.shiftId]?.label }); 
                 } else if (res && res.status === 'error') { 
-                    Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#0ea5e9' }); 
+                    Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#fb7185' }); 
                 }
                 
                 setIsScanning(false); setCameraActive(false);
             };
 
-            return (
-                <>
-                    {/* 🌟 แสดง Popup เมื่อออกงานสำเร็จ 🌟 */}
-                    {successResult && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
-                            <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft p-8 text-center border border-slate-100 relative">
-                                <div className="w-20 h-20 bg-sky-50 text-secondary rounded-full flex items-center justify-center mx-auto mb-5 border border-sky-100">
-                                    <i className="fa-solid fa-arrow-right-from-bracket text-4xl"></i>
-                                </div>
-                                <h2 className="text-2xl font-bold text-slate-800">บันทึกออกงานสำเร็จ</h2>
-                                <div className="my-6">
-                                    <p className="text-5xl font-semibold text-secondary mb-2 tracking-tight">{displaySafeTime(successResult.timeOut)}</p>
-                                    <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-md border border-slate-200">{successResult.shiftName}</p>
-                                </div>
-                                <button onClick={onDone} className="w-full p-4 bg-secondary hover:bg-sky-600 text-white rounded-xl font-bold transition-colors shadow-sm text-lg">เสร็จสิ้น</button>
-                            </div>
+            if (successResult) return (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft p-8 text-center border border-slate-100 relative">
+                        <div className="w-20 h-20 bg-rose-50 text-secondary rounded-full flex items-center justify-center mx-auto mb-5 border border-rose-100">
+                            <i className="fa-solid fa-arrow-right-from-bracket text-4xl"></i>
                         </div>
-                    )}
-
-                    <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fade-in">
-                        <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
-                            <div className="w-8 h-8 rounded-full bg-sky-100 text-secondary flex items-center justify-center"><i className="fa-solid fa-arrow-right-from-bracket text-sm"></i></div>
-                            <h2 className="text-lg font-bold text-slate-800">ออกงาน</h2>
+                        <h2 className="text-2xl font-bold text-slate-800">บันทึกออกงานสำเร็จ</h2>
+                        <div className="my-6">
+                            <p className="text-5xl font-semibold text-secondary mb-2 tracking-tight">{displaySafeTime(successResult.timeOut)}</p>
+                            <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-md border border-slate-200">{successResult.shiftName}</p>
                         </div>
-                        <div className="p-6 space-y-5">
-                            {errorMsg && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{errorMsg}</span></div>}
-                            
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">วันที่เข้างาน</label>
-                                <input type="date" value={outDate} onChange={handleDateChange} className="w-full p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800 focus:border-secondary" />
-                            </div>
-                            
-                            {!foundRecord ? (
-                                <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-400 text-sm font-medium">ไม่พบประวัติเข้างานของวันที่เลือก</div>
-                            ) : (
-                                <div className="space-y-5 animate-in fade-in">
-                                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between items-center">
-                                        <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">กะที่บันทึก</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{SHIFT_TYPES[foundRecord.shiftId]?.label}</p></div>
-                                        <div className="text-right"><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">เข้าเมื่อ</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{displaySafeTime(foundRecord.timeIn)}</p></div>
-                                    </div>
-                                    
-                                    <div className="border border-slate-200 rounded-xl h-64 flex items-center justify-center bg-slate-100 overflow-hidden relative shadow-inner">
-                                        {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
-                                        <button onClick={() => setCameraActive(true)} className="flex flex-col items-center text-slate-400 hover:text-slate-600 transition-colors">
-                                            <i className="fa-solid fa-camera text-4xl mb-3"></i><span className="text-sm font-semibold">เปิดกล้องสแกนหน้า</span>
-                                        </button>}
-                                    </div>
-                                    
-                                    {showEarlyWarning ? (
-                                        <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-sm">
-                                            <p className="text-amber-800 mb-4 text-sm font-bold">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
-                                            <div className="flex gap-2">
-                                                <button onClick={processClockOut} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-2.5 text-sm font-bold transition-colors">ยืนยัน</button>
-                                                <button onClick={() => setShowEarlyWarning(false)} className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg py-2.5 text-sm font-bold transition-colors">ยกเลิก</button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <button onClick={handleClockOutAttempt} disabled={!cameraActive || isScanning} className={`w-full p-4 rounded-xl font-bold text-base text-white transition-all ${cameraActive ? 'bg-secondary hover:bg-sky-600 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
-                                            {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันออกงาน'}
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                        <button onClick={onDone} className="w-full p-4 bg-secondary hover:bg-rose-500 text-white rounded-xl font-bold transition-colors shadow-sm text-lg">เสร็จสิ้น</button>
                     </div>
-                </>
+                </div>
+            );
+
+            return (
+                <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fade-in">
+                    <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
+                        <div className="w-8 h-8 rounded-full bg-rose-100 text-secondary flex items-center justify-center"><i className="fa-solid fa-arrow-right-from-bracket text-sm"></i></div>
+                        <h2 className="text-lg font-bold text-slate-800">ออกงาน</h2>
+                    </div>
+                    <div className="p-6 space-y-5">
+                        {errorMsg && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{errorMsg}</span></div>}
+                        
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">วันที่เข้างาน</label>
+                            <input type="date" value={outDate} onChange={handleDateChange} className="w-full p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800 focus:border-secondary" />
+                        </div>
+                        
+                        {!foundRecord ? (
+                            <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-400 text-sm font-medium">ไม่พบประวัติเข้างานของวันที่เลือก</div>
+                        ) : (
+                            <div className="space-y-5 animate-in fade-in">
+                                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between items-center">
+                                    <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">กะที่บันทึก</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{SHIFT_TYPES[foundRecord.shiftId]?.label}</p></div>
+                                    <div className="text-right"><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">เข้าเมื่อ</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{displaySafeTime(foundRecord.timeIn)}</p></div>
+                                </div>
+                                
+                                <div className="border border-slate-200 rounded-xl h-64 flex items-center justify-center bg-slate-100 overflow-hidden relative shadow-inner">
+                                    {cameraActive ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /> : 
+                                    <button onClick={() => setCameraActive(true)} className="flex flex-col items-center text-slate-400 hover:text-slate-600 transition-colors">
+                                        <i className="fa-solid fa-camera text-4xl mb-3"></i><span className="text-sm font-semibold">เปิดกล้องสแกนหน้า</span>
+                                    </button>}
+                                </div>
+                                
+                                {showEarlyWarning ? (
+                                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-sm">
+                                        <p className="text-amber-800 mb-4 text-sm font-bold">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
+                                        <div className="flex gap-2">
+                                            <button onClick={processClockOut} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-2.5 text-sm font-bold transition-colors">ยืนยัน</button>
+                                            <button onClick={() => setShowEarlyWarning(false)} className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg py-2.5 text-sm font-bold transition-colors">ยกเลิก</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button onClick={handleClockOutAttempt} disabled={!cameraActive || isScanning} className={`w-full p-4 rounded-xl font-bold text-base text-white transition-all ${cameraActive ? 'bg-secondary hover:bg-rose-500 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
+                                        {isScanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันออกงาน'}
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
             );
         }
 
@@ -1064,7 +1049,7 @@
                                 const isToday = dateStr === todayStr; 
                                 const isWeekend = [0, 6].includes(new Date(year, month, day).getDay());
                                 return (
-                                    <div key={day} onClick={() => setSelectedDate({ dateStr, day, dayShifts })} className={`relative flex flex-col p-1.5 sm:p-2 min-h-[60px] sm:min-h-[70px] rounded-xl cursor-pointer border transition-all ${isToday ? 'bg-blue-50 border-blue-300 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'} ${isWeekend && !isToday ? 'bg-rose-50/30' : ''}`}>
+                                    <div key={day} onClick={() => setSelectedDate({ dateStr, day, dayShifts })} className={`relative flex flex-col p-1.5 sm:p-2 min-h-[60px] sm:min-h-[70px] rounded-xl cursor-pointer border transition-all ${isToday ? 'bg-pink-50 border-pink-300 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'} ${isWeekend && !isToday ? 'bg-rose-50/30' : ''}`}>
                                         <span className={`text-[10px] sm:text-xs font-bold mb-1 ${isToday ? 'text-primary' : isWeekend ? 'text-rose-500' : 'text-slate-600'}`}>{day}</span>
                                         <div className="flex flex-col gap-1 w-full overflow-hidden">
                                             {dayShifts.map((s, i) => { 
@@ -1265,7 +1250,6 @@
                 return { empId, fname: employees[empId].fname, lname: employees[empId].lname, dept: employees[empId].dept, level: employees[empId].level, shiftsByDay, empTotalCredit, empTotalLate, otShifts: empTotalCredit - localWorkDays, shiftCounts };
             });
 
-            // 🌟 คำนวณสรุปอัตรากำลังใหม่ (แยกชิ้นส่วนตาม SHIFT_CATEGORY_MAP)
             const getDailyShiftCounts = (day) => {
                 const counts = {};
                 summaryMatrix.forEach(row => {
@@ -1309,7 +1293,7 @@
                         icon: 'success',
                         title: 'สำเร็จ!',
                         text: 'แก้ไขข้อมูลประวัติเรียบร้อยแล้ว',
-                        confirmButtonColor: '#2563eb',
+                        confirmButtonColor: '#ec4899',
                         timer: 2000,
                         showConfirmButton: false
                     });
@@ -1330,7 +1314,7 @@
                         icon: 'success',
                         title: 'สำเร็จ!',
                         text: 'เพิ่มข้อมูลประวัติย้อนหลังเรียบร้อยแล้ว',
-                        confirmButtonColor: '#2563eb',
+                        confirmButtonColor: '#ec4899',
                         timer: 2000,
                         showConfirmButton: false
                     });
@@ -1464,7 +1448,7 @@
                             <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft overflow-hidden p-6 border border-slate-200">
                                 <h3 className="font-bold text-slate-800 mb-4">แก้ไขประวัติ</h3>
                                 <div className="space-y-4 text-sm">
-                                    <select value={editModalData.shiftId} onChange={e => setEditModalData({...editModalData, shiftId: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold text-slate-800">
+                                    <select value={editModalData.shiftId} onChange={e => setEditModalData({...editModalData, shiftId: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold text-slate-800 focus:border-primary">
                                         <optgroup label="กะเวรปกติ">
                                             {getSortedShiftKeys(employees[editModalData.empId]?.dept).map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}
                                         </optgroup>
@@ -1472,8 +1456,14 @@
                                             {['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}
                                         </optgroup>
                                     </select>
-                                    <div className="flex gap-2"><input type="time" value={editModalData.timeIn} onChange={e => setEditModalData({...editModalData, timeIn: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" /><input type="time" value={editModalData.timeOut || ''} onChange={e => setEditModalData({...editModalData, timeOut: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" /></div>
-                                    <div className="flex gap-2 pt-2"><button onClick={() => setEditModalData(null)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ยกเลิก</button><button onClick={handleSaveEdit} className="flex-1 p-3 bg-primary hover:bg-blue-700 text-white rounded-xl font-bold transition-colors">บันทึก</button></div>
+                                    <div className="flex gap-2">
+                                        <input type="time" value={editModalData.timeIn} onChange={e => setEditModalData({...editModalData, timeIn: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold focus:border-primary" />
+                                        <input type="time" value={editModalData.timeOut || ''} onChange={e => setEditModalData({...editModalData, timeOut: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold focus:border-primary" />
+                                    </div>
+                                    <div className="flex gap-2 pt-2">
+                                        <button onClick={() => setEditModalData(null)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ยกเลิก</button>
+                                        <button onClick={handleSaveEdit} className="flex-1 p-3 bg-primary hover:bg-pink-600 text-white rounded-xl font-bold transition-colors">บันทึก</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1495,8 +1485,14 @@
                                             {['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}
                                         </optgroup>
                                     </select>
-                                    <div className="flex gap-2"><input type="time" placeholder="เวลาเข้า" value={addModalData.timeIn} onChange={(e) => setAddModalData({...addModalData, timeIn: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold outline-none focus:border-primary" /><input type="time" placeholder="เวลาออก" value={addModalData.timeOut} onChange={(e) => setAddModalData({...addModalData, timeOut: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold outline-none focus:border-primary" /></div>
-                                    <div className="flex gap-2 pt-3 border-t border-slate-100"><button onClick={() => setAddModalData(null)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ยกเลิก</button><button onClick={handleSaveAdd} disabled={isSaving} className="flex-1 p-3 bg-primary hover:bg-blue-700 text-white rounded-xl font-bold transition-colors">{isSaving ? 'บันทึก...' : 'เพิ่มข้อมูล'}</button></div>
+                                    <div className="flex gap-2">
+                                        <input type="time" placeholder="เวลาเข้า" value={addModalData.timeIn} onChange={(e) => setAddModalData({...addModalData, timeIn: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold outline-none focus:border-primary" />
+                                        <input type="time" placeholder="เวลาออก" value={addModalData.timeOut} onChange={(e) => setAddModalData({...addModalData, timeOut: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold outline-none focus:border-primary" />
+                                    </div>
+                                    <div className="flex gap-2 pt-3 border-t border-slate-100">
+                                        <button onClick={() => setAddModalData(null)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ยกเลิก</button>
+                                        <button onClick={handleSaveAdd} disabled={isSaving} className="flex-1 p-3 bg-primary hover:bg-pink-600 text-white rounded-xl font-bold transition-colors">{isSaving ? 'บันทึก...' : 'เพิ่มข้อมูล'}</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1510,7 +1506,7 @@
                                 <div className="space-y-2 max-h-48 overflow-y-auto mb-4 pr-1">
                                     {scheduleModalData.shifts.map((shift, i) => (
                                         <div key={i} className="flex gap-2">
-                                            <select value={shift} onChange={e => {const s=[...scheduleModalData.shifts]; s[i]=e.target.value; setScheduleModalData({...scheduleModalData, shifts: s})}} className="flex-1 p-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50">
+                                            <select value={shift} onChange={e => {const s=[...scheduleModalData.shifts]; s[i]=e.target.value; setScheduleModalData({...scheduleModalData, shifts: s})}} className="flex-1 p-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 focus:border-primary">
                                                 <option value="">- ว่าง -</option>
                                                 <optgroup label="กะ">
                                                     {getSortedShiftKeys(employees[scheduleModalData.empId]?.dept).map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}
@@ -1524,7 +1520,10 @@
                                     ))}
                                 </div>
                                 <button onClick={() => setScheduleModalData({...scheduleModalData, shifts: [...scheduleModalData.shifts, '']})} className="w-full p-2.5 border-2 border-dashed border-slate-300 text-slate-500 font-bold rounded-xl text-sm mb-4 hover:bg-slate-50 transition-colors">+ เพิ่มกะ</button>
-                                <div className="flex gap-2"><button onClick={() => setScheduleModalData(null)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors">ยกเลิก</button><button onClick={handleSaveScheduleCell} className="flex-1 p-3 bg-primary hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-colors">บันทึก</button></div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setScheduleModalData(null)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors">ยกเลิก</button>
+                                    <button onClick={handleSaveScheduleCell} className="flex-1 p-3 bg-primary hover:bg-pink-600 text-white rounded-xl font-bold text-sm transition-colors">บันทึก</button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1534,12 +1533,21 @@
                             <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft overflow-hidden p-6 border border-slate-200">
                                 <h3 className="font-bold text-slate-800 mb-4">จัดเวรอัตโนมัติ</h3>
                                 <div className="space-y-3 text-sm">
-                                    <select value={autoScheduleData.shiftId} onChange={e => setAutoScheduleData({...autoScheduleData, shiftId: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="">-- เลือกกะ --</option><optgroup label="กะ">{getSortedShiftKeys(filterDept).map(k => <option key={k} value={k}>{k}</option>)}</optgroup><optgroup label="อื่นๆ">{['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}</optgroup></select>
-                                    <select value={autoScheduleData.dayPattern} onChange={e => setAutoScheduleData({...autoScheduleData, dayPattern: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="all">ทุกวัน</option><option value="weekdays">วันธรรมดา</option><option value="weekends">วันหยุด (ส-อา)</option></select>
-                                    <select value={autoScheduleData.assignMode} onChange={e => setAutoScheduleData({...autoScheduleData, assignMode: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="all">ใส่ให้ทุกคน</option><option value="quota">จำกัดโควต้าคน/วัน</option></select>
-                                    {autoScheduleData.assignMode === 'quota' && <input type="number" min="1" placeholder="จำนวนคน/วัน" value={autoScheduleData.requiredCount} onChange={e => setAutoScheduleData({...autoScheduleData, requiredCount: parseInt(e.target.value)||1})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold" />}
-                                    <label className="flex items-center gap-2 mt-2 font-semibold text-slate-700 cursor-pointer"><input type="checkbox" checked={autoScheduleData.overwrite} onChange={e => setAutoScheduleData({...autoScheduleData, overwrite: e.target.checked})} className="rounded border-slate-300 w-4 h-4 text-primary" /> เขียนทับกะเดิม</label>
-                                    <div className="flex gap-2 pt-4 border-t border-slate-100"><button onClick={() => setAutoScheduleModal(false)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ยกเลิก</button><button onClick={handleRunAutoSchedule} className="flex-1 p-3 bg-primary hover:bg-blue-700 text-white rounded-xl font-bold transition-colors">เริ่มจัดเวร</button></div>
+                                    <select value={autoScheduleData.shiftId} onChange={e => setAutoScheduleData({...autoScheduleData, shiftId: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold focus:border-primary">
+                                        <option value="">-- เลือกกะ --</option>
+                                        <optgroup label="กะ">{getSortedShiftKeys(filterDept).map(k => <option key={k} value={k}>{k}</option>)}</optgroup>
+                                        <optgroup label="อื่นๆ">{['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}</optgroup>
+                                    </select>
+                                    <select value={autoScheduleData.dayPattern} onChange={e => setAutoScheduleData({...autoScheduleData, dayPattern: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold focus:border-primary"><option value="all">ทุกวัน</option><option value="weekdays">วันธรรมดา</option><option value="weekends">วันหยุด (ส-อา)</option></select>
+                                    <select value={autoScheduleData.assignMode} onChange={e => setAutoScheduleData({...autoScheduleData, assignMode: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold focus:border-primary"><option value="all">ใส่ให้ทุกคน</option><option value="quota">จำกัดโควต้าคน/วัน</option></select>
+                                    {autoScheduleData.assignMode === 'quota' && <input type="number" min="1" placeholder="จำนวนคน/วัน" value={autoScheduleData.requiredCount} onChange={e => setAutoScheduleData({...autoScheduleData, requiredCount: parseInt(e.target.value)||1})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold focus:border-primary" />}
+                                    <label className="flex items-center gap-2 mt-2 font-semibold text-slate-700 cursor-pointer">
+                                        <input type="checkbox" checked={autoScheduleData.overwrite} onChange={e => setAutoScheduleData({...autoScheduleData, overwrite: e.target.checked})} className="rounded border-slate-300 w-4 h-4 text-primary" /> เขียนทับกะเดิม
+                                    </label>
+                                    <div className="flex gap-2 pt-4 border-t border-slate-100">
+                                        <button onClick={() => setAutoScheduleModal(false)} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ยกเลิก</button>
+                                        <button onClick={handleRunAutoSchedule} className="flex-1 p-3 bg-primary hover:bg-pink-600 text-white rounded-xl font-bold transition-colors">เริ่มจัดเวร</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1555,23 +1563,22 @@
                             <div className="flex flex-wrap gap-2">
                                 {adminTab === 'logs' && role === 'admin' && (<><button onClick={() => setAddModalData({empId:'', date:'', shiftId:'', timeIn:'', timeOut:''})} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-plus mr-1.5"></i>เพิ่มย้อนหลัง</button><button onClick={exportLogsToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-csv mr-1.5 text-emerald-600"></i>ส่งออก</button></>)}
                                 {adminTab === 'summary' && (<button onClick={exportSummaryToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-csv mr-1.5 text-emerald-600"></i>ส่งออก</button>)}
-                                {adminTab === 'schedules' && (<><button onClick={() => setAutoScheduleModal(true)} disabled={!filterDept} className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-primary border border-blue-200 rounded-lg text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"><i className="fa-solid fa-wand-magic-sparkles mr-1.5"></i>จัดเวรออโต้</button><button onClick={exportScheduleToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-excel mr-1.5 text-emerald-600"></i>ส่งออก</button></>)}
+                                {adminTab === 'schedules' && (<><button onClick={() => setAutoScheduleModal(true)} disabled={!filterDept} className="px-4 py-2 bg-pink-50 hover:bg-pink-100 text-primary border border-pink-200 rounded-lg text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"><i className="fa-solid fa-wand-magic-sparkles mr-1.5"></i>จัดเวรออโต้</button><button onClick={exportScheduleToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-excel mr-1.5 text-emerald-600"></i>ส่งออก</button></>)}
                                 <button onClick={() => window.print()} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-print mr-1.5 text-slate-400"></i>พิมพ์</button>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                            {adminTab === 'logs' ? (<><input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700" /><input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700" /></>) : (<input type="month" value={matrixMonth} onChange={e=>setMatrixMonth(e.target.value)} className="col-span-2 p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700" />)}
-                            <select value={filterDept} onChange={e=>setFilterDept(e.target.value)} disabled={role==='supervisor'} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 bg-white disabled:bg-slate-100 disabled:text-slate-400">{role==='admin' && <option value="">ทุกแผนก</option>}{DEPARTMENTS.map(d=><option key={d} value={d}>{d}</option>)}</select>
-                            <input type="text" placeholder="ค้นหาชื่อ..." value={filterEmp} onChange={e=>setFilterEmp(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700" />
+                            {adminTab === 'logs' ? (<><input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" /><input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" /></>) : (<input type="month" value={matrixMonth} onChange={e=>setMatrixMonth(e.target.value)} className="col-span-2 p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" />)}
+                            <select value={filterDept} onChange={e=>setFilterDept(e.target.value)} disabled={role==='supervisor'} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 bg-white disabled:bg-slate-100 disabled:text-slate-400 focus:border-primary">{role==='admin' && <option value="">ทุกแผนก</option>}{DEPARTMENTS.map(d=><option key={d} value={d}>{d}</option>)}</select>
+                            <input type="text" placeholder="ค้นหาชื่อ..." value={filterEmp} onChange={e=>setFilterEmp(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" />
                         </div>
                         {adminTab === 'summary' && role === 'admin' && (
-                            <div className="mt-4 flex items-center gap-3 text-sm bg-blue-50 p-3 rounded-xl border border-blue-100 w-fit">
-                                <span className="text-primary font-bold"><i className="fa-solid fa-gear mr-2"></i>วันทำการปกติ:</span><input type="number" min="0" value={localWorkDays} onChange={e=>setLocalWorkDays(Number(e.target.value))} className="w-16 p-1.5 border border-blue-200 rounded-lg text-center font-bold bg-white text-slate-800" /><button onClick={handleSaveSettings} className="px-3 py-1.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors">บันทึก</button>
+                            <div className="mt-4 flex items-center gap-3 text-sm bg-pink-50 p-3 rounded-xl border border-pink-100 w-fit">
+                                <span className="text-primary font-bold"><i className="fa-solid fa-gear mr-2"></i>วันทำการปกติ:</span><input type="number" min="0" value={localWorkDays} onChange={e=>setLocalWorkDays(Number(e.target.value))} className="w-16 p-1.5 border border-pink-200 rounded-lg text-center font-bold bg-white text-slate-800 focus:border-primary" /><button onClick={handleSaveSettings} className="px-3 py-1.5 bg-primary hover:bg-pink-600 text-white rounded-lg text-xs font-bold transition-colors">บันทึก</button>
                             </div>
                         )}
                     </div>
 
-                    {}
                     {adminTab === 'logs' && role === 'admin' && (
                         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                             <div className="overflow-x-auto print-table-wrapper">
@@ -1581,12 +1588,12 @@
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {filteredRecords.map(r => (
-                                            <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <tr key={r.id} className="hover:bg-pink-50/50 transition-colors">
                                                 <td className="px-4 py-3 text-slate-500 font-semibold">{formatDisplayDate(r.date).slice(0,5)}</td><td className="px-4 py-3 font-bold text-slate-800">{employees[r.empId]?.fname}</td>
                                                 <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs">{r.shiftId}</span></td>
                                                 <td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeIn)}</td><td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeOut)}</td>
                                                 <td className="px-4 py-3 text-center">{r.isLate ? <span className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded text-xs font-bold">{r.lateMinutes} น.</span> : '-'}</td>
-                                                <td className="px-4 py-3 text-center print-hide">{(r.photoInUrl||r.photoOutUrl)?<button onClick={()=>setSelectedPhotoRecord(r)} className="text-primary hover:text-blue-700 bg-blue-50 w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors"><i className="fa-solid fa-image"></i></button>:'-'}</td>
+                                                <td className="px-4 py-3 text-center print-hide">{(r.photoInUrl||r.photoOutUrl)?<button onClick={()=>setSelectedPhotoRecord(r)} className="text-primary hover:text-pink-600 bg-pink-50 w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors"><i className="fa-solid fa-image"></i></button>:'-'}</td>
                                                 <td className="px-4 py-3 text-right print-hide"><button onClick={()=>setEditModalData({...r})} className="text-slate-400 hover:text-primary mr-3 transition-colors"><i className="fa-solid fa-pen"></i></button><button onClick={()=>handleDelete(r.id)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fa-solid fa-trash"></i></button></td>
                                             </tr>
                                         ))}
@@ -1596,7 +1603,6 @@
                         </div>
                     )}
 
-                    {}
                     {(adminTab === 'summary' || adminTab === 'schedules') && filterDept && (
                         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print-table-wrapper">
                             <div className="overflow-x-auto">
@@ -1606,21 +1612,19 @@
                                             <th rowSpan="2" className="px-2 py-3 font-extrabold text-slate-800 text-sm sticky left-0 bg-slate-50 z-20 border-r border-slate-200" style={{ width: '13%' }}>พนักงาน</th>
                                             {daysArray.map(day => { const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay()); return <th key={day} rowSpan="2" className={`day-col px-1 py-3 text-center text-xs font-extrabold ${isWeekend ? 'text-rose-600 bg-rose-50/50' : 'text-slate-500'}`}>{day}</th> })}
                                             
-                                            {/* เปลี่ยนคำว่า จำนวนเวรแยกประเภท เป็น สรุปกะเวร เพื่อประหยัดพื้นที่ */}
-                                            <th colSpan={sortedShiftTypesUsed.length} className="px-1 py-1.5 font-extrabold text-primary text-center bg-blue-50/50 border-l border-b border-blue-100 border-r border-slate-200 text-[10px] uppercase tracking-widest" style={{ width: `${sortedShiftTypesUsed.length * 2.5}%` }}>สรุปกะเวร</th>
+                                            <th colSpan={sortedShiftTypesUsed.length} className="px-1 py-1.5 font-extrabold text-primary text-center bg-pink-50/50 border-l border-b border-pink-100 border-r border-slate-200 text-[10px] uppercase tracking-widest" style={{ width: `${sortedShiftTypesUsed.length * 2.5}%` }}>สรุปกะเวร</th>
                                             
                                             <th rowSpan="2" className="px-1 py-3 text-center text-xs font-extrabold text-slate-700 bg-slate-100/50 border-l border-slate-200" style={{ width: '4%' }}>รวม</th>
                                             <th rowSpan="2" className="px-1 py-3 text-center text-xs font-extrabold text-slate-800 bg-slate-100/50 border-l border-slate-200" style={{ width: '4%' }}>ทำงาน</th>
-                                            <th rowSpan="2" className="px-1 py-3 text-center text-[10px] font-extrabold text-white bg-primary border-l border-blue-600" style={{ width: '4%' }}>OT</th>
+                                            <th rowSpan="2" className="px-1 py-3 text-center text-[10px] font-extrabold text-white bg-primary border-l border-pink-600" style={{ width: '4%' }}>OT</th>
                                             
-                                            {/* คอลัมน์สรุปสาย สำหรับ Admin */}
                                             {adminTab === 'summary' && role === 'admin' && <th rowSpan="2" className="px-1 py-3 text-center text-[10px] font-extrabold text-red-700 bg-red-50 border-l border-red-200" style={{ width: '4%' }}>สาย<br/>(นาที)</th>}
                                         </tr>
-                                        <tr>{sortedShiftTypesUsed.map(type => (<th key={type} className="px-1 py-1 font-extrabold text-primary text-center bg-blue-50/50 border-x border-white text-[10px]">{type}</th>))}</tr>
+                                        <tr>{sortedShiftTypesUsed.map(type => (<th key={type} className="px-1 py-1 font-extrabold text-primary text-center bg-pink-50/50 border-x border-white text-[10px]">{type}</th>))}</tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 text-sm">
                                         {summaryMatrix.map(row => (
-                                            <tr key={row.empId} className="hover:bg-blue-50/30 transition-colors">
+                                            <tr key={row.empId} className="hover:bg-pink-50/30 transition-colors">
                                                 <td className="px-2 py-2 sticky left-0 bg-white z-10 border-r border-slate-200"><p className="font-bold text-slate-800 leading-tight truncate">{row.fname}</p><p className="text-[9px] font-semibold text-slate-400 truncate mt-0.5">{row.empId} • {row.level}</p></td>
                                                 {daysArray.map(day => {
                                                     const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay());
@@ -1633,40 +1637,36 @@
                                                             <td key={day} className={`day-col px-0.5 py-1.5 text-center text-xs font-bold border-r border-slate-50 align-middle ${isAbsentDay ? 'bg-red-50 ring-1 ring-inset ring-red-200' : (isEmpty ? '' : 'bg-slate-50/40')} ${isWeekend && isEmpty ? 'bg-rose-50/30' : ''}`}>
                                                                 {isEmpty ? <span className="text-slate-300">-</span> : (<div className="flex flex-col gap-0.5 items-center justify-center my-0.5">{el.map((e,i) => {
                                                                     let chipClass = "shift-chip text-[10px] font-bold px-1 py-0.5 rounded border ";
-                                                                    if (e.type === 'worked') chipClass += "text-blue-900 bg-blue-100 border-blue-300"; else if (e.type === 'pending') chipClass += "text-emerald-900 bg-emerald-50 border-emerald-200"; else if (e.type === 'absent') chipClass += "text-red-900 bg-red-100 border-red-300"; else if (e.type === 'leave') chipClass += "text-amber-900 bg-amber-50 border-amber-300";
+                                                                    if (e.type === 'worked') chipClass += "text-pink-900 bg-pink-100 border-pink-300"; else if (e.type === 'pending') chipClass += "text-emerald-900 bg-emerald-50 border-emerald-200"; else if (e.type === 'absent') chipClass += "text-red-900 bg-red-100 border-red-300"; else if (e.type === 'leave') chipClass += "text-amber-900 bg-amber-50 border-amber-300";
                                                                     return <span key={i} className={chipClass} title={e.type === 'pending' ? 'กะล่วงหน้า/รอสแกน' : ''}>{e.shift}</span>;
                                                                 })}</div>)}
                                                             </td>
                                                         )
                                                     }
                                                 })}
-                                                {sortedShiftTypesUsed.map(type => (<td key={type} className="px-1 py-2 text-center font-bold text-primary bg-blue-50/30 border-x border-slate-50 text-[10px]">{row.shiftCounts[type] || 0}</td>))}
+                                                {sortedShiftTypesUsed.map(type => (<td key={type} className="px-1 py-2 text-center font-bold text-primary bg-pink-50/30 border-x border-slate-50 text-[10px]">{row.shiftCounts[type] || 0}</td>))}
                                                 <td className="px-1 py-2 text-center font-extrabold text-slate-800 bg-slate-50/50 border-l border-slate-200">{row.empTotalCredit}</td>
                                                 <td className="px-1 py-2 text-center font-bold text-slate-500 bg-slate-50/50 border-l border-slate-200 text-xs">{localWorkDays}</td>
-                                                <td className="px-1 py-2 text-center font-extrabold text-primary bg-blue-50 border-l border-blue-100">{row.otShifts>0?`+${row.otShifts}`:row.otShifts}</td>
+                                                <td className="px-1 py-2 text-center font-extrabold text-primary bg-pink-50 border-l border-pink-100">{row.otShifts>0?`+${row.otShifts}`:row.otShifts}</td>
                                                 
-                                                {/* คอลัมน์สรุปสาย สำหรับ Admin */}
                                                 {adminTab === 'summary' && role === 'admin' && <td className="px-1 py-2 text-center font-extrabold text-red-600 bg-red-50 border-l border-red-200">{row.empTotalLate > 0 ? row.empTotalLate : '-'}</td>}
                                             </tr>
                                         ))}
                                         
-                                        {}
+                                        {/* แถวสรุปอัตรากำลัง/วัน */}
                                         {summaryMatrix.length > 0 && (
                                             <tr className="bg-amber-50/80 border-t-2 border-amber-200">
                                                 <td className="px-2 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-extrabold text-slate-800 text-right text-xs">สรุปอัตรากำลัง/วัน</td>
                                                 {daysArray.map(day => {
-                                                    const counts = getDailyShiftCounts(day); 
-                                                    const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay());
+                                                    const counts = getDailyShiftCounts(day); const isWeekend = [0, 6].includes(new Date(matrixYear, matrixMonthNum - 1, day).getDay());
                                                     return (
                                                         <td key={`sum-${day}`} className={`day-col px-0.5 py-1 text-center border-r border-slate-200 align-top ${isWeekend ? 'bg-rose-50/50' : ''}`}>
                                                             {Object.keys(counts).length > 0 ? (
                                                                 <div className="flex flex-col gap-0.5 mt-1 pb-1">
-                                                                    {Object.entries(counts)
-                                                                        .sort((a,b) => {
-                                                                            const order = { 'ช': 1, 'บ': 2, 'ด': 3 };
-                                                                            return (order[a[0]] || 99) - (order[b[0]] || 99);
-                                                                        })
-                                                                        .map(([shift, count]) => (
+                                                                    {Object.entries(counts).sort((a,b) => {
+                                                                        const order = { 'ช': 1, 'บ': 2, 'ด': 3 };
+                                                                        return (order[a[0]] || 99) - (order[b[0]] || 99);
+                                                                    }).map(([shift, count]) => (
                                                                         <div key={shift} className="text-[9px] font-extrabold text-slate-700 leading-tight">
                                                                             {shift}: <strong className="text-primary">{count}</strong>
                                                                         </div>
