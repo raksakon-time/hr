@@ -61,7 +61,6 @@
         
         .print-show { display: none; }
         @media print {
-            /* บังคับขอบกระดาษให้เหลือน้อยที่สุด เพื่อเพิ่มพื้นที่ให้ตาราง */
             @page { size: A4 landscape; margin: 5mm; }
             
             body { font-size: 9pt; background: white; color: black; margin: 0; padding: 0; }
@@ -72,11 +71,9 @@
             .print-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; }
             .print-table-wrapper { overflow: visible !important; width: 100% !important; border: none !important; }
             
-            /* ล้างค่าความกว้าง และบังคับให้ตารางย่อลงให้พอดี 1 หน้า */
             table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; page-break-inside: auto; min-width: 0 !important; }
             tr { page-break-inside: avoid; page-break-after: auto; }
             
-            /* ลดขนาด padding และฟอนต์ เพื่อให้ยัดลง A4 แนวนอนได้ */
             th, td { 
                 border: 1px solid #9ca3af !important; 
                 padding: 1px 1px !important; 
@@ -567,78 +564,6 @@
                                     </div>
                                 </div>
                             )}
-                        </form>
-                    </div>
-                </div>
-            );
-        }
-
-        function RegisterView({ employees, setEmployees, onCancel, sendToGoogleSheet }) {
-            const [formData, setFormData] = useState({ empId: '', fname: '', lname: '', dept: 'OPD', level: 'พนักงาน', password: '' });
-            const [isSubmitting, setIsSubmitting] = useState(false);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if (!formData.empId.trim() || !formData.fname.trim() || !formData.lname.trim()) return Swal.fire({ icon: 'warning', text: 'กรุณากรอกข้อมูลให้ครบถ้วน', confirmButtonColor: '#ec4899' });
-                
-                const upperEmpId = formData.empId.trim().toUpperCase();
-                if (employees[upperEmpId]) return Swal.fire({ icon: 'warning', text: 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว', confirmButtonColor: '#ec4899' });
-
-                setIsSubmitting(true);
-                const res = await sendToGoogleSheet('register', { ...formData, empId: upperEmpId });
-                if (res && res.status === 'success') { 
-                    Swal.fire({ icon: 'success', text: 'ลงทะเบียนสำเร็จ', confirmButtonColor: '#ec4899', timer: 1500 }); 
-                    setEmployees({ ...employees, [upperEmpId]: { ...formData } }); 
-                    onCancel(); 
-                } else if (res && res.status === 'error') { 
-                    Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#ec4899' }); 
-                }
-                setIsSubmitting(false);
-            };
-
-            return (
-                <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-                    <div className="max-w-lg w-full bg-white rounded-2xl shadow-soft border border-slate-200 p-8 sm:p-10">
-                        <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-xl font-bold text-slate-800">ลงทะเบียนพนักงาน</h2>
-                            <button onClick={onCancel} className="text-slate-400 hover:text-slate-800"><i className="fa-solid fa-xmark text-xl"></i></button>
-                        </div>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5">รหัสพนักงาน</label>
-                                <input type="text" required value={formData.empId} onChange={e => setFormData({...formData, empId: e.target.value.toUpperCase()})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none" placeholder="EMP01" />
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="flex-1">
-                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">ชื่อ</label>
-                                    <input type="text" required value={formData.fname} onChange={e => setFormData({...formData, fname: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none" />
-                                </div>
-                                <div className="flex-1">
-                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">นามสกุล</label>
-                                    <input type="text" required value={formData.lname} onChange={e => setFormData({...formData, lname: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none" />
-                                </div>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="flex-1">
-                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">แผนก</label>
-                                    <select value={formData.dept} onChange={e => setFormData({...formData, dept: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none bg-white">
-                                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                                    </select>
-                                </div>
-                                <div className="flex-1">
-                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">ระดับ</label>
-                                    <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none bg-white">
-                                        <option value="พนักงาน">พนักงาน</option><option value="หัวหน้า">หัวหน้า</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5">รหัสผ่าน (Option)</label>
-                                <input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3 border border-slate-200 rounded-lg focus:border-primary outline-none" placeholder="ปล่อยว่างได้ถ้าระดับพนักงาน" />
-                            </div>
-                            <button type="submit" disabled={isSubmitting} className="w-full p-3.5 bg-primary hover:bg-pink-600 text-white rounded-lg font-semibold transition-colors mt-6 shadow-sm">
-                                {isSubmitting ? 'กำลังบันทึก...' : 'สร้างบัญชี'}
-                            </button>
                         </form>
                     </div>
                 </div>
@@ -1136,7 +1061,7 @@
         }
 
         function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
-            const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs'); 
+            const [adminTab, setAdminTab] = useState('logs'); 
             const [startDate, setStartDate] = useState(''); 
             const [endDate, setEndDate] = useState('');
             const now = new Date(); 
@@ -1144,6 +1069,9 @@
             const [matrixMonth, setMatrixMonth] = useState(defaultMonth);
             const [filterDept, setFilterDept] = useState(role === 'supervisor' ? user.dept : ''); 
             const [filterEmp, setFilterEmp] = useState('');
+            
+            // 🌟 Exception Filter: late / missing_out
+            const [exceptionFilter, setExceptionFilter] = useState('late');
             
             const [localWorkDays, setLocalWorkDays] = useState(22);
             useEffect(() => { setLocalWorkDays(parseInt(settings?.standardWorkDays?.[matrixMonth]) || 22); }, [settings, matrixMonth]);
@@ -1157,6 +1085,7 @@
             const [autoScheduleModal, setAutoScheduleModal] = useState(false); 
             const [autoScheduleData, setAutoScheduleData] = useState({ empId: 'all', shiftId: '', dayPattern: 'all', overwrite: false, assignMode: 'all', requiredCount: 1 });
 
+            // Base filtered records for viewing
             const filteredRecords = records.filter(r => {
                 const emp = employees[r.empId]; 
                 if (!emp) return false; 
@@ -1168,6 +1097,17 @@
                     if (!r.empId.toLowerCase().includes(search) && !`${emp.fname} ${emp.lname}`.toLowerCase().includes(search)) return false; 
                 }
                 return true;
+            });
+            
+            // 🌟 Filter records specifically for exceptions (Late or Missing Clock-Out)
+            const exceptionRecords = filteredRecords.filter(r => {
+                if (exceptionFilter === 'late') return r.isLate;
+                if (exceptionFilter === 'missing_out') {
+                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    if (r.date >= todayStr) return false; // Ignore active shifts for today
+                    return !r.timeOut;
+                }
+                return false;
             });
 
             const matrixYear = parseInt(matrixMonth.split('-')[0], 10); 
@@ -1250,6 +1190,7 @@
                 return { empId, fname: employees[empId].fname, lname: employees[empId].lname, dept: employees[empId].dept, level: employees[empId].level, shiftsByDay, empTotalCredit, empTotalLate, otShifts: empTotalCredit - localWorkDays, shiftCounts };
             });
 
+            // Calculate shift counts using SHIFT_CATEGORY_MAP for "ช, บ, ด" mapping
             const getDailyShiftCounts = (day) => {
                 const counts = {};
                 summaryMatrix.forEach(row => {
@@ -1378,6 +1319,23 @@
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `ประวัติลงเวลา_${new Date().getTime()}.csv`; link.click();
             };
 
+            const exportExceptionsToCSV = () => {
+                if(exceptionRecords.length === 0) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสำหรับส่งออก", "info");
+                let csvContent = "\uFEFF"; 
+                const title = exceptionFilter === 'late' ? 'รายงานพนักงานผู้มาสาย' : 'รายงานพนักงานลืมลงเวลาออก';
+                csvContent += `"${title}","แผนก: ${filterDept || 'ทั้งหมด'}","ตั้งแต่วันที่: ${startDate || '-'}","ถึงวันที่: ${endDate || '-'}"\n\n`; 
+                csvContent += "วันที่,รหัสพนักงาน,ชื่อ-สกุล,แผนก,กะ,เวลาเข้า,เวลาออก,สาย (นาที)\n";
+                exceptionRecords.forEach(r => { 
+                    const emp = employees[r.empId] || {}; 
+                    const shift = SHIFT_TYPES[r.shiftId]?.label || ''; 
+                    const lateMins = r.isLate ? r.lateMinutes : '0'; 
+                    csvContent += `"${formatDisplayDate(r.date)}","${r.empId}","${emp.fname} ${emp.lname}","${emp.dept}","${shift}","${r.timeIn}","${r.timeOut || '-'}","${lateMins}"\n`; 
+                });
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); 
+                const link = document.createElement("a"); link.href = URL.createObjectURL(blob); 
+                link.download = `${title}_${new Date().getTime()}.csv`; link.click();
+            };
+
             const exportSummaryToCSV = () => {
                 if(summaryMatrix.length === 0) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสรุปสำหรับส่งออก", "info");
                 let csvContent = "\uFEFF"; csvContent += `"สรุปภาพรวมแผนก: ${filterDept || 'ทุกแผนก'}","ประจำเดือน: ${matrixMonth}"\n\n`;
@@ -1436,7 +1394,12 @@
             return (
                 <div className="mt-2 pb-12">
                     <div className="hidden print-show text-center mb-6">
-                        <h2 className="text-2xl font-bold text-black mb-1">{adminTab === 'logs' ? 'ประวัติลงเวลา' : adminTab === 'summary' ? 'สรุปภาพรวมแผนกและการเบิก OT' : 'ตารางเวรปฏิบัติงาน'}</h2>
+                        <h2 className="text-2xl font-bold text-black mb-1">
+                            {adminTab === 'logs' ? 'ประวัติลงเวลา' : 
+                             adminTab === 'summary' ? 'สรุปภาพรวมแผนกและการเบิก OT' : 
+                             adminTab === 'schedules' ? 'ตารางเวรปฏิบัติงาน' : 
+                             (exceptionFilter === 'late' ? 'รายงานพนักงานผู้มาสาย' : 'รายงานพนักงานลืมลงเวลาออก')}
+                        </h2>
                         <p className="text-base font-bold text-gray-700">แผนก: {filterDept || 'ทั้งหมด'} | ประจำเดือน: {matrixMonth}</p>
                     </div>
 
@@ -1556,19 +1519,24 @@
                     <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-4 print-hide">
                         <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between mb-4 border-b border-slate-100 pb-4">
                             <div className="flex bg-slate-100 p-1.5 rounded-xl w-fit">
-                                {role === 'admin' && <button onClick={() => setAdminTab('logs')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab==='logs'?'bg-white text-primary shadow-sm':'text-slate-500 hover:text-slate-700'}`}>ประวัติ</button>}
+                                <button onClick={() => setAdminTab('logs')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab==='logs'?'bg-white text-primary shadow-sm':'text-slate-500 hover:text-slate-700'}`}>ประวัติ</button>
                                 <button onClick={() => setAdminTab('summary')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab==='summary'?'bg-white text-primary shadow-sm':'text-slate-500 hover:text-slate-700'}`}>สรุป OT</button>
                                 <button onClick={() => setAdminTab('schedules')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab==='schedules'?'bg-white text-primary shadow-sm':'text-slate-500 hover:text-slate-700'}`}>ตารางเวร</button>
+                                <button onClick={() => setAdminTab('exceptions')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab==='exceptions'?'bg-white text-primary shadow-sm':'text-slate-500 hover:text-slate-700'}`}>รายงานผิดปกติ</button>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                {adminTab === 'logs' && role === 'admin' && (<><button onClick={() => setAddModalData({empId:'', date:'', shiftId:'', timeIn:'', timeOut:''})} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-plus mr-1.5"></i>เพิ่มย้อนหลัง</button><button onClick={exportLogsToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-csv mr-1.5 text-emerald-600"></i>ส่งออก</button></>)}
+                                {adminTab === 'logs' && (<>
+                                    {role === 'admin' && <button onClick={() => setAddModalData({empId:'', date:'', shiftId:'', timeIn:'', timeOut:''})} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-plus mr-1.5"></i>เพิ่มย้อนหลัง</button>}
+                                    <button onClick={exportLogsToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-csv mr-1.5 text-emerald-600"></i>ส่งออก</button>
+                                </>)}
+                                {adminTab === 'exceptions' && (<button onClick={exportExceptionsToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-csv mr-1.5 text-emerald-600"></i>ส่งออก</button>)}
                                 {adminTab === 'summary' && (<button onClick={exportSummaryToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-csv mr-1.5 text-emerald-600"></i>ส่งออก</button>)}
                                 {adminTab === 'schedules' && (<><button onClick={() => setAutoScheduleModal(true)} disabled={!filterDept} className="px-4 py-2 bg-pink-50 hover:bg-pink-100 text-primary border border-pink-200 rounded-lg text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"><i className="fa-solid fa-wand-magic-sparkles mr-1.5"></i>จัดเวรออโต้</button><button onClick={exportScheduleToCSV} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-file-excel mr-1.5 text-emerald-600"></i>ส่งออก</button></>)}
                                 <button onClick={() => window.print()} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-print mr-1.5 text-slate-400"></i>พิมพ์</button>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                            {adminTab === 'logs' ? (<><input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" /><input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" /></>) : (<input type="month" value={matrixMonth} onChange={e=>setMatrixMonth(e.target.value)} className="col-span-2 p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" />)}
+                            {(adminTab === 'logs' || adminTab === 'exceptions') ? (<><input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" /><input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" /></>) : (<input type="month" value={matrixMonth} onChange={e=>setMatrixMonth(e.target.value)} className="col-span-2 p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" />)}
                             <select value={filterDept} onChange={e=>setFilterDept(e.target.value)} disabled={role==='supervisor'} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 bg-white disabled:bg-slate-100 disabled:text-slate-400 focus:border-primary">{role==='admin' && <option value="">ทุกแผนก</option>}{DEPARTMENTS.map(d=><option key={d} value={d}>{d}</option>)}</select>
                             <input type="text" placeholder="ค้นหาชื่อ..." value={filterEmp} onChange={e=>setFilterEmp(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary" />
                         </div>
@@ -1580,12 +1548,12 @@
                     </div>
 
                     {}
-                    {adminTab === 'logs' && role === 'admin' && (
+                    {adminTab === 'logs' && (
                         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                             <div className="overflow-x-auto print-table-wrapper">
                                 <table className="min-w-full text-sm text-left">
                                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-xs tracking-wider">
-                                        <tr><th className="px-4 py-4">วันที่</th><th className="px-4 py-4">พนักงาน</th><th className="px-4 py-4">กะ</th><th className="px-4 py-4 text-center">เข้า</th><th className="px-4 py-4 text-center">ออก</th><th className="px-4 py-4 text-center">สาย</th><th className="px-4 py-4 text-center print-hide">รูป</th><th className="px-4 py-4 text-right print-hide">จัดการ</th></tr>
+                                        <tr><th className="px-4 py-4">วันที่</th><th className="px-4 py-4">พนักงาน</th><th className="px-4 py-4">กะ</th><th className="px-4 py-4 text-center">เข้า</th><th className="px-4 py-4 text-center">ออก</th><th className="px-4 py-4 text-center">สาย</th><th className="px-4 py-4 text-center print-hide">รูป</th>{role === 'admin' && <th className="px-4 py-4 text-right print-hide">จัดการ</th>}</tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {filteredRecords.map(r => (
@@ -1595,11 +1563,11 @@
                                                     <span className="font-bold text-slate-800">{employees[r.empId]?.fname} {employees[r.empId]?.lname}</span>
                                                     <span className="block text-[10px] text-slate-400 mt-0.5">{r.empId}</span>
                                                 </td>
-                                                <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs">{r.shiftId}</span></td>
+                                                <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs">{SHIFT_TYPES[r.shiftId]?.label.split(' ')[0] || r.shiftId}</span></td>
                                                 <td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeIn)}</td><td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeOut)}</td>
                                                 <td className="px-4 py-3 text-center">{r.isLate ? <span className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded text-xs font-bold">{r.lateMinutes} น.</span> : '-'}</td>
                                                 <td className="px-4 py-3 text-center print-hide">{(r.photoInUrl||r.photoOutUrl)?<button onClick={()=>setSelectedPhotoRecord(r)} className="text-primary hover:text-pink-600 bg-pink-50 w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors"><i className="fa-solid fa-image"></i></button>:'-'}</td>
-                                                <td className="px-4 py-3 text-right print-hide"><button onClick={()=>setEditModalData({...r})} className="text-slate-400 hover:text-primary mr-3 transition-colors"><i className="fa-solid fa-pen"></i></button><button onClick={()=>handleDelete(r.id)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fa-solid fa-trash"></i></button></td>
+                                                {role === 'admin' && <td className="px-4 py-3 text-right print-hide"><button onClick={()=>setEditModalData({...r})} className="text-slate-400 hover:text-primary mr-3 transition-colors"><i className="fa-solid fa-pen"></i></button><button onClick={()=>handleDelete(r.id)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fa-solid fa-trash"></i></button></td>}
                                             </tr>
                                         ))}
                                     </tbody>
@@ -1607,8 +1575,39 @@
                             </div>
                         </div>
                     )}
+                    
+                    {adminTab === 'exceptions' && (
+                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                            <div className="p-4 bg-slate-50 border-b border-slate-200 flex gap-2 print-hide">
+                                <button onClick={() => setExceptionFilter('late')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${exceptionFilter === 'late' ? 'bg-primary text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}`}>พนักงานผู้มาสาย</button>
+                                <button onClick={() => setExceptionFilter('missing_out')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${exceptionFilter === 'missing_out' ? 'bg-primary text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}`}>ลืมลงเวลาออก</button>
+                            </div>
+                            <div className="overflow-x-auto print-table-wrapper">
+                                <table className="min-w-full text-sm text-left">
+                                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-xs tracking-wider">
+                                        <tr><th className="px-4 py-4">วันที่</th><th className="px-4 py-4">พนักงาน</th><th className="px-4 py-4">กะ</th><th className="px-4 py-4 text-center">เข้า</th><th className="px-4 py-4 text-center">ออก</th><th className="px-4 py-4 text-center">สถานะ</th></tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {exceptionRecords.map(r => (
+                                            <tr key={r.id} className="hover:bg-pink-50/50 transition-colors">
+                                                <td className="px-4 py-3 text-slate-500 font-semibold">{formatDisplayDate(r.date).slice(0,5)}</td>
+                                                <td className="px-4 py-3">
+                                                    <span className="font-bold text-slate-800">{employees[r.empId]?.fname} {employees[r.empId]?.lname}</span>
+                                                    <span className="block text-[10px] text-slate-400 mt-0.5">{r.empId}</span>
+                                                </td>
+                                                <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs">{SHIFT_TYPES[r.shiftId]?.label.split(' ')[0] || r.shiftId}</span></td>
+                                                <td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeIn)}</td>
+                                                <td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeOut)}</td>
+                                                <td className="px-4 py-3 text-center">{exceptionFilter === 'late' ? <span className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded text-xs font-bold">สาย {r.lateMinutes} น.</span> : <span className="text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded text-xs font-bold">ไม่พบเวลาออก</span>}</td>
+                                            </tr>
+                                        ))}
+                                        {exceptionRecords.length === 0 && <tr><td colSpan="6" className="px-4 py-8 text-center text-slate-500">ไม่พบข้อมูลความผิดปกติในช่วงเวลานี้</td></tr>}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
 
-                    {}
                     {(adminTab === 'summary' || adminTab === 'schedules') && filterDept && (
                         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print-table-wrapper">
                             <div className="overflow-x-auto">
