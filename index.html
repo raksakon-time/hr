@@ -396,12 +396,8 @@
                 </div>
             );
 
-            if (!currentUser && activeTab === 'register') {
-                return <RegisterView employees={employees} setEmployees={setEmployees} onCancel={() => setActiveTab('home')} sendToGoogleSheet={sendToGoogleSheet} />;
-            }
-
             if (!currentUser) {
-                return <UnifiedLoginView employees={employees} onLogin={(user) => { setCurrentUser(user); setAvatarImgError(false); }} onRegisterClick={() => setActiveTab('register')} />;
+                return <UnifiedLoginView employees={employees} onLogin={(user) => { setCurrentUser(user); setAvatarImgError(false); }} />;
             }
 
             const isManager = currentUser.level === 'หัวหน้า' || currentUser.dept === 'ADMIN';
@@ -469,7 +465,7 @@
             );
         }
 
-        function UnifiedLoginView({ employees, onLogin, onRegisterClick }) {
+        function UnifiedLoginView({ employees, onLogin }) {
             const [empId, setEmpId] = useState('');
             const [password, setPassword] = useState('');
             const [needsPassword, setNeedsPassword] = useState(false);
@@ -1038,9 +1034,10 @@
                         {myRecords.map((r, i) => (
                             <div key={r.id} className={`p-4 flex flex-col sm:flex-row gap-3 justify-between sm:items-center ${i !== myRecords.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-slate-50 transition-colors`}>
                                 <div className="flex items-center gap-4">
-                                    <div className="text-center min-w-[50px]">
-                                        <span className="block text-xs font-bold text-slate-400">{formatDisplayDate(r.date).slice(0,5)}</span>
-                                        <span className="block font-bold text-slate-800 mt-0.5">{SHIFT_TYPES[r.shiftId]?.label.split(' ')[0] || r.shiftId}</span>
+                                    <div className="text-center sm:text-left min-w-[65px]">
+                                        <span className="block text-xs font-bold text-slate-400 mb-0.5">{formatDisplayDate(r.date).slice(0,5)}</span>
+                                        <span className="block font-bold text-slate-800">{r.shiftId}</span>
+                                        {SHIFT_TYPES[r.shiftId] && <span className="block text-[10px] text-slate-500 font-medium leading-none mt-0.5">{SHIFT_TYPES[r.shiftId].start}-{SHIFT_TYPES[r.shiftId].end}</span>}
                                     </div>
                                     <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
                                     <div className="flex items-center gap-3 text-sm">
@@ -1061,7 +1058,7 @@
         }
 
         function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
-            const [adminTab, setAdminTab] = useState('logs'); 
+            const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs'); 
             const [startDate, setStartDate] = useState(''); 
             const [endDate, setEndDate] = useState('');
             const now = new Date(); 
@@ -1070,7 +1067,6 @@
             const [filterDept, setFilterDept] = useState(role === 'supervisor' ? user.dept : ''); 
             const [filterEmp, setFilterEmp] = useState('');
             
-            // 🌟 Exception Filter: late / missing_out
             const [exceptionFilter, setExceptionFilter] = useState('late');
             
             const [localWorkDays, setLocalWorkDays] = useState(22);
@@ -1085,7 +1081,6 @@
             const [autoScheduleModal, setAutoScheduleModal] = useState(false); 
             const [autoScheduleData, setAutoScheduleData] = useState({ empId: 'all', shiftId: '', dayPattern: 'all', overwrite: false, assignMode: 'all', requiredCount: 1 });
 
-            // Base filtered records for viewing
             const filteredRecords = records.filter(r => {
                 const emp = employees[r.empId]; 
                 if (!emp) return false; 
@@ -1099,12 +1094,11 @@
                 return true;
             });
             
-            // 🌟 Filter records specifically for exceptions (Late or Missing Clock-Out)
             const exceptionRecords = filteredRecords.filter(r => {
                 if (exceptionFilter === 'late') return r.isLate;
                 if (exceptionFilter === 'missing_out') {
                     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                    if (r.date >= todayStr) return false; // Ignore active shifts for today
+                    if (r.date >= todayStr) return false;
                     return !r.timeOut;
                 }
                 return false;
@@ -1190,7 +1184,6 @@
                 return { empId, fname: employees[empId].fname, lname: employees[empId].lname, dept: employees[empId].dept, level: employees[empId].level, shiftsByDay, empTotalCredit, empTotalLate, otShifts: empTotalCredit - localWorkDays, shiftCounts };
             });
 
-            // Calculate shift counts using SHIFT_CATEGORY_MAP for "ช, บ, ด" mapping
             const getDailyShiftCounts = (day) => {
                 const counts = {};
                 summaryMatrix.forEach(row => {
@@ -1295,7 +1288,13 @@
                         if (isQuotaMode) { eligible.sort((a, b) => assignedCounts[a] - assignedCounts[b] || Math.random() - 0.5); eligible = eligible.slice(0, reqCount); }
                         eligible.forEach(empId => {
                             if (!newSchedules[dateStr]) newSchedules[dateStr] = {}; 
-                            newSchedules[dateStr][empId] = { shifts: [autoScheduleData.shiftId], isEdited: true, editedBy: user.id }; 
+                            
+                            const oldShiftsStr = (newSchedules[dateStr]?.[empId]?.shifts || []).join(',');
+                            const newShiftsStr = [autoScheduleData.shiftId].join(',');
+                            const currentIsEdited = newSchedules[dateStr]?.[empId]?.isEdited || false;
+                            const isEdited = currentIsEdited || (oldShiftsStr !== '' && oldShiftsStr !== newShiftsStr);
+                            
+                            newSchedules[dateStr][empId] = { shifts: [autoScheduleData.shiftId], isEdited: isEdited, editedBy: user.id }; 
                             updates.push({ date: dateStr, empId, shifts: [autoScheduleData.shiftId] }); 
                             if (isQuotaMode) assignedCounts[empId]++;
                         });
@@ -1310,7 +1309,22 @@
             };
 
             const openScheduleModal = (empId, dateStr) => setScheduleModalData({ empId, dateStr, shifts: [...(schedules[dateStr]?.[empId]?.shifts || [])] });
-            const handleSaveScheduleCell = async () => { const { empId, dateStr, shifts } = scheduleModalData; const filtered = shifts.filter(s => s !== ''); const newSchedules = { ...schedules }; if (!newSchedules[dateStr]) newSchedules[dateStr] = {}; newSchedules[dateStr][empId] = { shifts: filtered, isEdited: true, editedBy: user.id }; setSchedules(newSchedules); setScheduleModalData(null); await sendToGoogleSheet('saveSchedule', { date: dateStr, empId, shifts: filtered, editorId: user.id, editorName: `${user.fname} ${user.lname}` }); };
+            const handleSaveScheduleCell = async () => { 
+                const { empId, dateStr, shifts } = scheduleModalData; 
+                const filtered = shifts.filter(s => s !== ''); 
+                
+                const oldShiftsStr = (schedules[dateStr]?.[empId]?.shifts || []).join(',');
+                const newShiftsStr = filtered.join(',');
+                const currentIsEdited = schedules[dateStr]?.[empId]?.isEdited || false;
+                const isEdited = currentIsEdited || (oldShiftsStr !== '' && oldShiftsStr !== newShiftsStr);
+                
+                const newSchedules = { ...schedules }; 
+                if (!newSchedules[dateStr]) newSchedules[dateStr] = {}; 
+                newSchedules[dateStr][empId] = { shifts: filtered, isEdited: isEdited, editedBy: user.id }; 
+                setSchedules(newSchedules); 
+                setScheduleModalData(null); 
+                await sendToGoogleSheet('saveSchedule', { date: dateStr, empId, shifts: filtered, editorId: user.id, editorName: `${user.fname} ${user.lname}` }); 
+            };
             
             const exportLogsToCSV = () => {
                 if(filteredRecords.length === 0) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสำหรับส่งออก", "info");
@@ -1563,7 +1577,7 @@
                                                     <span className="font-bold text-slate-800">{employees[r.empId]?.fname} {employees[r.empId]?.lname}</span>
                                                     <span className="block text-[10px] text-slate-400 mt-0.5">{r.empId}</span>
                                                 </td>
-                                                <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs">{SHIFT_TYPES[r.shiftId]?.label.split(' ')[0] || r.shiftId}</span></td>
+                                                <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs">{r.shiftId} {SHIFT_TYPES[r.shiftId] ? `${SHIFT_TYPES[r.shiftId].start}-${SHIFT_TYPES[r.shiftId].end}` : ''}</span></td>
                                                 <td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeIn)}</td><td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeOut)}</td>
                                                 <td className="px-4 py-3 text-center">{r.isLate ? <span className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded text-xs font-bold">{r.lateMinutes} น.</span> : '-'}</td>
                                                 <td className="px-4 py-3 text-center print-hide">{(r.photoInUrl||r.photoOutUrl)?<button onClick={()=>setSelectedPhotoRecord(r)} className="text-primary hover:text-pink-600 bg-pink-50 w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors"><i className="fa-solid fa-image"></i></button>:'-'}</td>
@@ -1595,7 +1609,7 @@
                                                     <span className="font-bold text-slate-800">{employees[r.empId]?.fname} {employees[r.empId]?.lname}</span>
                                                     <span className="block text-[10px] text-slate-400 mt-0.5">{r.empId}</span>
                                                 </td>
-                                                <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs">{SHIFT_TYPES[r.shiftId]?.label.split(' ')[0] || r.shiftId}</span></td>
+                                                <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs">{r.shiftId} {SHIFT_TYPES[r.shiftId] ? `${SHIFT_TYPES[r.shiftId].start}-${SHIFT_TYPES[r.shiftId].end}` : ''}</span></td>
                                                 <td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeIn)}</td>
                                                 <td className="px-4 py-3 text-center font-semibold text-slate-700">{displaySafeTime(r.timeOut)}</td>
                                                 <td className="px-4 py-3 text-center">{exceptionFilter === 'late' ? <span className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded text-xs font-bold">สาย {r.lateMinutes} น.</span> : <span className="text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded text-xs font-bold">ไม่พบเวลาออก</span>}</td>
