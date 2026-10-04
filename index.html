@@ -1067,7 +1067,20 @@
             const [filterDept, setFilterDept] = useState(role === 'supervisor' ? user.dept : ''); 
             const [filterEmp, setFilterEmp] = useState('');
             
-            const [excludedEmpIds, setExcludedEmpIds] = useState([]); 
+            // อัปเกรด: ให้ดึงค่าที่เคยบันทึกไว้ใน LocalStorage ของเบราว์เซอร์มาใช้ โดยผูกกับรหัส user
+            const [excludedEmpIdsByMonth, setExcludedEmpIdsByMonth] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('excludedEmpIdsByMonth_' + user.id);
+                    return saved ? JSON.parse(saved) : {};
+                } catch (e) { return {}; }
+            });
+            
+            // อัปเกรด: บันทึกค่าลง LocalStorage อัตโนมัติทุกครั้งที่มีการติ๊กเลือก/ยกเลิกเลือกพนักงาน
+            useEffect(() => {
+                localStorage.setItem('excludedEmpIdsByMonth_' + user.id, JSON.stringify(excludedEmpIdsByMonth));
+            }, [excludedEmpIdsByMonth, user.id]);
+
+            const excludedEmpIds = excludedEmpIdsByMonth[matrixMonth] || [];
             const [showEmpDropdown, setShowEmpDropdown] = useState(false); 
             
             const [exceptionFilter, setExceptionFilter] = useState('late');
@@ -1586,14 +1599,14 @@
                                             <div className="fixed inset-0 z-40" onClick={() => setShowEmpDropdown(false)}></div>
                                             <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto p-2 flex flex-col gap-1 top-full left-0 animate-fade-in">
                                                 <div className="flex justify-between items-center mb-1 pb-2 border-b border-slate-100 px-1 pt-1">
-                                                    <button onClick={() => setExcludedEmpIds(prev => prev.filter(id => !dropdownAvailableEmps.includes(id)))} className="text-xs text-primary font-bold hover:underline">เลือกทั้งหมด</button>
-                                                    <button onClick={() => setExcludedEmpIds(prev => [...new Set([...prev, ...dropdownAvailableEmps])])} className="text-xs text-slate-500 font-bold hover:underline">ล้างทั้งหมด</button>
+                                                    <button onClick={() => setExcludedEmpIdsByMonth(prev => ({...prev, [matrixMonth]: (prev[matrixMonth] || []).filter(id => !dropdownAvailableEmps.includes(id))}))} className="text-xs text-primary font-bold hover:underline">เลือกทั้งหมด</button>
+                                                    <button onClick={() => setExcludedEmpIdsByMonth(prev => ({...prev, [matrixMonth]: [...new Set([...(prev[matrixMonth] || []), ...dropdownAvailableEmps])]}))} className="text-xs text-slate-500 font-bold hover:underline">ล้างทั้งหมด</button>
                                                 </div>
                                                 {dropdownAvailableEmps.map(empId => (
                                                     <label key={empId} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer transition-colors">
                                                         <input type="checkbox" checked={!excludedEmpIds.includes(empId)} onChange={(e) => {
-                                                            if (e.target.checked) setExcludedEmpIds(prev => prev.filter(id => id !== empId));
-                                                            else setExcludedEmpIds(prev => [...prev, empId]);
+                                                            if (e.target.checked) setExcludedEmpIdsByMonth(prev => ({...prev, [matrixMonth]: (prev[matrixMonth] || []).filter(id => id !== empId)}));
+                                                            else setExcludedEmpIdsByMonth(prev => ({...prev, [matrixMonth]: [...(prev[matrixMonth] || []), empId]}));
                                                         }} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20 cursor-pointer" />
                                                         <span className="text-sm font-semibold text-slate-700 truncate">{employees[empId].fname} {employees[empId].lname}</span>
                                                     </label>
