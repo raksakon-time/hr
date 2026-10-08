@@ -1432,6 +1432,8 @@
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `ตารางเวร_${matrixMonth}.csv`; link.click();
             };
 
+            const leaveOptions = role === 'admin' ? ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'] : ['Off', 'ลา', 'ป่วย', 'ขาด'];
+
             return (
                 <div className="mt-2 pb-12">
                     <div className="hidden print-show text-center mb-6">
@@ -1457,7 +1459,7 @@
                                             {getSortedShiftKeys(employees[editModalData.empId]?.dept).map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}
                                         </optgroup>
                                         <optgroup label="วันหยุด/อื่นๆ">
-                                            {['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}
+                                            {leaveOptions.map(k => <option key={k} value={k}>{k}</option>)}
                                         </optgroup>
                                     </select>
                                     <div className="flex gap-2">
@@ -1486,7 +1488,7 @@
                                             {getSortedShiftKeys(employees[addModalData.empId]?.dept).map(key => <option key={key} value={key}>{SHIFT_TYPES[key]?.label || key}</option>)}
                                         </optgroup>
                                         <optgroup label="วันหยุด/อื่นๆ">
-                                            {['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}
+                                            {leaveOptions.map(k => <option key={k} value={k}>{k}</option>)}
                                         </optgroup>
                                     </select>
                                     <div className="flex gap-2">
@@ -1516,7 +1518,7 @@
                                                     {getSortedShiftKeys(employees[scheduleModalData.empId]?.dept).map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}
                                                 </optgroup>
                                                 <optgroup label="อื่นๆ">
-                                                    {['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}
+                                                    {leaveOptions.map(k => <option key={k} value={k}>{k}</option>)}
                                                 </optgroup>
                                             </select>
                                             <button onClick={() => {const s=[...scheduleModalData.shifts]; s.splice(i,1); setScheduleModalData({...scheduleModalData, shifts: s})}} className="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"><i className="fa-solid fa-trash-can"></i></button>
@@ -1540,7 +1542,7 @@
                                     <select value={autoScheduleData.shiftId} onChange={e => setAutoScheduleData({...autoScheduleData, shiftId: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold focus:border-primary">
                                         <option value="">-- เลือกกะ --</option>
                                         <optgroup label="กะ">{getSortedShiftKeys(filterDept).map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}</optgroup>
-                                        <optgroup label="อื่นๆ">{['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'].map(k => <option key={k} value={k}>{k}</option>)}</optgroup>
+                                        <optgroup label="อื่นๆ">{leaveOptions.map(k => <option key={k} value={k}>{k}</option>)}</optgroup>
                                     </select>
                                     <select value={autoScheduleData.dayPattern} onChange={e => setAutoScheduleData({...autoScheduleData, dayPattern: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold focus:border-primary"><option value="all">ทุกวัน</option><option value="weekdays">วันธรรมดา</option><option value="weekends">วันหยุด (ส-อา)</option></select>
                                     <select value={autoScheduleData.assignMode} onChange={e => setAutoScheduleData({...autoScheduleData, assignMode: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 font-semibold focus:border-primary"><option value="all">ใส่ให้ทุกคน</option><option value="quota">จำกัดโควต้าคน/วัน</option></select>
