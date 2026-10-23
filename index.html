@@ -42,6 +42,8 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHi
 const LEAVE_SYSTEM_URL = "https://script.google.com/macros/s/AKfycbzZvLTxd5MtGo7_5BQISe8b7KU-759zTWbHeIwsnhlGXI-nte9OwWvfporBCtoeAGk3/exec";
 const HOSPITAL_LAT = 17.162383247325145, HOSPITAL_LON = 104.14513206230059, ALLOWED_RADIUS = 100;
 
+const POLL_MS = 30000; // ความถี่ตรวจข้อมูลใหม่ (มิลลิวินาที)
+
 // กะ: [เริ่ม, เลิก, เครดิต] — label สร้างอัตโนมัติ
 const SHIFT_DEF = {
   'ด': ['00:00','08:00',1], 'ช616': ['06:00','16:00',1.25], 'ช618': ['06:00','18:00',1.5], 'ช619': ['06:00','19:00',1.625],
@@ -176,19 +178,42 @@ function App() {
     return () => clearInterval(t);
   }, []);
 
+  const verRef = useRef(null);
+  const applyData = d => {
+    setEmployees(d.employees || {}); setRecords(d.records || []); setSchedules(d.schedules || {});
+    if (d.settings) setSettings(d.settings);
+    verRef.current = d.version;
+  };
+  const quiet = async action => { // เรียกแบบเงียบ ไม่เด้งแจ้งเตือนเมื่อเน็ตสะดุด
+    try {
+      const r = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, payload: {} }) });
+      return await r.json();
+    } catch (e) { return null; }
+  };
+  const sync = async () => {
+    const v = await quiet('getVersion');
+    if (v?.status === 'success' && v.version !== verRef.current) {
+      const r = await quiet('getInitialData');
+      if (r?.status === 'success') applyData(r.data);
+    }
+  };
+
   useEffect(() => {
     (async () => {
-      if (!GAS_URL.includes('ใส่_URL')) {
-        const res = await sendToGoogleSheet('getInitialData');
-        if (res?.status === 'success') {
-          const d = res.data;
-          setEmployees(d.employees || {}); setRecords(d.records || []); setSchedules(d.schedules || {});
-          if (d.settings) setSettings(d.settings);
-        }
-      }
+      const res = await sendToGoogleSheet('getInitialData');
+      if (res?.status === 'success') applyData(res.data);
       setLoading(false);
     })();
   }, []);
+
+  // เรียลไทม์แบบ polling: ตรวจเวอร์ชันทุก POLL_MS และทันทีที่กลับมาเปิดหน้า
+  useEffect(() => {
+    if (!user) return;
+    const tick = () => { if (!document.hidden) sync(); };
+    const t = setInterval(tick, POLL_MS);
+    document.addEventListener('visibilitychange', tick);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', tick); };
+  }, [user]);
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
