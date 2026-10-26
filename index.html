@@ -54,7 +54,7 @@ const SHIFT_DEF = {
 };
 const SHIFT_TYPES = Object.fromEntries(Object.entries(SHIFT_DEF).map(([k, [start, end, credit]]) =>
   [k, { start, end, credit, label: `${start.replace(':', '.')} - ${end.replace(':', '.')} (${k})` }]));
-const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ขาด'];
+const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ลาชั่วโมง', 'ขาด'];
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
@@ -626,7 +626,7 @@ const DEPT_SHIFTS = {
   "เปล-ยานยนต์": ['ช','ชบ','บ','ด'], "ช่าง": ['ช'], "เวชระเบียน": ['ช7','ช','ช20','ชบ','ช917','บ','บ4','ด'], "ส่งเสริมสุขภาพ": ['ช7','ช'], "ADMIN": ['ช','ช83']
 };
 const SHIFT_CATEGORY_MAP = { 'ด':{ด:1}, 'ช616':{ช:1,บ:.25}, 'ช618':{ช:1,บ:.5}, 'ช619':{ช:1,บ:.625}, 'ช6':{ช:1}, 'ช716':{ช:1,บ:.125}, 'ช719':{ช:1,บ:.5}, 'ช7':{ช:1}, 'ช21':{ช:1,บ:.75}, 'ชบ7':{ช:1,บ:1}, 'ช':{ช:1}, 'ชบ':{ช:1,บ:1}, 'ช20':{ช:1,บ:.5}, 'ช83':{ช:1}, 'ช9':{ช:1,บ:.5}, 'ช917':{ช:1}, 'บ15':{บ:1}, 'บ':{บ:1}, 'บด':{บ:1,ด:1}, 'บ4':{บ:.5} };
-const PAID = ['Vac','พักร้อน','ป่วย','ลา'], CAT_ORD = { 'ช':1, 'บ':2, 'ด':3 };
+const PAID = ['Vac','พักร้อน','ป่วย','ลา'], LEAVE_LOCK = [...PAID, 'ลาชั่วโมง'], CAT_ORD = { 'ช':1, 'บ':2, 'ด':3 };
 const byCat = (a, b) => (CAT_ORD[a] || 99) - (CAT_ORD[b] || 99);
 const creditOf = s => SHIFT_TYPES[s] ? SHIFT_TYPES[s].credit : (PAID.includes(s) ? 1 : 0);
 
@@ -669,6 +669,7 @@ const Actions = ({ onCancel, onOk, okText, disabled }) => (
 const ShiftSelect = ({ dept, leave, value, onChange, empty, cls = 'w-full p-2.5 rounded-xl border border-slate-300 font-semibold bg-white focus:border-primary' }) => (
   <select value={value} onChange={e => onChange(e.target.value)} className={cls}>
     {empty && <option value="">{empty}</option>}
+    {value && !SHIFT_TYPES[value] && !leave.includes(value) && <option value={value}>{value}</option>}
     <optgroup label="กะเวรปกติ">{getSortedShiftKeys(dept).map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}</optgroup>
     <optgroup label="วันหยุด/อื่นๆ">{leave.map(k => <option key={k} value={k}>{k}</option>)}</optgroup>
   </select>
@@ -748,7 +749,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
       late += dayRecs.reduce((a, r) => a + (r.isLate ? Number(r.lateMinutes) : 0), 0);
       sched.filter(s => s && !worked.includes(s)).forEach(s => {
         if (ds >= todayStr) { add(s); credit += creditOf(s); ui.push({ shift: s, type: 'pending' }); }
-        else if (PAID.includes(s) || s === 'Off') { add(s); if (s !== 'Off') credit += 1; ui.push({ shift: s, type: 'leave' }); }
+        else if (LEAVE_LOCK.includes(s) || s === 'Off') { add(s); if (PAID.includes(s)) credit += 1; ui.push({ shift: s, type: 'leave' }); }
         else { add('ขาด'); absent = true; ui.push({ shift: s, type: 'absent' }); }
       });
       shiftsByDay[day] = { absent, ui };
@@ -814,14 +815,14 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const runAuto = async () => {
     setSaving(true);
     const quota = auto.assignMode === 'quota', req = auto.requiredCount || 1, updates = [], sch = { ...schedules }, cnt = {};
-    const targets = matrixEmployees;
+    const targets = matrixEmployees, keep = s => s && !SHIFT_TYPES[s] && s !== 'Off', isWork = !!SHIFT_TYPES[auto.shiftId], curOf = (id, ds) => (sch[ds]?.[id]?.shifts || []).filter(Boolean);
     if (quota) targets.forEach(id => { cnt[id] = daysArray.filter(d => (sch[dayStr(d)]?.[id]?.shifts || []).includes(auto.shiftId)).length; });
     daysArray.forEach(day => {
       const ds = dayStr(day), dow = new Date(my, mm - 1, day).getDay();
       if (!(auto.dayPattern === 'all' || (auto.dayPattern === 'weekdays' && dow >= 1 && dow <= 5) || (auto.dayPattern === 'weekends' && (dow === 0 || dow === 6)))) return;
-      let el = targets.filter(id => { const s = sch[ds]?.[id]?.shifts || []; return (s.length === 0 || s[0] === '' || auto.overwrite) && !(quota && s.includes(auto.shiftId)); });
+      let el = targets.filter(id => { const s = curOf(id, ds); return ((isWork ? s.every(keep) : s.length === 0) || auto.overwrite) && !(quota && s.includes(auto.shiftId)); });
       if (quota) el = el.sort((a, b) => cnt[a] - cnt[b] || Math.random() - .5).slice(0, req);
-      el.forEach(id => { withEdit(sch, ds, id, [auto.shiftId]); updates.push({ date: ds, empId: id, shifts: [auto.shiftId] }); if (quota) cnt[id]++; });
+      el.forEach(id => { const next = isWork ? [auto.shiftId, ...curOf(id, ds).filter(keep)] : [auto.shiftId]; withEdit(sch, ds, id, next); updates.push({ date: ds, empId: id, shifts: next }); if (quota) cnt[id]++; });
     });
     if (updates.length) {
       setSchedules(sch); setAutoOpen(false);
@@ -912,7 +913,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
         <div className="space-y-2 max-h-48 overflow-y-auto mb-4 pr-1">
           {cellData.shifts.map((s, i) => (
             <div key={i} className="flex gap-2">
-              <ShiftSelect dept={employees[cellData.empId]?.dept} leave={leaveOptions} empty="- ว่าง -" value={s} cls="flex-1 p-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50" onChange={v => { const a = [...cellData.shifts]; a[i] = v; setCellData({ ...cellData, shifts: a }); }} />
+              {LEAVE_LOCK.includes(s) ? <div className="flex-1 p-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-sm font-bold flex items-center gap-2"><i className="fa-solid fa-lock text-xs"></i>{s}</div> : <ShiftSelect dept={employees[cellData.empId]?.dept} leave={leaveOptions} empty="- ว่าง -" value={s} cls="flex-1 p-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50" onChange={v => { const a = [...cellData.shifts]; a[i] = v; setCellData({ ...cellData, shifts: a }); }} />}
               <button onClick={() => setCellData({ ...cellData, shifts: cellData.shifts.filter((_, k) => k !== i) })} className="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"><i className="fa-solid fa-trash-can"></i></button>
             </div>
           ))}
