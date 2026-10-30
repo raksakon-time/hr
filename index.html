@@ -21,6 +21,7 @@ tailwind.config = { theme: { extend: {
 <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
 <style>
 body { font-family: 'Sarabun', sans-serif; background: #f8fafc; -webkit-font-smoothing: antialiased; color: #1e293b; font-size: 15px; margin: 0; }
 input, select { transition: all .2s ease; }
@@ -172,6 +173,90 @@ const ResultModal = ({ tone, icon, title, time, shiftName, late, onDone }) => (
   </div>
 );
 
+// ================= สแกนใบหน้า (face-api: ตรวจจับ + landmarks + embedding 128 มิติ) =================
+const FACE_MODELS = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
+let faceReady = null;
+const loadFace = () => faceReady || (faceReady = (async () => {
+  if (!window.faceapi) throw new Error('โหลดไลบรารีสแกนใบหน้าไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
+  const n = faceapi.nets;
+  await Promise.all([n.tinyFaceDetector, n.faceLandmark68Net, n.faceRecognitionNet].map(m => m.loadFromUri(FACE_MODELS)));
+})().catch(e => { faceReady = null; throw e; }));
+const detectFace = v => faceapi.detectSingleFace(v, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })).withFaceLandmarks().withFaceDescriptor();
+// ท่าทางจากจุด landmark: yaw ≈ 0.5 เมื่อมองตรง, pitch เทียบกับค่าตอนมองตรง
+const facePose = lm => {
+  const p = lm.positions, eyeY = (p[36].y + p[45].y) / 2;
+  return { yaw: (p[30].x - p[0].x) / (p[16].x - p[0].x), pitch: (p[30].y - eyeY) / (p[8].y - eyeY) };
+};
+const earOf = (p, i) => (Math.hypot(p[i + 1].x - p[i + 5].x, p[i + 1].y - p[i + 5].y) + Math.hypot(p[i + 2].x - p[i + 4].x, p[i + 2].y - p[i + 4].y)) / (2 * Math.hypot(p[i].x - p[i + 3].x, p[i].y - p[i + 3].y));
+const eyeAR = lm => (earOf(lm.positions, 36) + earOf(lm.positions, 42)) / 2;
+const near = (a, b, t) => Math.abs(a - b) < t;
+
+// ขั้นตอนลงทะเบียน: ตรง / ข้าง 2 ด้าน / ก้ม-เงย 2 ทิศ (ไม่ระบุซ้าย-ขวา เพื่อไม่ให้สับสนเรื่องภาพกลับด้าน)
+const REG_STEPS = [
+  { label: 'มองตรงที่กล้อง', cap: true, ok: p => near(p.yaw, .5, .07), set: (p, s) => { s.base = p.pitch; } },
+  { label: 'หันหน้าไปด้านข้างเล็กน้อย', cap: true, ok: p => Math.abs(p.yaw - .5) > .12, set: (p, s) => { s.side = Math.sign(p.yaw - .5); } },
+  { label: 'หันไปอีกด้านหนึ่ง', cap: true, ok: (p, s) => (p.yaw - .5) * s.side < -.12 },
+  { label: 'เงยหน้าหรือก้มหน้าเล็กน้อย', cap: true, ok: (p, s) => Math.abs(p.pitch - s.base) > .08, set: (p, s) => { s.tilt = Math.sign(p.pitch - s.base); } },
+  { label: 'ก้มหรือเงยไปทางตรงข้ามกับครั้งก่อน', cap: true, ok: (p, s) => (p.pitch - s.base) * s.tilt < -.08 }
+];
+// ขั้นตอนยืนยัน: สุ่มกะพริบตา/หันหน้า แล้วมองตรง (เก็บ embedding เฉพาะตอนมองตรง)
+const LIVE_BLINK = { label: 'กะพริบตา 1 ครั้ง', ok: (p, s) => { s.open = Math.max(s.open || 0, p.ear); if (p.ear < s.open * .72) s.closed = true; return !!s.closed && p.ear > s.open * .88; } };
+const LIVE_TURN = { label: 'หันหน้าไปด้านข้างเล็กน้อย แล้วกลับมามองตรง', ok: (p, s) => { if (Math.abs(p.yaw - .5) > .12) s.turned = true; return !!s.turned && near(p.yaw, .5, .06); } };
+const LIVE_FRONT = { label: 'มองตรงที่กล้อง', cap: true, ok: p => near(p.yaw, .5, .07) };
+
+function FaceScanner({ mode, onResult, onCancel }) {
+  const reg = mode === 'register', total = reg ? REG_STEPS.length : 2;
+  const [msg, setMsg] = useState('กำลังโหลดระบบสแกนใบหน้า...'), [done, setDone] = useState(0), [err, setErr] = useState('');
+  const vref = useCamera(true, () => setErr('ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาต'));
+  useEffect(() => {
+    let stop = false;
+    (async () => {
+      try {
+        await loadFace();
+        const steps = reg ? REG_STEPS : [Math.random() < .5 ? LIVE_BLINK : LIVE_TURN, LIVE_FRONT], st = {}, caps = [], t0 = Date.now();
+        let i = 0, hits = 0;
+        while (!stop) {
+          if (Date.now() - t0 > 60000) throw new Error('หมดเวลา กรุณาลองใหม่อีกครั้ง');
+          const v = vref.current, r = v && v.videoWidth ? await detectFace(v) : null;
+          if (stop) break;
+          if (!r) { hits = 0; setMsg('ไม่พบใบหน้า กรุณาให้ใบหน้าอยู่กลางภาพ'); }
+          else {
+            const po = { ...facePose(r.landmarks), ear: eyeAR(r.landmarks) };
+            hits = steps[i].ok(po, st) ? hits + 1 : 0;
+            setMsg(steps[i].label);
+            if (hits >= 3) { // ต้องผ่านต่อเนื่อง 3 เฟรม
+              if (steps[i].cap) caps.push(Array.from(r.descriptor, x => +x.toFixed(4)));
+              steps[i].set?.(po, st);
+              hits = 0; i++; setDone(i);
+              if (i >= steps.length) { stop = true; onResult({ caps, photoBase64: captureImage(v) }); break; }
+              setMsg(steps[i].label);
+            }
+          }
+          await new Promise(res => setTimeout(res, 120));
+        }
+      } catch (e) { if (!stop) setErr(e.message || 'สแกนใบหน้าไม่สำเร็จ'); }
+    })();
+    return () => { stop = true; };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-soft">
+        <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+          <h3 className="font-bold text-slate-800">{reg ? 'ลงทะเบียนใบหน้า' : 'ยืนยันตัวตนด้วยใบหน้า'}</h3>
+          <button onClick={onCancel} className="text-slate-400 hover:text-slate-800"><i className="fa-solid fa-xmark"></i></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="relative h-72 rounded-xl overflow-hidden bg-slate-100 border border-slate-200"><video ref={vref} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /></div>
+          <p className={`text-center font-bold ${err ? 'text-red-600' : 'text-primary'}`}>{err || msg}</p>
+          <div className="flex justify-center gap-2">{Array.from({ length: total }, (_, k) => <span key={k} className={`w-3 h-3 rounded-full ${k < done ? 'bg-primary' : 'bg-slate-200'}`}></span>)}</div>
+          {reg && <p className="text-xs text-slate-400 text-center">ถอดหน้ากากอนามัยและแว่นกันแดด อยู่ในที่ที่มีแสงสว่างพอ แล้วทำตามคำสั่งทีละขั้น</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ================= App =================
 function App() {
   const [user, setUser] = useState(null), [tab, setTab] = useState('home'), [imgErr, setImgErr] = useState(false);
@@ -253,7 +338,7 @@ function App() {
           <button onClick={logout} className="text-white/90 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors"><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i></button>
         </header>
         <main className="flex-grow px-4 sm:px-6 lg:px-8 mt-4">
-          {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} />}
+          {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} onRegistered={() => { setUser(u => ({ ...u, face: true })); setEmployees(e => ({ ...e, [user.id]: { ...e[user.id], face: true } })); }} />}
           {tab === 'calendar' && <MyCalendarView user={user} schedules={schedules} />}
           {tab === 'history' && <MyHistoryView user={user} records={records} now={now} />}
           {tab === 'manager' && isManager && (typeof ReportView !== 'undefined'
@@ -342,8 +427,8 @@ function LoginView({ employees, onLogin }) {
 }
 
 // ================= หน้าลงเวลา =================
-function ActionPanelView({ user, now, records, setRecords, schedules, avatar, setTab }) {
-  const [type, setType] = useState(null);
+function ActionPanelView({ user, now, records, setRecords, schedules, avatar, setTab, onRegistered }) {
+  const [type, setType] = useState(null), [reg, setReg] = useState(false);
   if (!type) return (
     <div className="max-w-md mx-auto flex flex-col items-center mt-4">
       <div className="w-28 h-28 rounded-full border-4 border-white overflow-hidden bg-slate-100 shadow-md mb-3 shrink-0 relative">
@@ -360,6 +445,12 @@ function ActionPanelView({ user, now, records, setRecords, schedules, avatar, se
       <div className="w-full px-4">
         <button onClick={() => setTab('history')} className="w-full bg-white border shadow-sm border-slate-200 text-slate-600 py-3.5 rounded-2xl font-semibold hover:bg-slate-50 transition-colors text-sm tracking-wide">ประวัติการลงเวลา</button>
       </div>
+      {!user.face && <div className="w-full px-4 mt-3"><button onClick={() => setReg(true)} className="w-full bg-amber-50 border border-amber-200 text-amber-800 py-3.5 rounded-2xl font-bold hover:bg-amber-100 transition-colors text-sm"><i className="fa-solid fa-face-smile mr-2"></i>ลงทะเบียนใบหน้า (ยังไม่ได้ลงทะเบียน)</button></div>}
+      {reg && <FaceScanner mode="register" onCancel={() => setReg(false)} onResult={async r => {
+        setReg(false);
+        const res = await sendToGoogleSheet('faceRegister', { empId: user.id, password: user.password, templates: r.caps });
+        if (res?.status === 'success') { onRegistered(); Swal.fire({ icon: 'success', text: 'ลงทะเบียนใบหน้าเรียบร้อย', timer: 1800, showConfirmButton: false }); }
+      }} />}
     </div>
   );
   const props = { user, now, records, setRecords, onDone: () => setType(null) };
@@ -374,9 +465,10 @@ function ActionPanelView({ user, now, records, setRecords, schedules, avatar, se
 function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
   const [shift, setShift] = useState(''), [valid, setValid] = useState([]), [loc, setLoc] = useState('checking'), [pos, setPos] = useState(null);
   const [cam, setCam] = useState(false), [scanning, setScanning] = useState(false), [result, setResult] = useState(null), [err, setErr] = useState('');
+  const [scan, setScan] = useState(false);
   const vref = useCamera(cam && !result && loc === 'ok', () => { setErr('ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาต'); setCam(false); });
   const already = shift && records.some(r => r.empId === user.id && r.date === resolveTarget(now, schedules, user.id, shift).date && r.shiftId === shift);
-  const canGo = cam && loc === 'ok' && valid.length > 0 && !already;
+  const canGo = (user.face || cam) && loc === 'ok' && valid.length > 0 && !already;
 
   useEffect(() => {
     const today = fmtInput(now);
@@ -405,16 +497,16 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
     );
   };
 
-  const handleClockIn = async () => {
+  const handleClockIn = async face => {
     if (already) { setErr('ไม่อนุญาต: คุณได้ลงเวลาสำหรับกะนี้ไปแล้ว'); setCam(false); return; }
     setErr(''); setScanning(true);
-    const photoBase64 = captureImage(vref.current);
+    const photoBase64 = face ? face.photoBase64 : captureImage(vref.current);
     if (!photoBase64) { setErr('จับภาพล้มเหลว รอให้กล้องชัดเจนก่อนกดสแกน'); setScanning(false); return; }
     const sd = SHIFT_TYPES[shift], [h, m] = sd.start.split(':').map(Number);
     const actual = now.getHours() * 60 + now.getMinutes(), deadline = h * 60 + m + 5;
     const isLate = actual > deadline && actual < deadline + 720;
     const rec = { id: Date.now().toString(), date: resolveTarget(now, schedules, user.id, shift).date, empId: user.id, shiftId: shift, timeIn: formatTime24(now), timeOut: null,
-      isLate, lateMinutes: isLate ? actual - deadline : 0, credit: sd.credit, lat: pos?.lat, lon: pos?.lon, photoBase64 };
+      isLate, lateMinutes: isLate ? actual - deadline : 0, credit: sd.credit, lat: pos?.lat, lon: pos?.lon, photoBase64, descriptor: face?.caps[0] };
     const res = await sendToGoogleSheet('clockIn', rec, 3);
     if (res?.status === 'success') { setRecords([...records, rec]); setResult({ ...rec, shiftName: sd.label }); }
     else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#ec4899' });
@@ -427,6 +519,7 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
   return (
     <Panel tone="primary" icon="fa-arrow-right-to-bracket" title="เข้างาน">
       <ErrorBox msg={err} />
+      {scan && <FaceScanner mode="verify" onCancel={() => setScan(false)} onResult={r => { setScan(false); handleClockIn(r); }} />}
       <div>
         <label className={LABEL}>กะการทำงาน</label>
         {valid.length > 0
@@ -436,8 +529,8 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
       <div className={`p-3 rounded-lg flex items-center gap-2 text-sm border font-medium ${locCls}`}>
         {loc === 'ok' ? <><i className="fa-solid fa-location-dot"></i> พิกัดถูกต้อง</> : loc === 'error' ? <><i className="fa-solid fa-location-xmark"></i> {err || 'พิกัดอยู่นอกพื้นที่'}</> : <><i className="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบพิกัด...</>}
       </div>
-      <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" />
-      <button onClick={handleClockIn} disabled={!canGo || scanning} className={`w-full p-4 rounded-xl font-bold text-base text-white transition-all ${canGo ? 'bg-primary hover:bg-pink-600 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
+      {user.face ? <div className="p-4 rounded-xl bg-pink-50 border border-pink-100 text-sm font-semibold text-primary flex items-center gap-2"><i className="fa-solid fa-face-smile"></i> ระบบจะสแกนใบหน้าและให้ทำตามคำสั่งเมื่อกดยืนยัน</div> : <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" />}
+      <button onClick={() => user.face ? setScan(true) : handleClockIn()} disabled={!canGo || scanning} className={`w-full p-4 rounded-xl font-bold text-base text-white transition-all ${canGo ? 'bg-primary hover:bg-pink-600 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
         {scanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันเข้างาน'}
       </button>
     </Panel>
@@ -447,6 +540,7 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
 function ClockOutModule({ user, now, records, setRecords, onDone }) {
   const [outDate, setOutDate] = useState(fmtInput(now)), [found, setFound] = useState(null), [err, setErr] = useState('');
   const [cam, setCam] = useState(false), [scanning, setScanning] = useState(false), [warn, setWarn] = useState(false), [ok, setOk] = useState(null);
+  const [scan, setScan] = useState(false);
   const vref = useCamera(cam && !ok, () => { setErr('ไม่สามารถเข้าถึงกล้องได้'); setCam(false); });
 
   const search = date => {
@@ -457,19 +551,20 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
   useEffect(() => { search(outDate); }, []);
 
   const attempt = () => {
-    if (!cam) return;
+    if (!user.face && !cam) return;
     const sd = SHIFT_TYPES[found.shiftId], [eh, em] = (sd.end === '24:00' ? '23:59' : sd.end).split(':').map(Number), sh = +sd.start.split(':')[0];
     const end = new Date(now); end.setHours(eh, em, 0, 0);
     if (eh < sh && now.getHours() >= 12) end.setDate(end.getDate() + 1);
-    now < end ? setWarn(true) : process();
+    now < end ? setWarn(true) : go();
   };
 
-  const process = async () => {
+  const go = () => user.face ? setScan(true) : process();
+  const process = async face => {
     setWarn(false); setScanning(true); setErr('');
-    const photoBase64 = captureImage(vref.current);
+    const photoBase64 = face ? face.photoBase64 : captureImage(vref.current);
     if (!photoBase64) { setScanning(false); return; }
     const timeOut = formatTime24(now);
-    const res = await sendToGoogleSheet('clockOut', { id: found.id, timeOut, photoBase64 }, 3);
+    const res = await sendToGoogleSheet('clockOut', { id: found.id, timeOut, photoBase64, descriptor: face?.caps[0] }, 3);
     if (res?.status === 'success') { setRecords(records.map(r => r.id === found.id ? { ...r, timeOut } : r)); setOk({ timeOut, shiftName: SHIFT_TYPES[found.shiftId]?.label }); }
     else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#fb7185' });
     setScanning(false); setCam(false);
@@ -480,6 +575,7 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
   return (
     <Panel tone="secondary" icon="fa-arrow-right-from-bracket" title="ออกงาน">
       <ErrorBox msg={err} />
+      {scan && <FaceScanner mode="verify" onCancel={() => setScan(false)} onResult={r => { setScan(false); process(r); }} />}
       <div>
         <label className={LABEL}>วันที่เข้างาน</label>
         <input type="date" value={outDate} onChange={e => { setOutDate(e.target.value); search(e.target.value); }} className={`${FIELD} focus:border-secondary`} />
@@ -490,17 +586,17 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
             <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">กะที่บันทึก</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{SHIFT_TYPES[found.shiftId]?.label}</p></div>
             <div className="text-right"><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">เข้าเมื่อ</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{displaySafeTime(found.timeIn)}</p></div>
           </div>
-          <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} label="เปิดกล้องสแกนหน้า" />
+          {user.face ? <div className="p-4 rounded-xl bg-rose-50 border border-rose-100 text-sm font-semibold text-secondary flex items-center gap-2"><i className="fa-solid fa-face-smile"></i> ระบบจะสแกนใบหน้าและให้ทำตามคำสั่งเมื่อกดยืนยัน</div> : <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} label="เปิดกล้องสแกนหน้า" />}
           {warn ? (
             <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-sm">
               <p className="text-amber-800 mb-4 text-sm font-bold">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
               <div className="flex gap-2">
-                <button onClick={process} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-2.5 text-sm font-bold transition-colors">ยืนยัน</button>
+                <button onClick={go} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-2.5 text-sm font-bold transition-colors">ยืนยัน</button>
                 <button onClick={() => setWarn(false)} className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg py-2.5 text-sm font-bold transition-colors">ยกเลิก</button>
               </div>
             </div>
           ) : (
-            <button onClick={attempt} disabled={!cam || scanning} className={`w-full p-4 rounded-xl font-bold text-base text-white transition-all ${cam ? 'bg-secondary hover:bg-rose-500 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
+            <button onClick={attempt} disabled={!(user.face || cam) || scanning} className={`w-full p-4 rounded-xl font-bold text-base text-white transition-all ${(user.face || cam) ? 'bg-secondary hover:bg-rose-500 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
               {scanning ? 'กำลังบันทึก...' : 'สแกนหน้า ยืนยันออกงาน'}
             </button>
           )}
