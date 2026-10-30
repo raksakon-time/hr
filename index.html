@@ -202,29 +202,31 @@ const REG_STEPS = [
 // ขั้นตอนยืนยัน: สุ่มกะพริบตา/หันหน้า แล้วมองตรง (เก็บ embedding เฉพาะตอนมองตรง)
 const LIVE_BLINK = { label: 'กะพริบตา 1 ครั้ง', ok: (p, s) => { s.open = Math.max(s.open || 0, p.ear); if (p.ear < s.open * .72) s.closed = true; return !!s.closed && p.ear > s.open * .88; } };
 const LIVE_TURN = { label: 'หันหน้าไปด้านข้างเล็กน้อย แล้วกลับมามองตรง', ok: (p, s) => { if (Math.abs(p.yaw - .5) > .12) s.turned = true; return !!s.turned && near(p.yaw, .5, .06); } };
-const LIVE_FRONT = { label: 'มองตรงที่กล้อง', cap: true, ok: p => near(p.yaw, .5, .07) };
+const LIVE_FRONT = { label: 'จัดใบหน้าให้อยู่ในกรอบ มองตรงที่กล้อง', cap: true, ok: p => near(p.yaw, .5, .1) };
+const FACE_LIVENESS = false; // true = สุ่มให้กะพริบตา/หันหน้าก่อนสแกน (ช้าลง แต่กันภาพถ่ายได้ดีขึ้น)
 
 function FaceScanner({ mode, onResult, onCancel }) {
-  const reg = mode === 'register', total = reg ? REG_STEPS.length : 2;
-  const [msg, setMsg] = useState('กำลังโหลดระบบสแกนใบหน้า...'), [done, setDone] = useState(0), [err, setErr] = useState('');
+  const reg = mode === 'register', total = reg ? REG_STEPS.length : FACE_LIVENESS ? 2 : 1;
+  const [msg, setMsg] = useState('กำลังโหลดระบบสแกนใบหน้า...'), [done, setDone] = useState(0), [err, setErr] = useState(''), [found, setFound] = useState(false);
   const vref = useCamera(true, () => setErr('ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาต'));
   useEffect(() => {
     let stop = false;
     (async () => {
       try {
         await loadFace();
-        const steps = reg ? REG_STEPS : [Math.random() < .5 ? LIVE_BLINK : LIVE_TURN, LIVE_FRONT], st = {}, caps = [], t0 = Date.now();
+        const steps = reg ? REG_STEPS : FACE_LIVENESS ? [Math.random() < .5 ? LIVE_BLINK : LIVE_TURN, LIVE_FRONT] : [LIVE_FRONT], st = {}, caps = [], t0 = Date.now();
         let i = 0, hits = 0;
         while (!stop) {
           if (Date.now() - t0 > 60000) throw new Error('หมดเวลา กรุณาลองใหม่อีกครั้ง');
           const v = vref.current, r = v && v.videoWidth ? await detectFace(v) : null;
           if (stop) break;
+          setFound(!!r);
           if (!r) { hits = 0; setMsg('ไม่พบใบหน้า กรุณาให้ใบหน้าอยู่กลางภาพ'); }
           else {
             const po = { ...facePose(r.landmarks), ear: eyeAR(r.landmarks) };
             hits = steps[i].ok(po, st) ? hits + 1 : 0;
             setMsg(steps[i].label);
-            if (hits >= 3) { // ต้องผ่านต่อเนื่อง 3 เฟรม
+            if (hits >= (reg ? 3 : 2)) { // ต้องผ่านต่อเนื่องหลายเฟรม
               if (steps[i].cap) caps.push(Array.from(r.descriptor, x => +x.toFixed(4)));
               steps[i].set?.(po, st);
               hits = 0; i++; setDone(i);
@@ -232,7 +234,7 @@ function FaceScanner({ mode, onResult, onCancel }) {
               setMsg(steps[i].label);
             }
           }
-          await new Promise(res => setTimeout(res, 120));
+          await new Promise(res => setTimeout(res, 40));
         }
       } catch (e) { if (!stop) setErr(e.message || 'สแกนใบหน้าไม่สำเร็จ'); }
     })();
@@ -247,7 +249,13 @@ function FaceScanner({ mode, onResult, onCancel }) {
           <button onClick={onCancel} className="text-slate-400 hover:text-slate-800"><i className="fa-solid fa-xmark"></i></button>
         </div>
         <div className="p-5 space-y-4">
-          <div className="relative h-72 rounded-xl overflow-hidden bg-slate-100 border border-slate-200"><video ref={vref} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" /></div>
+          <div className="relative h-80 rounded-xl overflow-hidden bg-slate-900 border border-slate-200">
+            <video ref={vref} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
+            <div className="absolute inset-10 pointer-events-none">
+              {['top-0 left-0 border-t-4 border-l-4 rounded-tl-xl', 'top-0 right-0 border-t-4 border-r-4 rounded-tr-xl', 'bottom-0 left-0 border-b-4 border-l-4 rounded-bl-xl', 'bottom-0 right-0 border-b-4 border-r-4 rounded-br-xl'].map(c =>
+                <span key={c} className={`absolute w-10 h-10 transition-colors ${c} ${found ? 'border-green-500' : 'border-white/70'}`}></span>)}
+            </div>
+          </div>
           <p className={`text-center font-bold ${err ? 'text-red-600' : 'text-primary'}`}>{err || msg}</p>
           <div className="flex justify-center gap-2">{Array.from({ length: total }, (_, k) => <span key={k} className={`w-3 h-3 rounded-full ${k < done ? 'bg-primary' : 'bg-slate-200'}`}></span>)}</div>
           {reg && <p className="text-xs text-slate-400 text-center">ถอดหน้ากากอนามัยและแว่นกันแดด อยู่ในที่ที่มีแสงสว่างพอ แล้วทำตามคำสั่งทีละขั้น</p>}
@@ -312,6 +320,8 @@ function App() {
     document.addEventListener('visibilitychange', tick);
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', tick); };
   }, [user]);
+
+  useEffect(() => { if (user && user.face) loadFace().catch(() => {}); }, [user && user.face]);
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
