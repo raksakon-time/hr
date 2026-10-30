@@ -83,7 +83,14 @@ const resolveTarget = (now, sch, id, shift) => {
   return { date: t, shifts: shiftsOf(sch, t, id) };
 };
 
+let pendingWrites = 0, writeSeq = 0, syncing = false;
 const sendToGoogleSheet = async (action, payload = {}, retries = 3) => {
+  const write = action !== 'getInitialData';
+  if (write) { pendingWrites++; writeSeq++; }
+  try { return await postToSheet_(action, payload, retries); }
+  finally { if (write) { pendingWrites--; writeSeq++; } }
+};
+const postToSheet_ = async (action, payload = {}, retries = 3) => {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, payload }) });
@@ -191,11 +198,17 @@ function App() {
     } catch (e) { return null; }
   };
   const sync = async () => {
-    const v = await quiet('getVersion');
-    if (v?.status === 'success' && v.version !== verRef.current) {
-      const r = await quiet('getInitialData');
-      if (r?.status === 'success') applyData(r.data);
-    }
+    if (pendingWrites > 0 || syncing) return;   // กำลังบันทึกอยู่ ไม่ดึงข้อมูลมาทับ
+    syncing = true;
+    const seq = writeSeq;
+    try {
+      const v = await quiet('getVersion');
+      if (v?.status === 'success' && v.version !== verRef.current) {
+        const r = await quiet('getInitialData');
+        // ถ้ามีการบันทึกเกิดขึ้นระหว่างดึง ให้ทิ้งผลนี้ (รอบถัดไปจะดึงใหม่)
+        if (r?.status === 'success' && pendingWrites === 0 && seq === writeSeq) applyData(r.data);
+      }
+    } finally { syncing = false; }
   };
 
   useEffect(() => {
