@@ -25,6 +25,7 @@ tailwind.config = { theme: { extend: {
 <style>
 body { font-family: 'Sarabun', sans-serif; background: #f8fafc; -webkit-font-smoothing: antialiased; color: #1e293b; font-size: 15px; margin: 0; }
 input, select { transition: all .2s ease; }
+input[type=date], input[type=month], input[type=time] { min-width: 0; max-width: 100%; box-sizing: border-box; }
 input:focus, select:focus { outline: none; border-color: #ec4899 !important; box-shadow: 0 0 0 3px rgba(236,72,153,.2); }
 select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right .75rem center; background-repeat: no-repeat; background-size: 1.25em; padding-right: 2.5rem; }
 .print-show { display: none; }
@@ -134,16 +135,16 @@ const TONE = {
   secondary: { soft: 'bg-rose-50 text-secondary border-rose-100', ico: 'bg-rose-100 text-secondary', text: 'text-secondary', btn: 'bg-secondary hover:bg-rose-500', main: 'bg-secondary hover:bg-rose-500' }
 };
 const CARD = 'bg-white rounded-2xl shadow-sm border border-slate-200';
-const FIELD = 'w-full p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800';
+const FIELD = 'w-full min-w-0 max-w-full p-3 sm:p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800';
 const LABEL = 'block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider';
 
 const Panel = ({ tone, icon, title, children }) => (
   <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden animate-fade-in">
-    <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
+    <div className="px-5 py-3 sm:px-6 sm:py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${TONE[tone].ico}`}><i className={`fa-solid ${icon} text-sm`}></i></div>
       <h2 className="text-lg font-bold text-slate-800">{title}</h2>
     </div>
-    <div className="p-6 space-y-5">{children}</div>
+    <div className="p-4 sm:p-6 space-y-3 sm:space-y-5">{children}</div>
   </div>
 );
 
@@ -151,7 +152,7 @@ const ErrorBox = ({ msg }) => msg ? <div className="p-3 bg-red-50 text-red-600 r
 
 const CORNERS = ['top-0 left-0 border-t-4 border-l-4 rounded-tl-xl', 'top-0 right-0 border-t-4 border-r-4 rounded-tr-xl', 'bottom-0 left-0 border-b-4 border-l-4 rounded-bl-xl', 'bottom-0 right-0 border-b-4 border-r-4 rounded-br-xl'];
 const CameraBox = ({ active, vref, onOpen, disabled, label, found }) => (
-  <div className={`border border-slate-200 rounded-xl h-72 flex items-center justify-center overflow-hidden relative shadow-inner ${active ? 'bg-slate-900' : 'bg-slate-100'}`}>
+  <div className={`border border-slate-200 rounded-xl h-[min(18rem,34dvh)] flex items-center justify-center overflow-hidden relative shadow-inner ${active ? 'bg-slate-900' : 'bg-slate-100'}`}>
     {active ? <>
       <video ref={vref} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
       <div className="absolute inset-8 pointer-events-none">{CORNERS.map(c => <span key={c} className={`absolute w-10 h-10 transition-colors ${c} ${found ? 'border-green-500' : 'border-white/70'}`}></span>)}</div>
@@ -216,7 +217,7 @@ function useFaceFrame(vref, active, onStable) {
 
 // ================= App =================
 function App() {
-  const [user, setUser] = useState(null), [tab, setTab] = useState('home'), [imgErr, setImgErr] = useState(false);
+  const [user, setUser] = useState(null), [tab, setTab] = useState('home'), [imgErr, setImgErr] = useState(false), [formOpen, setFormOpen] = useState(false);
   const [now, setNow] = useState(new Date()), [loading, setLoading] = useState(true);
   const [records, setRecords] = useState([]), [employees, setEmployees] = useState({}), [schedules, setSchedules] = useState({});
   const [settings, setSettings] = useState({ standardWorkDays: {} });
@@ -284,20 +285,21 @@ function App() {
   const role = user.dept === 'ADMIN' ? 'admin' : user.level === 'หัวหน้า' ? 'supervisor' : 'employee';
   const lastPhoto = records.reduce((b, r) => r.empId === user.id && r.photoInUrl && (!b || r.id > b.id) ? r : b, null);
   const avatar = lastPhoto && !imgErr ? driveImg(lastPhoto.photoInUrl, 'w400-h400') : `https://ui-avatars.com/api/?name=${user.fname}+${user.lname}&background=fbcfe8&color=1e293b&size=150`;
+  const compact = tab === 'home' && formOpen;   // หน้าลงเวลาเข้า/ออก: ย่อแถบชมพู
   const logout = () => { setUser(null); setTab('home'); setImgErr(false); };
   const tabs = [['home', 'fa-solid fa-clock', 'ลงเวลา'], ['calendar', 'fa-regular fa-calendar-days', 'ตารางเวร'], ['history', 'fa-solid fa-clock-rotate-left', 'ประวัติ'],
     ...(isManager ? [['manager', 'fa-solid fa-layer-group', 'จัดการ']] : [])];
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 pb-20 font-sans text-slate-900 relative">
-      <div className="bg-primary h-40 w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm"></div>
+      <div className={`bg-primary ${compact ? 'h-28' : 'h-40'} w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm transition-all`}></div>
       <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col h-full">
-        <header className="flex justify-between items-center px-6 pt-5 pb-2 text-white print-hide">
+        <header className={`flex justify-between items-center px-6 ${compact ? 'pt-3 pb-0' : 'pt-5 pb-2'} text-white print-hide`}>
           <div className="flex flex-col">{tab !== 'home' && <span className="font-semibold tracking-wider">รักษ์สกล Time</span>}</div>
           <button onClick={logout} className="text-white/90 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors"><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i></button>
         </header>
-        <main className="flex-grow px-4 sm:px-6 lg:px-8 mt-4">
-          {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} />}
+        <main className={`flex-grow px-4 sm:px-6 lg:px-8 ${compact ? 'mt-1' : 'mt-4'}`}>
+          {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} onForm={setFormOpen} />}
           {tab === 'calendar' && <MyCalendarView user={user} schedules={schedules} />}
           {tab === 'history' && <MyHistoryView user={user} records={records} now={now} />}
           {tab === 'manager' && isManager && (typeof ReportView !== 'undefined'
@@ -306,9 +308,9 @@ function App() {
         </main>
       </div>
 
-      <a href={LEAVE_SYSTEM_URL} target="_blank" className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 bg-white text-primary border border-primary/20 px-4 py-3 rounded-full shadow-soft hover:shadow-md transition-all z-[100] flex items-center gap-2 print-hide" style={{ textDecoration: 'none' }}>
+      {!compact && <a href={LEAVE_SYSTEM_URL} target="_blank" className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 bg-white text-primary border border-primary/20 px-4 py-3 rounded-full shadow-soft hover:shadow-md transition-all z-[100] flex items-center gap-2 print-hide" style={{ textDecoration: 'none' }}>
         <i className="fa-solid fa-notes-medical"></i><span className="text-sm font-medium">ลางาน</span>
-      </a>
+      </a>}
 
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 pb-safe print-hide bottom-nav-hide z-50">
         <div className="max-w-md mx-auto flex justify-around px-2">
@@ -386,8 +388,9 @@ function LoginView({ employees, onLogin }) {
 }
 
 // ================= หน้าลงเวลา =================
-function ActionPanelView({ user, now, records, setRecords, schedules, avatar, setTab }) {
+function ActionPanelView({ user, now, records, setRecords, schedules, avatar, setTab, onForm }) {
   const [type, setType] = useState(null);
+  useEffect(() => { onForm(!!type); return () => onForm(false); }, [type]);
   if (!type) return (
     <div className="max-w-md mx-auto flex flex-col items-center mt-4">
       <div className="w-28 h-28 rounded-full border-4 border-white overflow-hidden bg-slate-100 shadow-md mb-3 shrink-0 relative">
@@ -408,8 +411,8 @@ function ActionPanelView({ user, now, records, setRecords, schedules, avatar, se
   );
   const props = { user, now, records, setRecords, onDone: () => setType(null) };
   return (
-    <div className="max-w-md mx-auto mt-4">
-      <button onClick={() => setType(null)} className="mb-4 text-white drop-shadow-md text-sm hover:text-pink-100 flex items-center transition-colors font-semibold"><i className="fa-solid fa-arrow-left mr-2"></i> ย้อนกลับ</button>
+    <div className="max-w-md mx-auto mt-2">
+      <button onClick={() => setType(null)} className="mb-2 text-white drop-shadow-md text-sm hover:text-pink-100 flex items-center transition-colors font-semibold"><i className="fa-solid fa-arrow-left mr-2"></i> ย้อนกลับ</button>
       {type === 'in' ? <ClockInModule {...props} schedules={schedules} /> : <ClockOutModule {...props} />}
     </div>
   );
