@@ -301,7 +301,7 @@ function App() {
         <main className={`flex-grow px-4 sm:px-6 lg:px-8 ${compact ? 'mt-1' : 'mt-4'}`}>
           {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} onForm={setFormOpen} />}
           {tab === 'calendar' && <MyCalendarView user={user} schedules={schedules} />}
-          {tab === 'history' && <MyHistoryView user={user} records={records} now={now} />}
+          {tab === 'history' && <MyHistoryView user={user} records={records} schedules={schedules} settings={settings} now={now} />}
           {tab === 'manager' && isManager && (typeof ReportView !== 'undefined'
             ? <ReportView role={role} user={user} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} />
             : <div className={`${CARD} p-8 text-center text-slate-500`}>ยังไม่ได้ติดตั้งโมดูลจัดการ (ReportView)</div>)}
@@ -610,10 +610,25 @@ function MyCalendarView({ user, schedules }) {
   );
 }
 
-function MyHistoryView({ user, records, now }) {
+function MyHistoryView({ user, records, schedules, settings, now }) {
   const [month, setMonth] = useState(`${now.getFullYear()}-${pad(now.getMonth() + 1)}`);
   const mine = records.filter(r => r.empId === user.id && r.date.startsWith(month)).sort((a, b) => b.date.localeCompare(a.date) || b.timeIn.localeCompare(a.timeIn));
-  const credit = mine.reduce((s, r) => s + (r.credit || 0), 0), late = mine.filter(r => r.isLate).length;
+  const late = mine.filter(r => r.isLate).length;
+
+  // สรุปเดือน: เครดิตรวม (วิธีเดียวกับหน้าสรุป OT ของหัวหน้า), วันทำงาน, พักร้อน, ลา, OT
+  const [y, m] = month.split('-').map(Number), today = fmtInput(now), workDays = parseInt(settings?.standardWorkDays?.[month]) || 22;
+  let credit = 0, vac = 0, leave = 0, hourly = 0;
+  for (let d = 1, n = new Date(y, m, 0).getDate(); d <= n; d++) {
+    const ds = ymd(y, m, d), recs = mine.filter(r => r.date === ds), sched = shiftsOf(schedules, ds, user.id), worked = recs.map(r => r.shiftId);
+    credit += recs.reduce((a, r) => a + (r.credit || 0), 0);
+    if (sched.some(s => s === 'Vac' || s === 'พักร้อน')) vac++;
+    if (sched.some(s => s === 'ลา' || s === 'ป่วย')) leave++;
+    if (sched.includes('ลาชั่วโมง')) hourly++;
+    sched.filter(s => !worked.includes(s)).forEach(s => { credit += ds >= today ? creditOf(s) : (PAID.includes(s) ? 1 : 0); });
+  }
+  const f = n => +n.toFixed(3), ot = credit - workDays;
+  const stats = [['วันทำงาน', new Set(mine.map(r => r.date)).size, ''], ['Vac', vac, ''], ['ลา', leave, hourly ? `+ลาชม. ${hourly} ครั้ง` : ''], ['OT', (ot > 0 ? '+' : '') + f(ot), '']];
+
   return (
     <div className="max-w-3xl mx-auto space-y-4 mt-2">
       <div className={`flex flex-wrap gap-4 items-center justify-between p-4 sm:p-5 ${CARD}`}>
@@ -621,14 +636,23 @@ function MyHistoryView({ user, records, now }) {
         <input type="month" value={month} onChange={e => setMonth(e.target.value)} className="p-2 border border-slate-300 rounded-lg bg-white text-sm font-semibold text-slate-700 outline-none focus:border-primary" />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-primary text-white rounded-2xl p-5 shadow-md"><p className="text-white/80 text-xs uppercase tracking-wider mb-1 font-bold">เครดิตเวร</p><p className="text-4xl font-semibold tracking-tight">{credit}</p></div>
+        <div className="bg-primary text-white rounded-2xl p-5 shadow-md">
+          <p className="text-white/80 text-xs uppercase tracking-wider mb-1 font-bold">เครดิตเวร</p>
+          <p className="text-4xl font-semibold tracking-tight">{f(credit)}</p>
+          <p className="text-white/70 text-[10px] mb-3">รวมเวรล่วงหน้าและลา · วันทำการ {workDays}</p>
+          <div className="grid grid-cols-2 gap-2">{stats.map(([l, v, sub]) => (
+            <div key={l} className="bg-white/15 rounded-lg px-2.5 py-1.5"><p className="text-[10px] font-bold text-white/80">{l}</p><p className="text-lg font-bold leading-tight">{v}</p>{sub && <p className="text-[9px] text-white/80">{sub}</p>}</div>))}
+          </div>
+        </div>
         <div className={`${CARD} p-5`}><p className="text-slate-500 text-xs uppercase tracking-wider mb-1 font-bold">สาย</p><p className="text-4xl font-semibold tracking-tight text-slate-800">{late} <span className="text-sm font-medium text-slate-400">ครั้ง</span></p></div>
       </div>
       <div className={`${CARD} overflow-hidden`}>
         {mine.map((r, i) => {
-          const st = SHIFT_TYPES[r.shiftId];
+          const st = SHIFT_TYPES[r.shiftId], cur = shiftsOf(schedules, r.date, user.id);
+          // เวรในตารางไม่ตรงกับที่ลงเวลาไว้ (เช่น สแกน ชบ แล้วถูกเปลี่ยนเป็น ช)
+          const warn = !cur.includes(r.shiftId) && (cur.length ? `ตารางเวรของวันนี้เปลี่ยนเป็น ${cur.join(', ')} แต่ลงเวลาไว้เป็น ${r.shiftId}` : `ไม่พบเวรของวันนี้ในตารางเวร (ลงเวลาไว้เป็น ${r.shiftId})`);
           return (
-            <div key={r.id} className={`p-4 flex flex-col sm:flex-row gap-3 justify-between sm:items-center ${i < mine.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-slate-50 transition-colors`}>
+            <div key={r.id} className={`p-4 flex flex-col sm:flex-row sm:flex-wrap gap-3 justify-between sm:items-center ${i < mine.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-slate-50 transition-colors`}>
               <div className="flex items-center gap-4">
                 <div className="text-center sm:text-left min-w-[65px]">
                   <span className="block text-xs font-bold text-slate-400 mb-0.5">{formatDisplayDate(r.date).slice(0, 5)}</span>
@@ -645,6 +669,7 @@ function MyHistoryView({ user, records, now }) {
                 {r.isLate && <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded text-xs font-bold border border-red-200">สาย {r.lateMinutes} นาที</span>}
                 <span className="text-slate-600 text-xs font-bold px-2 py-0.5 bg-slate-100 rounded border border-slate-200">เครดิต: {r.credit}</span>
               </div>
+              {warn && <div className="w-full text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"><i className="fa-solid fa-triangle-exclamation mr-1.5"></i>{warn} — โปรดแจ้ง HR ตรวจสอบ</div>}
             </div>
           );
         })}
