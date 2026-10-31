@@ -518,9 +518,18 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
     if (!photoBase64) { setErr('จับภาพล้มเหลว รอให้กล้องชัดเจนก่อนกดสแกน'); setScanning(false); return; }
     const sd = SHIFT_TYPES[shift], [h, m] = sd.start.split(':').map(Number);
     const actual = now.getHours() * 60 + now.getMinutes(), deadline = h * 60 + m + 5;
-    const isLate = actual > deadline && actual < deadline + 720;
-    const rec = { id: Date.now().toString(), date: resolveTarget(now, schedules, user.id, shift).date, empId: user.id, shiftId: shift, timeIn: formatTime24(now), timeOut: null,
-      isLate, lateMinutes: isLate ? actual - deadline : 0, credit: sd.credit, lat: pos?.lat, lon: pos?.lon, photoBase64 };
+    const tgt = resolveTarget(now, schedules, user.id, shift);
+    // วันที่ช่องเวรมี "ลาชั่วโมง" ไม่นับสาย (ระบบไม่ทราบช่วงเวลาที่ลา)
+    let dl = deadline;
+    if (tgt.shifts.includes('ลาชั่วโมง')) {
+      // ไม่ทราบเวลาลา หรือ ลาครอบเวลาเริ่มกะ = ไม่นับสาย / ลาช่วงอื่น (เช่น ท้ายกะ) = นับสายตามปกติ
+      const lt = schedules[tgt.date]?.[user.id]?.leaveTime || '', tm = t => +t.slice(0, 2) * 60 + +t.slice(3, 5);
+      const cover = lt.split(';').filter(Boolean).map(x => x.split('-').map(tm)).find(([a, b]) => a <= h * 60 + m && b > h * 60 + m);
+      dl = !lt || cover ? Infinity : deadline;
+    }
+    const isLate = actual > dl && actual < dl + 720;
+    const rec = { id: Date.now().toString(), date: tgt.date, empId: user.id, shiftId: shift, timeIn: formatTime24(now), timeOut: null,
+      isLate, lateMinutes: isLate ? actual - dl : 0, credit: sd.credit, lat: pos?.lat, lon: pos?.lon, photoBase64 };
     const res = await sendToGoogleSheet('clockIn', rec, 3);
     if (res?.status === 'success') { setRecords([...records, rec]); setResult({ ...rec, shiftName: sd.label }); }
     else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#ec4899' });
