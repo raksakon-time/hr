@@ -766,6 +766,36 @@ const PhotoModal = ({ record, employees, onClose }) => {
   );
 };
 
+// จัดเวรตามกรอบกำลัง: เติมทีละวัน เริ่มจากกะที่หายาก (ดึก > บ > ช+บ > ช) หมุนเวียนคนที่ทำกะนั้นน้อยสุด (เสมอกันดูเครดิตน้อยสุด) ที่ไม่ผิดกติกา
+function planFrame({ dates, emps, schedules, frame, maxRun, restNight }) {
+  const cur = {}, credit = {}, cnt = {}, updates = [], short = [];
+  const prevOf = d => fmtInput(new Date(new Date(d + 'T00:00:00').getTime() - 864e5));
+  const getS = (id, d) => cur[id][d] || schedules[d]?.[id]?.shifts || [];
+  emps.forEach(id => {
+    cur[id] = {}; cnt[id] = {};
+    dates.forEach(d => { cur[id][d] = [...(schedules[d]?.[id]?.shifts || [])]; });
+    credit[id] = dates.reduce((a, d) => a + cur[id][d].reduce((b, s) => b + creditOf(s), 0), 0);
+  });
+  const before = { ...credit };
+  const prio = s => { const c = SHIFT_CATEGORY_MAP[s] || {}; return c['ด'] ? 0 : c['ช'] ? (c['บ'] ? 2 : 3) : 1; };
+  dates.forEach(d => {
+    const wk = [0, 6].includes(new Date(d + 'T00:00:00').getDay());
+    [...(wk ? frame.we : frame.wd)].sort((a, b) => prio(a.shift) - prio(b.shift)).forEach(({ shift, count }) => {
+      const free = id => {
+        if (cur[id][d].length) return false;                       // ช่องที่มีเวร/ลา/Off อยู่แล้ว ไม่แตะ
+        let p = prevOf(d), run = 0;
+        if (restNight && getS(id, p).some(s => s.includes('ด'))) return false; // พักหลังเวรดึก
+        while (run < maxRun && getS(id, p).some(s => SHIFT_TYPES[s])) { run++; p = prevOf(p); }
+        return run < maxRun;                                         // ทำงานติดกันไม่เกิน maxRun วัน
+      };
+      const pick = emps.filter(free).sort((a, b) => (cnt[a][shift] || 0) - (cnt[b][shift] || 0) || credit[a] - credit[b] || Math.random() - .5).slice(0, count);
+      pick.forEach(id => { cur[id][d] = [shift]; credit[id] += creditOf(shift); cnt[id][shift] = (cnt[id][shift] || 0) + 1; updates.push({ date: d, empId: id, shifts: [shift] }); });
+      if (pick.length < count) short.push({ date: d, shift, need: count, got: pick.length });
+    });
+  });
+  return { updates, short, before, credit };
+}
+
 function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
   const now = new Date(), todayStr = fmtInput(now), defMonth = todayStr.slice(0, 7);
   const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs');
@@ -781,6 +811,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const [mapRec, setMapRec] = useState(null), [photoRec, setPhotoRec] = useState(null), [editData, setEditData] = useState(null), [addData, setAddData] = useState(null);
   const [saving, setSaving] = useState(false), [cellData, setCellData] = useState(null), [autoOpen, setAutoOpen] = useState(false);
   const [auto, setAuto] = useState({ shiftId: '', dayPattern: 'all', overwrite: false, assignMode: 'all', requiredCount: 1 });
+  const [autoEmps, setAutoEmps] = useState([]), [autoMode, setAutoMode] = useState('frame'), [frame, setFrame] = useState({ wd: [], we: [] }), [plan, setPlan] = useState(null), [params, setParams] = useState({ maxRun: 6, restNight: true });
   const leaveOptions = role === 'admin' ? NON_WORK : ['Off', 'ลา', 'ป่วย', 'ขาด'];
   const info = (text, icon = 'success') => Swal.fire({ icon, text, timer: 1500, showConfirmButton: false });
   const nodata = () => Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสำหรับส่งออก", "info");
@@ -875,9 +906,11 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const editor = { editorId: user.id, editorName: `${user.fname} ${user.lname}` };
 
   const runAuto = async () => {
+    if (!autoEmps.length) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกพนักงานอย่างน้อย 1 คน' });
+    if (!auto.shiftId) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกกะ' });
     setSaving(true);
     const quota = auto.assignMode === 'quota', req = auto.requiredCount || 1, updates = [], sch = { ...schedules }, cnt = {};
-    const targets = matrixEmployees, keep = s => s && !SHIFT_TYPES[s] && s !== 'Off', isWork = !!SHIFT_TYPES[auto.shiftId], curOf = (id, ds) => (sch[ds]?.[id]?.shifts || []).filter(Boolean);
+    const targets = autoEmps, keep = s => s && !SHIFT_TYPES[s] && s !== 'Off', isWork = !!SHIFT_TYPES[auto.shiftId], curOf = (id, ds) => (sch[ds]?.[id]?.shifts || []).filter(Boolean);
     if (quota) targets.forEach(id => { cnt[id] = daysArray.filter(d => (sch[dayStr(d)]?.[id]?.shifts || []).includes(auto.shiftId)).length; });
     daysArray.forEach(day => {
       const ds = dayStr(day), dow = new Date(my, mm - 1, day).getDay();
@@ -893,6 +926,38 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
     }
     setSaving(false);
   };
+
+  // กรอบเริ่มต้น = ค่าเฉลี่ยจำนวนคนต่อกะต่อวัน (ธรรมดา/หยุด) จากตารางเดือนที่เลือก
+  const deriveFrame = () => {
+    const acc = { wd: {}, we: {} }, n = { wd: 0, we: 0 };
+    daysArray.forEach(d => {
+      const k = [0, 6].includes(new Date(my, mm - 1, d).getDay()) ? 'we' : 'wd'; n[k]++;
+      matrixEmployees.forEach(id => (schedules[dayStr(d)]?.[id]?.shifts || []).forEach(s => { if (SHIFT_TYPES[s]) acc[k][s] = (acc[k][s] || 0) + 1; }));
+    });
+    const out = k => Object.entries(acc[k]).map(([shift, c]) => ({ shift, count: Math.round(c / Math.max(n[k], 1)) })).filter(x => x.count > 0);
+    return { wd: out('wd'), we: out('we') };
+  };
+  const openAuto = () => { setAutoEmps(matrixEmployees); setFrame(settings?.frames?.[filterDept] || deriveFrame()); setPlan(null); setAutoOpen(true); };
+  const preview = () => {
+    if (!autoEmps.length) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกพนักงานอย่างน้อย 1 คน' });
+    const f = { wd: frame.wd.filter(r => r.shift && r.count > 0), we: frame.we.filter(r => r.shift && r.count > 0) };
+    setPlan(planFrame({ dates: daysArray.map(dayStr), emps: autoEmps, schedules, frame: f, ...params }));
+  };
+  const saveFrame = async () => {
+    const res = await sendToGoogleSheet('saveSettings', { frameDept: filterDept, frame });
+    if (res?.status === 'success') { setSettings({ ...settings, frames: { ...(settings.frames || {}), [filterDept]: frame } }); info('บันทึกกรอบกำลังของแผนกแล้ว'); }
+  };
+  const commitPlan = async updates => {
+    if (!updates.length) return info('ไม่มีช่องที่ต้องจัดเพิ่ม', 'info');
+    setSaving(true);
+    const sch = { ...schedules };
+    updates.forEach(u => withEdit(sch, u.date, u.empId, u.shifts));
+    setSchedules(sch); setAutoOpen(false); setPlan(null);
+    const res = await sendToGoogleSheet('saveScheduleBulk', { updates, ...editor });
+    if (res?.status === 'success') info(`บันทึกสำเร็จ ${updates.length} ช่อง`);
+    setSaving(false);
+  };
+  const setRow = (k, i, patch) => setFrame(f => ({ ...f, [k]: f[k].map((x, j) => j === i ? { ...x, ...patch } : x) }));
 
   const saveCell = async () => {
     const { empId, dateStr, shifts } = cellData, f = shifts.filter(s => s !== ''), sch = { ...schedules };
@@ -984,13 +1049,45 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
         <Actions onCancel={() => setCellData(null)} onOk={saveCell} okText="บันทึก" />
       </div></Modal>}
 
-      {autoOpen && <Modal><div className="p-6"><h3 className="font-bold text-slate-800 mb-4">จัดเวรอัตโนมัติ</h3><div className="space-y-3 text-sm">
-        <ShiftSelect dept={filterDept} leave={leaveOptions} empty="-- เลือกกะ --" value={auto.shiftId} onChange={v => setAuto({ ...auto, shiftId: v })} cls="w-full p-3 rounded-xl border border-slate-300 font-semibold" />
-        <select value={auto.dayPattern} onChange={e => setAuto({ ...auto, dayPattern: e.target.value })} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="all">ทุกวัน</option><option value="weekdays">วันธรรมดา</option><option value="weekends">วันหยุด (ส-อา)</option></select>
-        <select value={auto.assignMode} onChange={e => setAuto({ ...auto, assignMode: e.target.value })} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="all">ใส่ให้ทุกคน</option><option value="quota">จำกัดโควต้าคน/วัน</option></select>
-        {auto.assignMode === 'quota' && <input type="number" min="1" placeholder="จำนวนคน/วัน" value={auto.requiredCount} onChange={e => setAuto({ ...auto, requiredCount: parseInt(e.target.value) || 1 })} className="w-full p-3 rounded-xl border border-slate-300 font-semibold" />}
-        <label className="flex items-center gap-2 mt-2 font-semibold text-slate-700 cursor-pointer"><input type="checkbox" checked={auto.overwrite} onChange={e => setAuto({ ...auto, overwrite: e.target.checked })} className="rounded border-slate-300 w-4 h-4" /> เขียนทับกะเดิม</label>
-        <Actions onCancel={() => setAutoOpen(false)} onOk={runAuto} okText="เริ่มจัดเวร" disabled={saving} />
+      {autoOpen && <Modal wide><div className="p-6 max-h-[88vh] overflow-y-auto"><h3 className="font-bold text-slate-800 mb-3">จัดเวรอัตโนมัติ <span className="text-xs font-semibold text-slate-400 ml-1">{filterDept}</span></h3><div className="space-y-3 text-sm">
+        <div className="flex bg-slate-100 p-1 rounded-xl">{[['frame', 'ตามกรอบกำลัง'], ['single', 'ใส่กะเดียว']].map(([k, l]) => <button key={k} onClick={() => { setAutoMode(k); setPlan(null); }} className={`flex-1 py-2 rounded-lg font-bold ${autoMode === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500'}`}>{l}</button>)}</div>
+        <div className="border border-slate-200 rounded-xl">
+          <div className="flex justify-between px-3 py-2 border-b border-slate-100 text-xs font-bold"><span>พนักงานที่จะจัด ({autoEmps.length}/{dropdownEmps.length})</span><span><button onClick={() => setAutoEmps(dropdownEmps)} className="text-primary mr-3">ทั้งหมด</button><button onClick={() => setAutoEmps([])} className="text-slate-500">ล้าง</button></span></div>
+          <div className="max-h-32 overflow-y-auto p-2 grid grid-cols-2 gap-1">{dropdownEmps.map(id => <label key={id} className="flex items-center gap-2 p-1 cursor-pointer"><input type="checkbox" checked={autoEmps.includes(id)} onChange={e => setAutoEmps(p => e.target.checked ? [...p, id] : p.filter(x => x !== id))} className="w-4 h-4" /><span className="truncate font-semibold text-slate-700">{employees[id].fname}</span></label>)}</div>
+        </div>
+        {autoMode === 'single' ? <>
+          <ShiftSelect dept={filterDept} leave={leaveOptions} empty="-- เลือกกะ --" value={auto.shiftId} onChange={v => setAuto({ ...auto, shiftId: v })} cls="w-full p-3 rounded-xl border border-slate-300 font-semibold" />
+          <select value={auto.dayPattern} onChange={e => setAuto({ ...auto, dayPattern: e.target.value })} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="all">ทุกวัน</option><option value="weekdays">วันธรรมดา</option><option value="weekends">วันหยุด (ส-อา)</option></select>
+          <select value={auto.assignMode} onChange={e => setAuto({ ...auto, assignMode: e.target.value })} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="all">ใส่ให้ทุกคนที่เลือก</option><option value="quota">จำกัดโควต้าคน/วัน</option></select>
+          {auto.assignMode === 'quota' && <input type="number" min="1" placeholder="จำนวนคน/วัน" value={auto.requiredCount} onChange={e => setAuto({ ...auto, requiredCount: parseInt(e.target.value) || 1 })} className="w-full p-3 rounded-xl border border-slate-300 font-semibold" />}
+          <label className="flex items-center gap-2 mt-2 font-semibold text-slate-700 cursor-pointer"><input type="checkbox" checked={auto.overwrite} onChange={e => setAuto({ ...auto, overwrite: e.target.checked })} className="rounded border-slate-300 w-4 h-4" /> เขียนทับกะเดิม (เก็บรายการลาไว้)</label>
+          <Actions onCancel={() => setAutoOpen(false)} onOk={runAuto} okText="เริ่มจัดเวร" disabled={saving} />
+        </> : plan ? <>
+          <p className="font-bold text-slate-700">จัดได้ {plan.updates.length} ช่อง · {plan.short.length ? <span className="text-red-600">ขาดกรอบ {plan.short.length} จุด</span> : <span className="text-emerald-600">ครบตามกรอบ</span>}</p>
+          {plan.short.length > 0 && <div className="max-h-24 overflow-y-auto text-xs bg-red-50 border border-red-100 rounded-lg p-2 space-y-0.5">{plan.short.slice(0, 40).map((x, i) => <div key={i}>วันที่ {+x.date.slice(8)} · {x.shift} ขาด {x.need - x.got} (ได้ {x.got}/{x.need})</div>)}</div>}
+          <div className="max-h-44 overflow-y-auto border border-slate-200 rounded-lg"><table className="w-full text-xs"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-2 text-left">พนักงาน</th><th className="p-2">ก่อน</th><th className="p-2">หลัง</th><th className="p-2">OT</th></tr></thead>
+            <tbody>{autoEmps.map(id => <tr key={id} className="border-t border-slate-100"><td className="p-2 font-semibold">{employees[id].fname}</td><td className="p-2 text-center">{plan.before[id]}</td><td className="p-2 text-center font-bold">{plan.credit[id]}</td><td className="p-2 text-center text-primary font-bold">{plan.credit[id] - localWorkDays}</td></tr>)}</tbody></table></div>
+          <p className="text-xs text-slate-400">OT เทียบกับวันทำการ {localWorkDays} วัน ยังไม่บันทึกจนกว่าจะกดยืนยัน</p>
+          <Actions onCancel={() => setPlan(null)} onOk={() => commitPlan(plan.updates)} okText="บันทึกเวร" disabled={saving} />
+        </> : <>
+          {['wd', 'we'].map(k => (
+            <div key={k}><p className="font-bold text-slate-600 mb-1">{k === 'wd' ? 'กรอบวันธรรมดา' : 'กรอบวันหยุด (ส-อา)'}</p>
+              {frame[k].map((r, i) => (
+                <div key={i} className="flex gap-2 mb-1">
+                  <ShiftSelect dept={filterDept} leave={[]} value={r.shift} onChange={v => setRow(k, i, { shift: v })} cls="flex-1 p-2 border border-slate-300 rounded-xl font-semibold bg-white" />
+                  <input type="number" min="0" value={r.count} onChange={e => setRow(k, i, { count: Number(e.target.value) })} className="w-16 p-2 border border-slate-300 rounded-xl text-center font-bold" />
+                  <button onClick={() => setFrame(f => ({ ...f, [k]: f[k].filter((_, j) => j !== i) }))} className="w-9 rounded-xl bg-red-50 text-red-600"><i className="fa-solid fa-trash-can"></i></button>
+                </div>))}
+              <button onClick={() => setFrame(f => ({ ...f, [k]: [...f[k], { shift: getSortedShiftKeys(filterDept)[0], count: 1 }] }))} className="text-primary text-xs font-bold">+ เพิ่มกะในกรอบ</button>
+            </div>))}
+          <div className="flex items-center gap-3 flex-wrap text-xs font-semibold text-slate-600">
+            <label className="flex items-center gap-1">ทำงานติดกันไม่เกิน <input type="number" min="1" value={params.maxRun} onChange={e => setParams({ ...params, maxRun: Number(e.target.value) || 1 })} className="w-14 p-1 border border-slate-300 rounded-lg text-center" /> วัน</label>
+            <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked={params.restNight} onChange={e => setParams({ ...params, restNight: e.target.checked })} className="w-4 h-4" /> พักวันถัดไปหลังเวรดึก</label>
+          </div>
+          <p className="text-xs text-slate-400">เติมเฉพาะช่องที่ยังว่าง ไม่แตะลา/Off/เวรที่จัดไว้แล้ว</p>
+          <button onClick={saveFrame} className="text-xs font-bold text-slate-500 hover:text-primary">บันทึกกรอบนี้ไว้ใช้กับแผนก {filterDept}</button>
+          <Actions onCancel={() => setAutoOpen(false)} onOk={preview} okText="ดูตัวอย่าง" />
+        </>}
       </div></div></Modal>}
 
       <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-4 print-hide">
@@ -998,7 +1095,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
           <div className="flex bg-slate-100 p-1.5 rounded-xl w-fit">{tabBtn('logs', 'ประวัติ')}{tabBtn('summary', 'สรุป OT')}{tabBtn('schedules', 'ตารางเวร')}{tabBtn('exceptions', 'รายงานผิดปกติ')}</div>
           <div className="flex flex-wrap gap-2">
             {adminTab === 'logs' && role === 'admin' && <button onClick={() => setAddData({ empId: '', date: '', shiftId: '', timeIn: '', timeOut: '' })} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-plus mr-1.5"></i>เพิ่มย้อนหลัง</button>}
-            {adminTab === 'schedules' && <button onClick={() => setAutoOpen(true)} disabled={!filterDept} className="px-4 py-2 bg-pink-50 hover:bg-pink-100 text-primary border border-pink-200 rounded-lg text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"><i className="fa-solid fa-wand-magic-sparkles mr-1.5"></i>จัดเวรออโต้</button>}
+            {adminTab === 'schedules' && <button onClick={openAuto} disabled={!filterDept} className="px-4 py-2 bg-pink-50 hover:bg-pink-100 text-primary border border-pink-200 rounded-lg text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"><i className="fa-solid fa-wand-magic-sparkles mr-1.5"></i>จัดเวรออโต้</button>}
             {exportBtn({ logs: exportLogs, exceptions: exportEx, summary: exportSummary, schedules: exportSchedule }[adminTab], adminTab === 'schedules' ? 'fa-file-excel' : 'fa-file-csv')}
             <button onClick={() => window.print()} className={BTN}><i className="fa-solid fa-print mr-1.5 text-slate-400"></i>พิมพ์</button>
           </div>
