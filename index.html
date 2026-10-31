@@ -31,6 +31,9 @@ select { -webkit-appearance: none; appearance: none; background-image: url("data
 .print-show { display: none; }
 @keyframes blob { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-50px) scale(1.1); } 66% { transform: translate(-20px,20px) scale(.9); } }
 .animate-blob { animation: blob 7s infinite; }
+@keyframes festi-float { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-6px) rotate(4deg); } }
+.festi-float { animation: festi-float 4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .festi-float { animation: none; } }
 </style>
 </head>
 <body>
@@ -215,6 +218,30 @@ function useFaceFrame(vref, active, onStable) {
   return found;
 }
 
+// ================= ธีมเทศกาล (แถบสีชมพูด้านบน) =================
+// from/to เป็น MM-DD (ข้ามปีได้) / เทศกาลตามจันทรคติใช้ YYYY-MM-DD และต้องแก้วันที่ทุกปี
+const FESTIVAL_ON = true;      // false = ปิดธีมเทศกาลทั้งหมด
+const FESTIVAL_PREVIEW = '';   // ใส่ key เช่น 'halloween' เพื่อทดสอบหน้าตา (ปล่อยว่างเมื่อใช้งานจริง)
+const FESTIVALS = [
+  { key: 'valentine', from: '02-12', to: '02-14', emoji: '💖', greet: 'Happy Valentine', bg: 'linear-gradient(135deg,#ec4899,#e11d48)', deco: ['💖', '💌', '🌹', '💕', '💖', '🌹'] },
+  { key: 'songkran', from: '04-13', to: '04-15', emoji: '💦', greet: 'สุขสันต์วันสงกรานต์', bg: 'linear-gradient(135deg,#0ea5e9,#14b8a6)', deco: ['💦', '🌸', '🐘', '💧', '🌸', '💦'] },
+  { key: 'mother', from: '08-12', to: '08-12', emoji: '💙', greet: 'สุขสันต์วันแม่', bg: 'linear-gradient(135deg,#38bdf8,#818cf8)', deco: ['💙', '🌼', '🌷', '💙', '🌼', '🌷'] },
+  { key: 'halloween', from: '10-28', to: '10-31', emoji: '🎃', greet: 'Happy Halloween', bg: 'linear-gradient(135deg,#6d28d9,#ea580c)', deco: ['🎃', '🦇', '👻', '🕸️', '🦇', '🎃'] },
+  { key: 'loykrathong', from: '2026-11-24', to: '2026-11-24', emoji: '🌕', greet: 'สุขสันต์วันลอยกระทง', bg: 'linear-gradient(135deg,#1e3a8a,#f59e0b)', deco: ['🌕', '🏮', '🌸', '🏮', '🌕', '🌸'] },
+  { key: 'father', from: '12-05', to: '12-05', emoji: '💛', greet: 'สุขสันต์วันพ่อ', bg: 'linear-gradient(135deg,#d97706,#f59e0b)', deco: ['💛', '🌟', '💛', '🌟', '💛', '🌟'] },
+  { key: 'christmas', from: '12-20', to: '12-26', emoji: '🎄', greet: 'Merry Christmas', bg: 'linear-gradient(135deg,#b91c1c,#15803d)', deco: ['🎄', '⛄', '🎁', '❄️', '🎄', '🎁'] },
+  { key: 'newyear', from: '12-29', to: '01-02', emoji: '🎆', greet: 'สุขสันต์วันปีใหม่', bg: 'linear-gradient(135deg,#1d4ed8,#7c3aed)', deco: ['🎆', '🎉', '✨', '🥂', '🎆', '✨'] }
+];
+const festivalFor = d => {
+  if (!FESTIVAL_ON) return null;
+  if (FESTIVAL_PREVIEW) return FESTIVALS.find(f => f.key === FESTIVAL_PREVIEW) || null;
+  const full = fmtInput(d), md = full.slice(5);
+  return FESTIVALS.find(f => {
+    const v = f.from.length > 5 ? full : md;
+    return f.from <= f.to ? v >= f.from && v <= f.to : v >= f.from || v <= f.to;
+  }) || null;
+};
+
 // ================= App =================
 function App() {
   const [user, setUser] = useState(null), [tab, setTab] = useState('home'), [imgErr, setImgErr] = useState(false), [formOpen, setFormOpen] = useState(false);
@@ -285,17 +312,20 @@ function App() {
   const role = user.dept === 'ADMIN' ? 'admin' : user.level === 'หัวหน้า' ? 'supervisor' : 'employee';
   const lastPhoto = records.reduce((b, r) => r.empId === user.id && r.photoInUrl && (!b || r.id > b.id) ? r : b, null);
   const avatar = lastPhoto && !imgErr ? driveImg(lastPhoto.photoInUrl, 'w400-h400') : `https://ui-avatars.com/api/?name=${user.fname}+${user.lname}&background=fbcfe8&color=1e293b&size=150`;
-  const compact = tab === 'home' && formOpen;   // หน้าลงเวลาเข้า/ออก: ย่อแถบชมพู
+  const compact = tab === 'home' && formOpen;
+  const fest = festivalFor(now);   // หน้าลงเวลาเข้า/ออก: ย่อแถบชมพู
   const logout = () => { setUser(null); setTab('home'); setImgErr(false); };
   const tabs = [['home', 'fa-solid fa-clock', 'ลงเวลา'], ['calendar', 'fa-regular fa-calendar-days', 'ตารางเวร'], ['history', 'fa-solid fa-clock-rotate-left', 'ประวัติ'],
     ...(isManager ? [['manager', 'fa-solid fa-layer-group', 'จัดการ']] : [])];
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 pb-20 font-sans text-slate-900 relative">
-      <div className={`bg-primary ${compact ? 'h-28' : 'h-40'} w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm transition-all`}></div>
+      <div className={`bg-primary ${compact ? 'h-28' : 'h-40'} w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm transition-all overflow-hidden`} style={fest ? { background: fest.bg } : undefined}>
+        {fest && fest.deco.map((e, i) => <span key={i} className="absolute select-none pointer-events-none festi-float" style={{ left: `${6 + i * 16}%`, top: `${10 + (i % 3) * 24}%`, fontSize: 20 + (i % 3) * 6, opacity: .4, animationDelay: `${i * .7}s` }}>{e}</span>)}
+      </div>
       <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col h-full">
         <header className={`flex justify-between items-center px-6 ${compact ? 'pt-3 pb-0' : 'pt-5 pb-2'} text-white print-hide`}>
-          <div className="flex flex-col">{tab !== 'home' && <span className="font-semibold tracking-wider">รักษ์สกล Time</span>}</div>
+          <div className="flex flex-col">{tab !== 'home' ? <span className="font-semibold tracking-wider">รักษ์สกล Time</span> : fest && <span className="font-bold tracking-wide">{fest.emoji} {fest.greet}</span>}</div>
           <button onClick={logout} className="text-white/90 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors"><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i></button>
         </header>
         <main className={`flex-grow px-4 sm:px-6 lg:px-8 ${compact ? 'mt-1' : 'mt-4'}`}>
@@ -391,10 +421,14 @@ function LoginView({ employees, onLogin }) {
 function ActionPanelView({ user, now, records, setRecords, schedules, avatar, setTab, onForm }) {
   const [type, setType] = useState(null);
   useEffect(() => { onForm(!!type); return () => onForm(false); }, [type]);
+  const fest = festivalFor(now);
   if (!type) return (
     <div className="max-w-md mx-auto flex flex-col items-center mt-4">
-      <div className="w-28 h-28 rounded-full border-4 border-white overflow-hidden bg-slate-100 shadow-md mb-3 shrink-0 relative">
-        <img src={avatar} alt="Profile" className="w-full h-full object-cover transform scale-x-[-1]" />
+      <div className="relative mb-3 shrink-0">
+        <div className="w-28 h-28 rounded-full border-4 border-white overflow-hidden bg-slate-100 shadow-md">
+          <img src={avatar} alt="Profile" className="w-full h-full object-cover transform scale-x-[-1]" />
+        </div>
+        {fest && <span className="absolute -bottom-1 -right-1 text-3xl drop-shadow select-none">{fest.emoji}</span>}
       </div>
       <h2 className="text-xl font-bold text-slate-800">{user.fname} {user.lname}</h2>
       <p className="text-sm text-slate-500 mb-8 font-medium">แผนก{user.dept}</p>
