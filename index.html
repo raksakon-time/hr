@@ -124,10 +124,20 @@ const captureImage = v => {
 function useCamera(active, onFail) {
   const ref = useRef(null);
   useEffect(() => {
-    const stop = () => ref.current?.srcObject?.getTracks().forEach(t => t.stop());
-    if (active) navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }).then(s => { if (ref.current) ref.current.srcObject = s; }).catch(onFail);
-    else stop();
-    return stop;
+    if (!active) return;
+    let dead = false, tries = 0, timer, stream = null;
+    // เก็บ stream ไว้ในตัวแปรนี้เสมอ เพื่อปิดกล้องได้แม้ element วิดีโอถูกถอดไปแล้ว (เดิมกล้องค้างจนเปิดใหม่ได้ภาพดำบน iOS)
+    const release = () => { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } };
+    const start = () => navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }).then(s => {
+      if (dead) { s.getTracks().forEach(t => t.stop()); return; }   // ผลมาช้าหลังปิดไปแล้ว: ปล่อยกล้องทิ้ง
+      release(); stream = s;
+      const v = ref.current;
+      if (v) { v.srcObject = s; const p = v.play && v.play(); if (p && p.catch) p.catch(() => {}); }
+      // ถ้า 2.5 วินาทียังไม่มีภาพ (ภาพดำ) ให้เปิดกล้องใหม่ ลองซ้ำไม่เกิน 3 ครั้ง
+      timer = setTimeout(() => { if (!dead && ref.current && !ref.current.videoWidth && ++tries < 3) { release(); start(); } }, 2500);
+    }).catch(err => { if (!dead) onFail(err); });
+    start();
+    return () => { dead = true; clearTimeout(timer); release(); if (ref.current) ref.current.srcObject = null; };
   }, [active]);
   return ref;
 }
@@ -154,12 +164,12 @@ const Panel = ({ tone, icon, title, children }) => (
 const ErrorBox = ({ msg }) => msg ? <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{msg}</span></div> : null;
 
 const CORNERS = ['top-0 left-0 border-t-4 border-l-4 rounded-tl-xl', 'top-0 right-0 border-t-4 border-r-4 rounded-tr-xl', 'bottom-0 left-0 border-b-4 border-l-4 rounded-bl-xl', 'bottom-0 right-0 border-b-4 border-r-4 rounded-br-xl'];
-const CameraBox = ({ active, vref, onOpen, disabled, label, found }) => (
+const CameraBox = ({ active, vref, onOpen, disabled, label, found, ready }) => (
   <div className={`border border-slate-200 rounded-xl h-[min(18rem,34dvh)] flex items-center justify-center overflow-hidden relative shadow-inner ${active ? 'bg-slate-900' : 'bg-slate-100'}`}>
     {active ? <>
       <video ref={vref} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
       <div className="absolute inset-8 pointer-events-none">{CORNERS.map(c => <span key={c} className={`absolute w-10 h-10 transition-colors ${c} ${found ? 'border-green-500' : 'border-white/70'}`}></span>)}</div>
-      <p className="absolute bottom-2 inset-x-0 text-center text-xs font-bold text-white drop-shadow">{found ? 'พบใบหน้า กำลังบันทึก...' : 'จัดใบหน้าให้อยู่ในกรอบ'}</p>
+      <p className="absolute bottom-2 inset-x-0 text-center text-xs font-bold text-white drop-shadow">{!ready ? 'กำลังเตรียมระบบสแกน...' : found ? 'พบใบหน้า กำลังบันทึก...' : 'จัดใบหน้าให้อยู่ในกรอบ'}</p>
     </> : <button onClick={onOpen} disabled={disabled} className="flex flex-col items-center text-slate-400 hover:text-slate-600 transition-colors">
       <i className="fa-solid fa-camera text-4xl mb-3"></i><span className="text-sm font-semibold">{label}</span>
     </button>}
@@ -184,23 +194,31 @@ const ResultModal = ({ tone, icon, title, time, shiftName, late, onDone }) => (
 // ================= ตรวจใบหน้าเข้ากรอบ (face-api tinyFaceDetector เท่านั้น ~190KB) =================
 const FACE_MODELS = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
 const MANUAL_FALLBACK = true; // true = ถ้าสแกนอัตโนมัติไม่ติด (โหลดตัวตรวจไม่ได้/เกิน 20 วินาที) จะมีปุ่มบันทึกเองให้กด
-let liteReady = null;
+let liteReady = null, liteDone = false;
 const loadFaceLite = () => liteReady || (liteReady = (async () => {
   if (!window.faceapi) throw new Error('faceapi not loaded');
   await faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODELS);
+  // วอร์มอัป: ตรวจภาพเปล่า 1 ครั้งเพื่อเตรียมตัวประมวลผล (ครั้งแรกช้า) ให้การสแกนจริงเร็ว
+  const c = document.createElement('canvas'); c.width = c.height = 96;
+  await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }));
+  liteDone = true;
 })().catch(e => { liteReady = null; throw e; }));
 
 // ใบหน้าอยู่กลางกรอบ -> คืน true (กรอบเขียว) และถ้าอยู่นิ่งต่อเนื่อง เรียก onStable ครั้งเดียวเพื่อบันทึกอัตโนมัติ
 // ถ้าตัวตรวจใบหน้าโหลดไม่ได้จะไม่ทำอะไร ผู้ใช้กดปุ่มยืนยันเองได้ตามเดิม
 function useFaceFrame(vref, active, onStable) {
-  const [found, setFound] = useState(false), [manual, setManual] = useState(false), cb = useRef(onStable);
+  const [found, setFound] = useState(false), [manual, setManual] = useState(false), [ready, setReady] = useState(liteDone), cb = useRef(onStable);
   cb.current = onStable;
   useEffect(() => {
     if (!active) { setFound(false); setManual(false); return; }
     let stop = false, hits = 0;
     const t = setTimeout(() => setManual(true), 20000);
     (async () => {
-      try { await loadFaceLite(); } catch (e) { setManual(true); return; }
+      for (;;) {   // โหลดไม่สำเร็จให้ลองใหม่เรื่อย ๆ (ระหว่างนั้นปุ่มสำรองจะโผล่ให้กดเองได้)
+        try { await loadFaceLite(); break; } catch (e) { setManual(true); await new Promise(res => setTimeout(res, 2000)); if (stop) return; }
+      }
+      if (stop) return;
+      setReady(true);
       while (!stop) {
         const v = vref.current;
         if (v && v.videoWidth) {
@@ -217,7 +235,7 @@ function useFaceFrame(vref, active, onStable) {
     })();
     return () => { stop = true; clearTimeout(t); };
   }, [active]);
-  return { found, manual: MANUAL_FALLBACK && manual };
+  return { found, manual: MANUAL_FALLBACK && manual, ready };
 }
 
 // ================= ธีมเทศกาล (แถบสีชมพูด้านบน) =================
@@ -480,7 +498,7 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
   const vref = useCamera(cam && !result && loc === 'ok', () => { setErr('ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาต'); setCam(false); });
   const already = shift && records.some(r => r.empId === user.id && r.date === resolveTarget(now, schedules, user.id, shift).date && r.shiftId === shift);
   const canGo = cam && loc === 'ok' && valid.length > 0 && !already;
-  const { found: faceOk, manual } = useFaceFrame(vref, canGo && !scanning && !result, () => handleClockIn());
+  const { found: faceOk, manual, ready } = useFaceFrame(vref, canGo && !scanning && !result, () => handleClockIn());
   // เปิดกล้องอัตโนมัติเมื่อพิกัดผ่านและมีกะเดียว (ถ้ามีหลายกะ ให้เลือกกะก่อนแล้วกดเปิดกล้อง)
   useEffect(() => { if (loc === 'ok' && valid.length === 1 && !already) setCam(true); }, [loc, valid.length, already]);
 
@@ -551,7 +569,7 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
       <div className={`p-3 rounded-lg flex items-center gap-2 text-sm border font-medium ${locCls}`}>
         {loc === 'ok' ? <><i className="fa-solid fa-location-dot"></i> พิกัดถูกต้อง</> : loc === 'error' ? <><i className="fa-solid fa-location-xmark"></i> {err || 'พิกัดอยู่นอกพื้นที่'}</> : <><i className="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบพิกัด...</>}
       </div>
-      <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" found={faceOk} />
+      <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" found={faceOk} ready={ready} />
       {scanning && <p className="text-center text-sm font-bold text-primary">กำลังบันทึก...</p>}
       {manual && canGo && !scanning && <button onClick={handleClockIn} className="w-full p-3 rounded-xl font-bold text-sm text-white bg-primary hover:bg-pink-600 shadow-md">สแกนไม่ติด? กดบันทึกเข้างานเอง</button>}
     </Panel>
@@ -562,7 +580,7 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
   const [outDate, setOutDate] = useState(fmtInput(now)), [found, setFound] = useState(null), [err, setErr] = useState('');
   const [cam, setCam] = useState(false), [scanning, setScanning] = useState(false), [warn, setWarn] = useState(false), [ok, setOk] = useState(null);
   const vref = useCamera(cam && !ok, () => { setErr('ไม่สามารถเข้าถึงกล้องได้'); setCam(false); });
-  const { found: faceOk, manual } = useFaceFrame(vref, cam && !ok && !scanning && !warn && !!found, () => attempt());
+  const { found: faceOk, manual, ready } = useFaceFrame(vref, cam && !ok && !scanning && !warn && !!found, () => attempt());
   useEffect(() => { if (found) setCam(true); }, [found]);   // เปิดกล้องอัตโนมัติเมื่อพบประวัติเข้างาน
 
   const search = date => {
@@ -570,7 +588,13 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
     const r = records.find(x => x.empId === user.id && x.date === date && !x.timeOut);
     if (!r) setErr('ไม่พบประวัติค้างออกของวันที่เลือก'); else setFound(r);
   };
-  useEffect(() => { search(outDate); }, []);
+  useEffect(() => {
+    // ถ้าวันนี้ไม่มีรายการค้างออก แต่เมื่อวานมี (เช่น เวรดึก) ให้เลือกวันนั้นให้เลย
+    const y = fmtInput(new Date(now.getTime() - 864e5));
+    const open = records.filter(r => r.empId === user.id && !r.timeOut && (r.date === outDate || r.date === y)).sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (open && open.date !== outDate) setOutDate(open.date);
+    search(open ? open.date : outDate);
+  }, []);
 
   const attempt = () => {
     if (!cam) return;
@@ -606,7 +630,7 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
             <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">กะที่บันทึก</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{SHIFT_TYPES[found.shiftId]?.label}</p></div>
             <div className="text-right"><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">เข้าเมื่อ</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{displaySafeTime(found.timeIn)}</p></div>
           </div>
-          <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} label="เปิดกล้องสแกนหน้า" found={faceOk} />
+          <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} label="เปิดกล้องสแกนหน้า" found={faceOk} ready={ready} />
           {warn ? (
             <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-sm">
               <p className="text-amber-800 mb-4 text-sm font-bold">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
