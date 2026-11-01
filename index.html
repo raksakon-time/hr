@@ -133,8 +133,8 @@ function useCamera(active, onFail) {
       release(); stream = s;
       const v = ref.current;
       if (v) { v.srcObject = s; const p = v.play && v.play(); if (p && p.catch) p.catch(() => {}); }
-      // ถ้า 2.5 วินาทียังไม่มีภาพ (ภาพดำ) ให้เปิดกล้องใหม่ ลองซ้ำไม่เกิน 3 ครั้ง
-      timer = setTimeout(() => { if (!dead && ref.current && !ref.current.videoWidth && ++tries < 3) { release(); start(); } }, 2500);
+      // ถ้า 4 วินาทียังไม่มีภาพ (ภาพดำ) ให้เปิดกล้องใหม่ ลองซ้ำไม่เกิน 3 ครั้ง
+      timer = setTimeout(() => { if (!dead && ref.current && !ref.current.videoWidth && ++tries < 3) { release(); start(); } }, 4000);
     }).catch(err => { if (!dead) onFail(err); });
     start();
     return () => { dead = true; clearTimeout(timer); release(); if (ref.current) ref.current.srcObject = null; };
@@ -200,7 +200,7 @@ const loadFaceLite = () => liteReady || (liteReady = (async () => {
   await faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODELS);
   // วอร์มอัป: ตรวจภาพเปล่า 1 ครั้งเพื่อเตรียมตัวประมวลผล (ครั้งแรกช้า) ให้การสแกนจริงเร็ว
   const c = document.createElement('canvas'); c.width = c.height = 96;
-  await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }));
+  try { await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })); } catch (e) { console.warn('face warm-up', e); }
   liteDone = true;
 })().catch(e => { liteReady = null; throw e; }));
 
@@ -221,8 +221,10 @@ function useFaceFrame(vref, active, onStable) {
       setReady(true);
       while (!stop) {
         const v = vref.current;
-        if (v && v.videoWidth) {
-          const r = await faceapi.detectSingleFace(v, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }));
+        if (v && v.videoWidth && v.readyState >= 2) {   // รอให้เฟรมแรกพร้อมก่อน (ถ้าไม่รออาจเกิด error ในรอบแรก)
+          let r = null;
+          try { r = await faceapi.detectSingleFace(v, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })); }
+          catch (e) { console.warn('face detect error', e); }   // ข้ามรอบนี้ ไม่ให้การสแกนหยุดทั้งหมด
           if (stop) break;
           const b = r && r.box, W = v.videoWidth, H = v.videoHeight;
           const ok = !!b && b.width > W * .28 && Math.abs(b.x + b.width / 2 - W / 2) < W * .2 && Math.abs(b.y + b.height / 2 - H / 2) < H * .2;
