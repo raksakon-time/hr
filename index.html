@@ -13,7 +13,7 @@
 tailwind.config = { theme: { extend: {
   fontFamily: { sans: ['Sarabun', 'sans-serif'] },
   boxShadow: { soft: '0 4px 20px -2px rgba(0,0,0,0.04)', subtle: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)' },
-  colors: { primary: '#ec4899', secondary: '#fb7185', dark: '#1e293b' }
+  colors: { primary: '#db2777', secondary: '#9d174d', dark: '#1e293b' }
 } } }
 </script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -26,7 +26,7 @@ tailwind.config = { theme: { extend: {
 body { font-family: 'Sarabun', sans-serif; background: #f8fafc; -webkit-font-smoothing: antialiased; color: #1e293b; font-size: 15px; margin: 0; }
 input, select { transition: all .2s ease; }
 input[type=date], input[type=month], input[type=time] { min-width: 0; max-width: 100%; box-sizing: border-box; }
-input:focus, select:focus { outline: none; border-color: #ec4899 !important; box-shadow: 0 0 0 3px rgba(236,72,153,.2); }
+input:focus, select:focus { outline: none; border-color: #db2777 !important; box-shadow: 0 0 0 3px rgba(219,39,119,.2); }
 select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right .75rem center; background-repeat: no-repeat; background-size: 1.25em; padding-right: 2.5rem; }
 .print-show { display: none; }
 @keyframes blob { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-50px) scale(1.1); } 66% { transform: translate(-20px,20px) scale(.9); } }
@@ -100,12 +100,12 @@ const postToSheet_ = async (action, payload = {}, retries = 3) => {
     try {
       const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, payload }) });
       const data = await res.json();
-      if (data.status === 'error') Swal.fire({ title: 'แจ้งเตือน', text: data.message, icon: 'warning', confirmButtonColor: '#ec4899' });
+      if (data.status === 'error') Swal.fire({ title: 'แจ้งเตือน', text: data.message, icon: 'warning', confirmButtonColor: '#db2777' });
       return data;
     } catch (e) {
       console.warn(`การเชื่อมต่อล้มเหลวครั้งที่ ${i + 1}: ${e.message}`);
       if (i === retries - 1) {
-        Swal.fire({ title: 'ข้อผิดพลาดเครือข่าย', text: 'การเชื่อมต่อล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ตของท่าน', icon: 'error', confirmButtonColor: '#ec4899' });
+        Swal.fire({ title: 'ข้อผิดพลาดเครือข่าย', text: 'การเชื่อมต่อล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ตของท่าน', icon: 'error', confirmButtonColor: '#db2777' });
         return { status: 'error', message: e.message };
       }
       await new Promise(r => setTimeout(r, 1500));
@@ -144,8 +144,8 @@ function useCamera(active, onFail) {
 
 // ================= UI ใช้ร่วมกัน =================
 const TONE = {
-  primary: { soft: 'bg-pink-50 text-primary border-pink-100', ico: 'bg-pink-100 text-primary', text: 'text-primary', btn: 'bg-primary hover:bg-pink-600', main: 'bg-primary hover:bg-pink-600' },
-  secondary: { soft: 'bg-rose-50 text-secondary border-rose-100', ico: 'bg-rose-100 text-secondary', text: 'text-secondary', btn: 'bg-secondary hover:bg-rose-500', main: 'bg-secondary hover:bg-rose-500' }
+  primary: { soft: 'bg-pink-50 text-primary border-pink-100', ico: 'bg-pink-100 text-primary', text: 'text-primary', btn: 'bg-primary hover:bg-pink-700', main: 'bg-primary hover:bg-pink-700' },
+  secondary: { soft: 'bg-rose-50 text-secondary border-rose-100', ico: 'bg-rose-100 text-secondary', text: 'text-secondary', btn: 'bg-secondary hover:bg-pink-900', main: 'bg-secondary hover:bg-pink-900' }
 };
 const CARD = 'bg-white rounded-2xl shadow-sm border border-slate-200';
 const FIELD = 'w-full min-w-0 max-w-full p-3 sm:p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800';
@@ -164,12 +164,13 @@ const Panel = ({ tone, icon, title, children }) => (
 const ErrorBox = ({ msg }) => msg ? <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{msg}</span></div> : null;
 
 const CORNERS = ['top-0 left-0 border-t-4 border-l-4 rounded-tl-xl', 'top-0 right-0 border-t-4 border-r-4 rounded-tr-xl', 'bottom-0 left-0 border-b-4 border-l-4 rounded-bl-xl', 'bottom-0 right-0 border-b-4 border-r-4 rounded-br-xl'];
-const CameraBox = ({ active, vref, onOpen, disabled, label, found, ready, dbg }) => (
+const CameraBox = ({ active, vref, onOpen, disabled, label, found, ready, dbg, prog }) => (
   <div className={`border border-slate-200 rounded-xl h-[min(18rem,34dvh)] flex items-center justify-center overflow-hidden relative shadow-inner ${active ? 'bg-slate-900' : 'bg-slate-100'}`}>
     {active ? <>
       <video ref={vref} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
       <div className="absolute inset-8 pointer-events-none">{CORNERS.map(c => <span key={c} className={`absolute w-10 h-10 transition-colors ${c} ${found ? 'border-green-500' : 'border-white/70'}`}></span>)}</div>
-      <p className="absolute bottom-2 inset-x-0 text-center text-xs font-bold text-white drop-shadow">{!ready ? 'กำลังเตรียมระบบสแกน...' : found ? 'พบใบหน้า อยู่นิ่งสักครู่...' : 'จัดใบหน้าให้อยู่ในกรอบ'}</p>
+      <p className="absolute bottom-4 inset-x-0 text-center"><span className="inline-block bg-black/60 text-white text-sm font-bold rounded-full px-4 py-1.5">{!ready ? 'กำลังเตรียมระบบสแกน...' : found ? 'พบใบหน้า อยู่นิ่งสักครู่...' : 'จัดใบหน้าให้อยู่ในกรอบ'}</span></p>
+      <div className="absolute bottom-0 inset-x-0 h-1.5 bg-white/30"><div className="h-full bg-green-400 transition-all" style={{ width: `${Math.round((prog || 0) * 100)}%` }}></div></div>
       {FACE_DEBUG && dbg && <p className="absolute top-1 inset-x-0 text-center text-[10px] font-mono text-yellow-300 drop-shadow">{dbg}</p>}
     </> : <button onClick={onOpen} disabled={disabled} className="flex flex-col items-center text-slate-400 hover:text-slate-600 transition-colors">
       <i className="fa-solid fa-camera text-4xl mb-3"></i><span className="text-sm font-semibold">{label}</span>
@@ -210,10 +211,10 @@ const loadFaceLite = () => liteReady || (liteReady = (async () => {
 // ใบหน้าอยู่กลางกรอบ -> คืน true (กรอบเขียว) และถ้าอยู่นิ่งต่อเนื่อง เรียก onStable ครั้งเดียวเพื่อบันทึกอัตโนมัติ
 // ถ้าตัวตรวจใบหน้าโหลดไม่ได้จะไม่ทำอะไร ผู้ใช้กดปุ่มยืนยันเองได้ตามเดิม
 function useFaceFrame(vref, active, onStable) {
-  const [found, setFound] = useState(false), [manual, setManual] = useState(false), [ready, setReady] = useState(liteDone), [dbg, setDbg] = useState(''), cb = useRef(onStable);
+  const [found, setFound] = useState(false), [manual, setManual] = useState(false), [ready, setReady] = useState(liteDone), [dbg, setDbg] = useState(''), [prog, setProg] = useState(0), cb = useRef(onStable);
   cb.current = onStable;
   useEffect(() => {
-    if (!active) { setFound(false); setManual(false); return; }
+    if (!active) { setFound(false); setManual(false); setProg(0); return; }
     let stop = false, hits = 0, since = 0, n = 0, lastErr = '';
     const t = setTimeout(() => setManual(true), 20000);
     (async () => {
@@ -236,6 +237,7 @@ function useFaceFrame(vref, active, onStable) {
           if (FACE_DEBUG) setDbg(`${W}x${H} rs${v.readyState} #${n} ${Math.round(performance.now() - t0)}ms ` + (b ? `หน้า w${Math.round(b.width / W * 100)}% x${Math.round((b.x + b.width / 2) / W * 100)}% y${Math.round((b.y + b.height / 2) / H * 100)}%` : 'ไม่พบหน้า') + (lastErr ? ' ERR:' + lastErr : ''));
           hits = ok ? hits + 1 : 0;
           if (!ok) since = 0; else if (!since) since = performance.now();
+          setProg(ok ? Math.min(1, (performance.now() - since) / FACE_HOLD_MS) : 0);
           setFound(hits >= 1);
           if (hits >= 4 && performance.now() - since >= FACE_HOLD_MS) { stop = true; cb.current(); break; }
         } else if (FACE_DEBUG) setDbg('รอวิดีโอ ' + (v ? v.videoWidth + 'x' + v.videoHeight + ' rs' + v.readyState : 'ไม่มี element'));
@@ -244,7 +246,7 @@ function useFaceFrame(vref, active, onStable) {
     })();
     return () => { stop = true; clearTimeout(t); };
   }, [active]);
-  return { found, manual: MANUAL_FALLBACK && manual, ready, dbg };
+  return { found, manual: MANUAL_FALLBACK && manual, ready, dbg, prog };
 }
 
 // ================= ธีมเทศกาล (แถบสีชมพูด้านบน) =================
@@ -254,7 +256,7 @@ const FESTIVAL_PREVIEW = '';   // ใส่ key เช่น 'halloween' เพ�
 // แต่ละเทศกาลมีพื้นหลัง 3 แบบ x ชุดอีโมจิ 4 ชุด หมุนตามปี (ปีไม่ซ้ำกัน 12 ปี) ไม่ต้องแก้ไฟล์ทุกปี
 const FESTIVALS = [
   { key: 'valentine', from: '02-12', to: '02-14', greet: 'Happy Valentine',
-    bgs: [['#ec4899', '#e11d48'], ['#be185d', '#7c3aed'], ['#e11d48', '#f59e0b']],
+    bgs: [['#db2777', '#e11d48'], ['#be185d', '#7c3aed'], ['#e11d48', '#f59e0b']],
     decos: ['💖 💌 🌹 💕 💖', '🌷 💘 🍫 💝 💖', '🧸 💞 🌹 🎀 💗', '💍 💓 💐 💕 🥰'] },
   { key: 'songkran', from: '04-13', to: '04-15', greet: 'สุขสันต์วันสงกรานต์',
     bgs: [['#0ea5e9', '#14b8a6'], ['#0369a1', '#22d3ee'], ['#0d9488', '#facc15']],
@@ -275,7 +277,7 @@ const FESTIVALS = [
     bgs: [['#b91c1c', '#15803d'], ['#1e3a8a', '#b91c1c'], ['#065f46', '#b45309']],
     decos: ['🎄 ⛄ 🎁 ❄️ 🎄', '🎅 🔔 ⭐ 🎁 🦌', '🤶 🍪 🎄 ❄️ 🕯️', '🧦 🎁 ⛄ ✨ 🎄'] },
   { key: 'newyear', from: '12-29', to: '01-02', greet: 'สุขสันต์วันปีใหม่',
-    bgs: [['#1d4ed8', '#7c3aed'], ['#0f172a', '#f59e0b'], ['#7c3aed', '#ec4899']],
+    bgs: [['#1d4ed8', '#7c3aed'], ['#0f172a', '#f59e0b'], ['#7c3aed', '#db2777']],
     decos: ['🎆 🎉 ✨ 🥂 🎆', '🎇 🎶 ✨ 🎊 🥳', '🧨 🎉 🎆 🍾 ✨', '🕛 🎊 ✨ 🎆 🥂'] }
 ];
 const festivalFor = d => {
@@ -294,7 +296,7 @@ const festivalFor = d => {
 // ================= App =================
 function App() {
   const [user, setUser] = useState(null), [tab, setTab] = useState('home'), [imgErr, setImgErr] = useState(false), [formOpen, setFormOpen] = useState(false);
-  const [now, setNow] = useState(new Date()), [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(new Date()), [loading, setLoading] = useState(true), [syncedAt, setSyncedAt] = useState(null);
   const [records, setRecords] = useState([]), [employees, setEmployees] = useState({}), [schedules, setSchedules] = useState({});
   const [settings, setSettings] = useState({ standardWorkDays: {} });
 
@@ -309,6 +311,7 @@ function App() {
     setEmployees(d.employees || {}); setRecords(d.records || []); setSchedules(d.schedules || {});
     if (d.settings) setSettings(d.settings);
     verRef.current = d.version;
+    setSyncedAt(new Date());
   };
   const quiet = async action => { // เรียกแบบเงียบ ไม่เด้งแจ้งเตือนเมื่อเน็ตสะดุด
     try {
@@ -326,7 +329,7 @@ function App() {
         const r = await quiet('getInitialData');
         // ถ้ามีการบันทึกเกิดขึ้นระหว่างดึง ให้ทิ้งผลนี้ (รอบถัดไปจะดึงใหม่)
         if (r?.status === 'success' && pendingWrites === 0 && seq === writeSeq) applyData(r.data);
-      }
+      } else if (v?.status === 'success') setSyncedAt(new Date());   // ข้อมูลเป็นปัจจุบันแล้ว
     } finally { syncing = false; }
   };
 
@@ -378,7 +381,7 @@ function App() {
           <button onClick={logout} className="text-white/90 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors"><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i></button>
         </header>
         <main className={`flex-grow px-4 sm:px-6 lg:px-8 ${compact ? 'mt-1' : 'mt-4'}`}>
-          {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} onForm={setFormOpen} />}
+          {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} onForm={setFormOpen} syncedAt={syncedAt} />}
           {tab === 'calendar' && <MyCalendarView user={user} schedules={schedules} />}
           {tab === 'history' && <MyHistoryView user={user} records={records} schedules={schedules} settings={settings} now={now} />}
           {tab === 'manager' && isManager && (typeof ReportView !== 'undefined'
@@ -396,7 +399,7 @@ function App() {
           {tabs.map(([k, ico, label]) => (
             <button key={k} onClick={() => setTab(k)} className={`flex flex-col items-center justify-center w-full py-3 gap-1 transition-colors ${tab === k ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}>
               <i className={`${ico} text-lg ${tab === k ? 'scale-110 transition-transform' : ''}`}></i>
-              <span className="text-[10px] font-semibold">{label}</span>
+              <span className="text-xs font-semibold">{label}</span>
             </button>
           ))}
         </div>
@@ -409,7 +412,7 @@ function App() {
 function LoginView({ employees, onLogin }) {
   const [empId, setEmpId] = useState(''), [password, setPassword] = useState(''), [needsPw, setNeedsPw] = useState(false), [err, setErr] = useState('');
   const inputCls = 'w-full pl-12 pr-4 py-4 border-2 border-slate-100 rounded-2xl bg-white/50 outline-none text-slate-800 font-bold focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-inner';
-  const grad = 'bg-gradient-to-r from-primary to-secondary hover:from-pink-600 hover:to-rose-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2';
+  const grad = 'bg-primary hover:bg-pink-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2';
 
   const next = e => {
     e?.preventDefault(); setErr('');
@@ -425,16 +428,11 @@ function LoginView({ employees, onLogin }) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none flex justify-center items-center">
-        <div className="absolute -top-20 -left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute top-40 -right-20 w-72 h-72 bg-rose-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute -bottom-20 left-20 w-72 h-72 bg-fuchsia-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" style={{ animationDelay: '4s' }}></div>
-      </div>
-      <div className="w-full max-w-md bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/60 p-8 sm:p-10 text-center relative z-10">
-        <div className="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-pink-500/30 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-soft border border-slate-200 p-8 sm:p-10 text-center relative z-10">
+        <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-pink-500/30 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
           <i className="fa-solid fa-fingerprint text-4xl text-white"></i>
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">รักษ์สกล <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Time</span></h1>
+        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">รักษ์สกล <span className="text-primary">Time</span></h1>
         <p className="text-slate-500 text-sm font-medium mb-8">เข้าสู่ระบบเพื่อปฏิบัติงาน</p>
         {err && <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-sm border border-red-100 flex items-center justify-center gap-2 font-bold shadow-sm"><i className="fa-solid fa-circle-exclamation text-lg"></i>{err}</div>}
         <form onSubmit={next} className="space-y-5 text-left">
@@ -467,10 +465,19 @@ function LoginView({ employees, onLogin }) {
 }
 
 // ================= หน้าลงเวลา =================
-function ActionPanelView({ user, now, records, setRecords, schedules, avatar, setTab, onForm }) {
+function ActionPanelView({ user, now, records, setRecords, schedules, avatar, setTab, onForm, syncedAt }) {
   const [type, setType] = useState(null);
   useEffect(() => { onForm(!!type); return () => onForm(false); }, [type]);
   const fest = festivalFor(now);
+  // ป้ายสถานะของวันนี้
+  const today = fmtInput(now), yest = fmtInput(new Date(now.getTime() - 864e5));
+  const open = records.find(r => r.empId === user.id && !r.timeOut && (r.date === today || (now.getHours() <= 8 && r.date === yest)));
+  const last = !open && records.filter(r => r.empId === user.id && r.date === today && r.timeOut).sort((a, b) => b.id.localeCompare(a.id))[0];
+  const todayShifts = shiftsOf(schedules, today, user.id).filter(s => SHIFT_TYPES[s]);
+  const chip = open ? ['green', `เข้างานแล้ว ${displaySafeTime(open.timeIn)} · กะ ${SHIFT_TYPES[open.shiftId]?.label || open.shiftId}`]
+    : last ? ['slate', `ออกงานแล้ว ${displaySafeTime(last.timeOut)}`]
+    : todayShifts.length ? ['amber', `วันนี้เวร ${todayShifts.join(', ')} · ยังไม่ได้ลงเวลา`] : ['slate', 'วันนี้ไม่มีเวร'];
+  const CHIP_CLS = { green: 'bg-emerald-100 text-emerald-800', amber: 'bg-amber-100 text-amber-800', slate: 'bg-slate-100 text-slate-700' };
   if (!type) return (
     <div className="max-w-md mx-auto flex flex-col items-center mt-4">
       <div className="relative mb-3 shrink-0">
@@ -482,7 +489,8 @@ function ActionPanelView({ user, now, records, setRecords, schedules, avatar, se
       <h2 className="text-xl font-bold text-slate-800">{user.fname} {user.lname}</h2>
       <p className="text-sm text-slate-500 mb-8 font-medium">แผนก{user.dept}</p>
       <div className="text-7xl leading-none font-medium text-primary tracking-tighter mb-2 font-mono">{formatTime24(now)}</div>
-      <p className="text-sm font-semibold text-slate-500 mb-12">{formatFullThaiDate(now)}</p>
+      <p className="text-sm font-semibold text-slate-500 mb-3">{formatFullThaiDate(now)}</p>
+      <div className={`text-sm font-bold px-4 py-1.5 rounded-full mb-8 text-center ${CHIP_CLS[chip[0]]}`}>{chip[1]}</div>
       <div className="flex gap-4 w-full px-4 mb-5">
         <button onClick={() => setType('in')} className="flex-1 bg-primary text-white py-4 rounded-2xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all text-sm tracking-wide">ลงเวลาเข้า</button>
         <button onClick={() => setType('out')} className="flex-1 bg-secondary text-white py-4 rounded-2xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all text-sm tracking-wide">ลงเวลาออก</button>
@@ -490,6 +498,7 @@ function ActionPanelView({ user, now, records, setRecords, schedules, avatar, se
       <div className="w-full px-4">
         <button onClick={() => setTab('history')} className="w-full bg-white border shadow-sm border-slate-200 text-slate-600 py-3.5 rounded-2xl font-semibold hover:bg-slate-50 transition-colors text-sm tracking-wide">ประวัติการลงเวลา</button>
       </div>
+      <p className="mt-4 text-xs text-slate-500">ข้อมูลอัปเดตล่าสุด {syncedAt ? formatTime24(syncedAt) + ' น.' : '-'}</p>
     </div>
   );
   const props = { user, now, records, setRecords, onDone: () => setType(null) };
@@ -507,7 +516,7 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
   const vref = useCamera(cam && !result && loc === 'ok', () => { setErr('ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาต'); setCam(false); });
   const already = shift && records.some(r => r.empId === user.id && r.date === resolveTarget(now, schedules, user.id, shift).date && r.shiftId === shift);
   const canGo = cam && loc === 'ok' && valid.length > 0 && !already;
-  const { found: faceOk, manual, ready, dbg } = useFaceFrame(vref, canGo && !scanning && !result, () => handleClockIn());
+  const { found: faceOk, manual, ready, dbg, prog } = useFaceFrame(vref, canGo && !scanning && !result, () => handleClockIn());
   // เปิดกล้องอัตโนมัติเมื่อพิกัดผ่านและมีกะเดียว (ถ้ามีหลายกะ ให้เลือกกะก่อนแล้วกดเปิดกล้อง)
   useEffect(() => { if (loc === 'ok' && valid.length === 1 && !already) setCam(true); }, [loc, valid.length, already]);
 
@@ -559,7 +568,7 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
       isLate, lateMinutes: isLate ? actual - dl : 0, credit: sd.credit, lat: pos?.lat, lon: pos?.lon, photoBase64 };
     const res = await sendToGoogleSheet('clockIn', rec, 3);
     if (res?.status === 'success') { setRecords([...records, rec]); setResult({ ...rec, shiftName: sd.label }); }
-    else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#ec4899' });
+    else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#db2777' });
     setScanning(false); setCam(false);
   };
 
@@ -578,9 +587,9 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
       <div className={`p-3 rounded-lg flex items-center gap-2 text-sm border font-medium ${locCls}`}>
         {loc === 'ok' ? <><i className="fa-solid fa-location-dot"></i> พิกัดถูกต้อง</> : loc === 'error' ? <><i className="fa-solid fa-location-xmark"></i> {err || 'พิกัดอยู่นอกพื้นที่'}</> : <><i className="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบพิกัด...</>}
       </div>
-      <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" found={faceOk} ready={ready} dbg={dbg} />
+      <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} />
       {scanning && <p className="text-center text-sm font-bold text-primary">กำลังบันทึก...</p>}
-      {manual && canGo && !scanning && <button onClick={handleClockIn} className="w-full p-3 rounded-xl font-bold text-sm text-white bg-primary hover:bg-pink-600 shadow-md">สแกนไม่ติด? กดบันทึกเข้างานเอง</button>}
+      {manual && canGo && !scanning && <button onClick={handleClockIn} className="w-full p-3 rounded-xl font-bold text-sm text-white bg-primary hover:bg-pink-700 shadow-md">สแกนไม่ติด? กดบันทึกเข้างานเอง</button>}
     </Panel>
   );
 }
@@ -589,7 +598,7 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
   const [outDate, setOutDate] = useState(fmtInput(now)), [found, setFound] = useState(null), [err, setErr] = useState('');
   const [cam, setCam] = useState(false), [scanning, setScanning] = useState(false), [warn, setWarn] = useState(false), [ok, setOk] = useState(null);
   const vref = useCamera(cam && !ok, () => { setErr('ไม่สามารถเข้าถึงกล้องได้'); setCam(false); });
-  const { found: faceOk, manual, ready, dbg } = useFaceFrame(vref, cam && !ok && !scanning && !warn && !!found, () => attempt());
+  const { found: faceOk, manual, ready, dbg, prog } = useFaceFrame(vref, cam && !ok && !scanning && !warn && !!found, () => attempt());
   useEffect(() => { if (found) setCam(true); }, [found]);   // เปิดกล้องอัตโนมัติเมื่อพบประวัติเข้างาน
 
   const search = date => {
@@ -620,7 +629,7 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
     const timeOut = formatTime24(now);
     const res = await sendToGoogleSheet('clockOut', { id: found.id, timeOut, photoBase64 }, 3);
     if (res?.status === 'success') { setRecords(records.map(r => r.id === found.id ? { ...r, timeOut } : r)); setOk({ timeOut, shiftName: SHIFT_TYPES[found.shiftId]?.label }); }
-    else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#fb7185' });
+    else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#9d174d' });
     setScanning(false); setCam(false);
   };
 
@@ -636,10 +645,10 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
       {!found ? <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-400 text-sm font-medium">ไม่พบประวัติเข้างานของวันที่เลือก</div> : (
         <div className="space-y-5">
           <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between items-center">
-            <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">กะที่บันทึก</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{SHIFT_TYPES[found.shiftId]?.label}</p></div>
-            <div className="text-right"><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">เข้าเมื่อ</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{displaySafeTime(found.timeIn)}</p></div>
+            <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wider">กะที่บันทึก</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{SHIFT_TYPES[found.shiftId]?.label}</p></div>
+            <div className="text-right"><p className="text-xs font-bold text-slate-500 uppercase tracking-wider">เข้าเมื่อ</p><p className="font-semibold text-slate-800 mt-0.5 text-sm">{displaySafeTime(found.timeIn)}</p></div>
           </div>
-          <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} label="เปิดกล้องสแกนหน้า" found={faceOk} ready={ready} dbg={dbg} />
+          <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} label="เปิดกล้องสแกนหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} />
           {warn ? (
             <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-sm">
               <p className="text-amber-800 mb-4 text-sm font-bold">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
@@ -651,7 +660,7 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
           ) : (
             <>
               {scanning && <p className="text-center text-sm font-bold text-secondary">กำลังบันทึก...</p>}
-              {manual && cam && !scanning && <button onClick={attempt} className="w-full p-3 rounded-xl font-bold text-sm text-white bg-secondary hover:bg-rose-500 shadow-md">สแกนไม่ติด? กดบันทึกออกงานเอง</button>}
+              {manual && cam && !scanning && <button onClick={attempt} className="w-full p-3 rounded-xl font-bold text-sm text-white bg-secondary hover:bg-pink-900 shadow-md">สแกนไม่ติด? กดบันทึกออกงานเอง</button>}
             </>
           )}
         </div>
@@ -740,10 +749,10 @@ function MyHistoryView({ user, records, schedules, settings, now }) {
         <div className="shrink-0">
           <p className="text-white/80 text-xs uppercase tracking-wider mb-1 font-bold">เครดิตเวร</p>
           <p className="text-4xl font-semibold tracking-tight leading-none">{f(credit)}</p>
-          <p className="text-white/70 text-[10px] mt-1">รวมเวรล่วงหน้าและลา · วันทำการ {workDays}</p>
+          <p className="text-white/70 text-xs mt-1">รวมเวรล่วงหน้าและลา · วันทำการ {workDays}</p>
         </div>
         <div className="grid grid-cols-3 gap-2 flex-1">{stats.map(([l, v, sub]) => (
-          <div key={l} className="bg-white/15 rounded-lg px-2.5 py-1.5"><p className="text-[10px] font-bold text-white/80">{l}</p><p className="text-lg font-bold leading-tight">{v}</p>{sub && <p className="text-[9px] text-white/80">{sub}</p>}</div>))}
+          <div key={l} className="bg-white/15 rounded-lg px-2.5 py-1.5"><p className="text-xs font-bold text-white/80">{l}</p><p className="text-lg font-bold leading-tight">{v}</p>{sub && <p className="text-[11px] text-white/80">{sub}</p>}</div>))}
         </div>
       </div>
       <div className={`${CARD} overflow-hidden`}>
@@ -757,7 +766,7 @@ function MyHistoryView({ user, records, schedules, settings, now }) {
                 <div className="text-center sm:text-left min-w-[65px]">
                   <span className="block text-xs font-bold text-slate-400 mb-0.5">{formatDisplayDate(r.date).slice(0, 5)}</span>
                   <span className="block font-bold text-slate-800">{r.shiftId}</span>
-                  {st && <span className="block text-[10px] text-slate-500 font-medium leading-none mt-0.5">{st.start}-{st.end}</span>}
+                  {st && <span className="block text-xs text-slate-500 font-medium leading-none mt-0.5">{st.start}-{st.end}</span>}
                 </div>
                 <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
                 <div className="flex items-center gap-3 text-sm">
@@ -850,7 +859,7 @@ const ModalHead = ({ title, onClose }) => (
 const Actions = ({ onCancel, onOk, okText, disabled }) => (
   <div className="flex gap-2 pt-3">
     <button onClick={onCancel} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors">ยกเลิก</button>
-    <button onClick={onOk} disabled={disabled} className="flex-1 p-3 bg-primary hover:bg-pink-600 text-white rounded-xl font-bold text-sm transition-colors">{okText}</button>
+    <button onClick={onOk} disabled={disabled} className="flex-1 p-3 bg-primary hover:bg-pink-700 text-white rounded-xl font-bold text-sm transition-colors">{okText}</button>
   </div>
 );
 const ShiftSelect = ({ dept, leave, value, onChange, empty, cls = 'w-full p-2.5 rounded-xl border border-slate-300 font-semibold bg-white focus:border-primary' }) => (
@@ -992,7 +1001,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
     const res = await sendToGoogleSheet('saveSettings', { standardWorkDays: localWorkDays, monthYear: matrixMonth });
     if (res?.status === 'success') { setSettings({ ...settings, standardWorkDays: { ...settings.standardWorkDays, [matrixMonth]: localWorkDays } }); info('บันทึกวันทำการสำเร็จ'); }
   };
-  const okToast = text => Swal.fire({ icon: 'success', title: 'สำเร็จ!', text, confirmButtonColor: '#ec4899', timer: 2000, showConfirmButton: false });
+  const okToast = text => Swal.fire({ icon: 'success', title: 'สำเร็จ!', text, confirmButtonColor: '#db2777', timer: 2000, showConfirmButton: false });
 
   const saveEdit = async () => {
     setSaving(true);
@@ -1259,7 +1268,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
           <div className="mt-4 flex items-center gap-3 text-sm bg-pink-50 p-3 rounded-xl border border-pink-100 w-fit">
             <span className="text-primary font-bold"><i className="fa-solid fa-gear mr-2"></i>วันทำการปกติ:</span>
             <input type="number" min="0" value={localWorkDays} onChange={e => setLocalWorkDays(Number(e.target.value))} className="w-16 p-1.5 border border-pink-200 rounded-lg text-center font-bold bg-white text-slate-800" />
-            <button onClick={saveSettings} className="px-3 py-1.5 bg-primary hover:bg-pink-600 text-white rounded-lg text-xs font-bold transition-colors">บันทึก</button>
+            <button onClick={saveSettings} className="px-3 py-1.5 bg-primary hover:bg-pink-700 text-white rounded-lg text-xs font-bold transition-colors">บันทึก</button>
           </div>
         )}
       </div>
