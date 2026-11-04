@@ -156,12 +156,13 @@ const Panel = ({ children }) => <div className="space-y-3 animate-fade-in">{chil
 const ErrorBox = ({ msg }) => msg ? <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{msg}</span></div> : null;
 
 const CORNERS = ['top-0 left-0 border-t-4 border-l-4 rounded-tl-xl', 'top-0 right-0 border-t-4 border-r-4 rounded-tr-xl', 'bottom-0 left-0 border-b-4 border-l-4 rounded-bl-xl', 'bottom-0 right-0 border-b-4 border-r-4 rounded-br-xl'];
-const CameraBox = ({ active, vref, onOpen, disabled, label, found, ready, dbg, prog }) => (
+const CameraBox = ({ active, vref, onOpen, disabled, label, found, ready, dbg, prog, saving }) => (
   <div className={`border border-slate-200 rounded-xl h-[min(18rem,34dvh)] flex items-center justify-center overflow-hidden relative shadow-inner ${active ? 'bg-slate-900' : 'bg-slate-100'}`}>
     {active ? <>
       <video ref={vref} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
       <div className="absolute inset-8 pointer-events-none">{CORNERS.map(c => <span key={c} className={`absolute w-10 h-10 transition-colors ${c} ${found ? 'border-green-500' : 'border-white/70'}`}></span>)}</div>
       <p className="absolute bottom-4 inset-x-0 text-center"><span className="inline-block bg-black/60 text-white text-sm font-bold rounded-full px-4 py-1.5">{!ready ? 'กำลังเตรียมระบบสแกน...' : found ? 'พบใบหน้า อยู่นิ่งสักครู่...' : 'จัดใบหน้าให้อยู่ในกรอบ'}</span></p>
+      {saving && <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-3 text-white"><div className="w-14 h-14 rounded-full border-4 border-white/30 border-t-white animate-spin"></div><p className="text-base font-bold">กำลังบันทึก...</p></div>}
       {FACE_DEBUG && dbg && <p className="absolute top-1 inset-x-0 text-center text-[10px] font-mono text-yellow-300 drop-shadow">{dbg}</p>}
     </> : <button onClick={onOpen} disabled={disabled} className="flex flex-col items-center text-slate-400 hover:text-slate-600 transition-colors">
       <i className="fa-solid fa-camera text-4xl mb-3"></i><span className="text-sm font-semibold">{label}</span>
@@ -173,8 +174,8 @@ const ScanHint = ({ cam, prog, scanning, color }) => {
   const pct = Math.round((prog || 0) * 100);
   return (
     <div className="space-y-2">
-      <div className="flex justify-between text-sm font-semibold text-slate-600"><span>{scanning ? 'กำลังบันทึก...' : 'บันทึกอัตโนมัติเมื่อใบหน้านิ่งในกรอบ'}</span><span>{cam ? (scanning ? 100 : pct) + '%' : ''}</span></div>
-      <div className="h-2 rounded bg-pink-100 overflow-hidden"><div className={`h-2 rounded transition-all ${color}`} style={{ width: (scanning ? 100 : pct) + '%' }}></div></div>
+      <div className="flex justify-between text-sm font-semibold text-slate-600"><span>{scanning ? 'กำลังบันทึก...' : 'บันทึกอัตโนมัติเมื่อใบหน้านิ่งในกรอบ'}</span><span>{cam && !scanning ? pct + '%' : ''}</span></div>
+      {!scanning && <div className="h-2 rounded bg-pink-100 overflow-hidden"><div className={`h-2 rounded transition-all ${color}`} style={{ width: pct + '%' }}></div></div>}
       <p className="text-sm text-slate-600 leading-relaxed">มองตรงที่กล้อง ถอดหน้ากากและแว่นกันแดดชั่วคราว ถ้าสแกนไม่ติดนาน ปุ่ม "กดบันทึกเอง" จะปรากฏให้</p>
     </div>
   );
@@ -602,7 +603,7 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
           {loc === 'ok' ? <><i className="fa-solid fa-location-dot"></i> พิกัดถูกต้อง · อยู่ในพื้นที่โรงพยาบาล</> : loc === 'error' ? <><i className="fa-solid fa-location-xmark"></i> {err || 'พิกัดอยู่นอกพื้นที่'}</> : <><i className="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบพิกัด...</>}
         </div>
       </div>
-      <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} />
+      <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} saving={scanning} />
       <ScanHint cam={cam} prog={prog} scanning={scanning} color="bg-primary" />
       {manual && canGo && !scanning && <button onClick={handleClockIn} className="w-full p-3 rounded-xl font-bold text-sm text-white bg-primary hover:bg-pink-700 shadow-md">สแกนไม่ติด? กดบันทึกเข้างานเอง</button>}
     </Panel>
@@ -668,7 +669,7 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
       </div>
       {!found ? <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 text-sm font-medium">ไม่พบประวัติเข้างานของวันที่เลือก</div> : (
         <div className="space-y-3">
-          <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} label="เปิดกล้องสแกนหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} />
+          <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} label="เปิดกล้องสแกนหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} saving={scanning} />
           <ScanHint cam={cam} prog={prog} scanning={scanning} color="bg-secondary" />
           {warn ? (
             <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-sm">
@@ -690,52 +691,60 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
 }
 
 // ================= ตารางเวร / ประวัติ =================
+const PageTitle = ({ sub, title, right }) => (
+  <div className="flex items-center justify-between gap-3 text-white mb-3">
+    <div><p className="text-sm font-semibold">{sub}</p><h2 className="text-[22px] font-bold leading-tight">{title}</h2></div>
+    {right}
+  </div>
+);
+
 function MyCalendarView({ user, schedules }) {
-  const [cur, setCur] = useState(new Date()), [sel, setSel] = useState(null);
+  const [cur, setCur] = useState(new Date()), [sel, setSel] = useState(fmtInput(new Date()));
   const y = cur.getFullYear(), m = cur.getMonth(), todayStr = fmtInput(new Date());
   const blanks = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
   const isLeave = s => NON_WORK.includes(s);
+  const selShifts = shiftsOf(schedules, sel, user.id), selLeaveTime = schedules[sel]?.[user.id]?.leaveTime || '';
+  const arrow = 'w-11 h-11 rounded-full bg-pink-50 text-pink-900 hover:bg-pink-100 flex items-center justify-center transition-colors';
   return (
-    <div className="max-w-3xl mx-auto space-y-4 mt-2">
-      <div className={`${CARD} p-4 sm:p-5 flex items-center justify-between`}>
-        <button onClick={() => setCur(new Date(y, m - 1, 1))} className="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors"><i className="fa-solid fa-chevron-left text-sm"></i></button>
-        <h2 className="text-lg font-bold text-slate-800">{THAI_MONTHS[m]} {y + 543}</h2>
-        <button onClick={() => setCur(new Date(y, m + 1, 1))} className="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors"><i className="fa-solid fa-chevron-right text-sm"></i></button>
+    <div className="max-w-md mx-auto space-y-3">
+      <PageTitle sub={`แผนก${user.dept}`} title="ตารางเวรของฉัน" />
+      <div className={`${CARD} px-3 py-2 flex items-center justify-between shadow-soft`}>
+        <button aria-label="เดือนก่อนหน้า" onClick={() => setCur(new Date(y, m - 1, 1))} className={arrow}><i className="fa-solid fa-chevron-left"></i></button>
+        <h3 className="text-lg font-bold text-slate-800">{THAI_MONTHS[m]} {y + 543}</h3>
+        <button aria-label="เดือนถัดไป" onClick={() => setCur(new Date(y, m + 1, 1))} className={arrow}><i className="fa-solid fa-chevron-right"></i></button>
       </div>
-      <div className={`${CARD} p-4 sm:p-5`}>
-        <div className="grid grid-cols-7 gap-2 mb-3 border-b border-slate-100 pb-2">
-          {['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map((d, i) => <div key={d} className={`text-center text-xs font-bold py-1 ${i === 0 || i === 6 ? 'text-rose-500' : 'text-slate-500'}`}>{d}</div>)}
+      <div className={`${CARD} p-2`}>
+        <div className="grid grid-cols-7 gap-1 mb-1">
+          {['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map((d, i) => <div key={d} className={`text-center text-xs font-bold py-1 ${i === 0 || i === 6 ? 'text-pink-700' : 'text-slate-600'}`}>{d}</div>)}
         </div>
-        <div className="grid grid-cols-7 gap-1 sm:gap-2">
-          {Array.from({ length: blanks }, (_, i) => <div key={`b${i}`} className="min-h-[70px]"></div>)}
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: blanks }, (_, i) => <div key={`b${i}`}></div>)}
           {Array.from({ length: days }, (_, i) => i + 1).map(day => {
             const dateStr = ymd(y, m + 1, day), dayShifts = schedules[dateStr]?.[user.id]?.shifts || [];
             const today = dateStr === todayStr, wk = [0, 6].includes(new Date(y, m, day).getDay());
             return (
-              <div key={day} onClick={() => setSel({ day, dayShifts })} className={`relative flex flex-col p-1.5 sm:p-2 min-h-[60px] sm:min-h-[70px] rounded-xl cursor-pointer border transition-all ${today ? 'bg-pink-50 border-pink-300 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'} ${wk && !today ? 'bg-rose-50/30' : ''}`}>
-                <span className={`text-[10px] sm:text-xs font-bold mb-1 ${today ? 'text-primary' : wk ? 'text-rose-500' : 'text-slate-600'}`}>{day}</span>
-                <div className="flex flex-col gap-1 w-full overflow-hidden">
-                  {dayShifts.map((s, k) => <span key={k} className={`text-[9px] sm:text-[10px] font-bold px-1 py-0.5 rounded text-center truncate border ${isLeave(s) ? 'bg-slate-100 text-slate-600 border-slate-300' : 'bg-white text-slate-800 border-slate-300 shadow-sm'}`}>{s}</span>)}
-                </div>
-              </div>
+              <button key={day} onClick={() => setSel(dateStr)} className={`min-h-[48px] rounded-lg text-xs text-slate-600 flex flex-col items-center gap-0.5 py-1 px-0.5 ${today ? 'bg-pink-50 outline outline-2 outline-pink-600' : dateStr === sel ? 'bg-white ring-2 ring-pink-300' : 'bg-slate-50'}`}>
+                <span className={wk ? 'text-pink-700 font-bold' : ''}>{day}</span>
+                {dayShifts.slice(0, 2).map((s, k) => <b key={k} className={`max-w-full truncate leading-tight ${s === 'Off' ? 'text-xs text-slate-500 font-semibold' : isLeave(s) ? 'text-xs text-amber-800 bg-amber-100 rounded px-1' : 'text-[13px] text-slate-900'}`}>{s}</b>)}
+              </button>
             );
           })}
         </div>
       </div>
-      {sel && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in" onClick={() => setSel(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft overflow-hidden border border-slate-200" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50"><h3 className="font-bold text-slate-800">เวรวันที่ {sel.day} {THAI_MONTHS[m]} {y + 543}</h3><button onClick={() => setSel(null)} className="text-slate-400 hover:text-slate-800"><i className="fa-solid fa-xmark"></i></button></div>
-            <div className="p-6 space-y-3">
-              {sel.dayShifts.length ? sel.dayShifts.map((s, i) => (
-                <div key={i} className={`border rounded-xl p-4 flex justify-between items-center ${isLeave(s) ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <span className="font-bold text-slate-800 text-lg">{s}</span><span className="text-slate-500 text-sm font-medium">{SHIFT_TYPES[s]?.label || 'ไม่ระบุเวลา'}</span>
-                </div>
-              )) : <div className="text-center py-6 text-slate-400 text-sm font-medium">ไม่มีกะเวรในวันนี้</div>}
+      <div className={`${CARD} p-3 space-y-2 shadow-soft`}>
+        <p className="text-xs text-slate-500 font-semibold">{sel === todayStr ? 'วันนี้ · ' : ''}{formatFullThaiDate(new Date(sel + 'T00:00:00'))}</p>
+        {selShifts.length ? selShifts.map((s, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className={`w-11 h-11 shrink-0 rounded-lg text-xl font-bold flex items-center justify-center ${isLeave(s) ? 'bg-amber-100 text-amber-900 text-sm' : 'bg-pink-100 text-pink-900'}`}>{isLeave(s) ? 'ลา' : s}</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[17px] font-bold text-slate-800 leading-tight">{SHIFT_TYPES[s] ? `${SHIFT_TYPES[s].start.replace(':', '.')} - ${SHIFT_TYPES[s].end.replace(':', '.')} น.` : s}</p>
+              {s === 'ลาชั่วโมง' && selLeaveTime && <p className="text-xs text-slate-500">ช่วงเวลาที่ลา {selLeaveTime.split(';').map(x => x.replace(/-/g, ' - ')).join(', ')} น.</p>}
             </div>
+            {SHIFT_TYPES[s] && <span className="text-xs font-bold text-emerald-800 bg-emerald-100 rounded-full px-2.5 py-1">เครดิต {SHIFT_TYPES[s].credit}</span>}
           </div>
-        </div>
-      )}
+        )) : <p className="text-sm font-semibold text-slate-500 py-2">ไม่มีเวรในวันนี้</p>}
+      </div>
+      <p className="text-xs text-slate-500 pb-2">ช เวรปกติ · Off วันหยุด · <span className="text-amber-800 font-bold">พักร้อน/ลา</span> · แตะวันเพื่อดูรายละเอียด</p>
     </div>
   );
 }
@@ -757,52 +766,42 @@ function MyHistoryView({ user, records, schedules, settings, now }) {
     sched.filter(s => !worked.includes(s)).forEach(s => { credit += ds >= today ? creditOf(s) : (PAID.includes(s) ? 1 : 0); });
   }
   const f = n => +n.toFixed(3), ot = credit - workDays;
-  const stats = [['วันทำงาน', new Set(mine.map(r => r.date)).size, ''], ['Vac', vac, ''], ['ลา', leave, hourly ? `+ลาชม. ${hourly} ครั้ง` : ''], ['OT', (ot > 0 ? '+' : '') + f(ot), ''], ['สาย', late, 'ครั้ง'], ['สายรวม', lateMin, 'นาที']];
+  const stats = [['วันทำงาน', new Set(mine.map(r => r.date)).size, ''], ['Vac', vac, ''], ['ลา', leave, hourly ? `+ลาชม. ${hourly} ครั้ง` : ''], ['OT', (ot > 0 ? '+' : '') + f(ot), ''], ['สาย (ครั้ง)', late, ''], ['สายรวม (นาที)', lateMin, '']];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4 mt-2">
-      <div className={`flex flex-wrap gap-4 items-center justify-between p-4 sm:p-5 ${CARD}`}>
-        <h2 className="text-lg font-bold text-slate-800">ประวัติของฉัน</h2>
-        <input type="month" value={month} onChange={e => setMonth(e.target.value)} className="p-2 border border-slate-300 rounded-lg bg-white text-sm font-semibold text-slate-700 outline-none focus:border-primary" />
-      </div>
-      <div className="bg-primary text-white rounded-2xl p-4 sm:p-5 shadow-md flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
-        <div className="shrink-0">
-          <p className="text-white/80 text-xs uppercase tracking-wider mb-1 font-bold">เครดิตเวร</p>
-          <p className="text-4xl font-semibold tracking-tight leading-none">{f(credit)}</p>
-          <p className="text-white/70 text-xs mt-1">รวมเวรล่วงหน้าและลา · วันทำการ {workDays}</p>
+    <div className="max-w-md mx-auto space-y-3">
+      <PageTitle sub={`แผนก${user.dept}`} title="ประวัติของฉัน" right={<input type="month" aria-label="เลือกเดือน" value={month} onChange={e => setMonth(e.target.value)} className="h-11 rounded-full bg-white/20 text-white text-sm font-bold px-3 outline-none" />} />
+      <div className="bg-pink-700 text-white rounded-xl p-3.5 shadow-soft">
+        <div className="flex items-end justify-between">
+          <div><p className="text-xs font-bold">เครดิตเวร</p><p className="text-[40px] font-bold leading-none">{f(credit)}</p></div>
+          <p className="text-xs text-right">รวมเวรล่วงหน้าและลา<br />วันทำการ {workDays}</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 flex-1">{stats.map(([l, v, sub]) => (
-          <div key={l} className="bg-white/15 rounded-lg px-2.5 py-1.5"><p className="text-xs font-bold text-white/80">{l}</p><p className="text-lg font-bold leading-tight">{v}</p>{sub && <p className="text-[11px] text-white/80">{sub}</p>}</div>))}
+        <div className="grid grid-cols-3 gap-2 mt-3">{stats.map(([l, v, sub]) => (
+          <div key={l} className="bg-white/15 rounded-lg px-2.5 py-1.5"><p className="text-xs font-semibold">{l}</p><p className="text-lg font-bold leading-tight">{v}</p>{sub && <p className="text-[11px]">{sub}</p>}</div>))}
         </div>
       </div>
-      <div className={`${CARD} overflow-hidden`}>
+      <div className={`${CARD} px-3.5`}>
         {mine.map((r, i) => {
-          const st = SHIFT_TYPES[r.shiftId], cur = shiftsOf(schedules, r.date, user.id);
+          const cur = shiftsOf(schedules, r.date, user.id), extra = cur.filter(s => s !== r.shiftId && NON_WORK.includes(s) && s !== 'Off');
           // เวรในตารางไม่ตรงกับที่ลงเวลาไว้ (เช่น สแกน ชบ แล้วถูกเปลี่ยนเป็น ช)
-          const warn = !cur.includes(r.shiftId) && (cur.length ? `ตารางเวรของวันนี้เปลี่ยนเป็น ${cur.join(', ')} แต่ลงเวลาไว้เป็น ${r.shiftId}` : `ไม่พบเวรของวันนี้ในตารางเวร (ลงเวลาไว้เป็น ${r.shiftId})`);
+          const warn = !cur.includes(r.shiftId) && (cur.length ? `ตารางเวรวันนี้เปลี่ยนเป็น ${cur.join(', ')} แต่ลงเวลาไว้เป็น ${r.shiftId}` : `ไม่พบเวรของวันนี้ในตารางเวร (ลงเวลาไว้เป็น ${r.shiftId})`);
+          const chip = r.isLate ? ['bg-amber-100 text-amber-800', `สาย ${r.lateMinutes} นาที`]
+            : !r.timeOut ? (r.date < today ? ['bg-rose-100 text-rose-800', 'ลืมออก'] : ['bg-slate-100 text-slate-700', 'ยังไม่ออก'])
+            : ['bg-emerald-100 text-emerald-800', 'ตรงเวลา'];
           return (
-            <div key={r.id} className={`p-4 flex flex-col sm:flex-row sm:flex-wrap gap-3 justify-between sm:items-center ${i < mine.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-slate-50 transition-colors`}>
-              <div className="flex items-center gap-4">
-                <div className="text-center sm:text-left min-w-[65px]">
-                  <span className="block text-xs font-bold text-slate-400 mb-0.5">{formatDisplayDate(r.date).slice(0, 5)}</span>
-                  <span className="block font-bold text-slate-800">{r.shiftId}</span>
-                  {st && <span className="block text-xs text-slate-500 font-medium leading-none mt-0.5">{st.start}-{st.end}</span>}
+            <div key={r.id} className={`py-2.5 ${i ? 'border-t border-slate-200' : ''}`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[15px] font-semibold text-slate-800">{formatDisplayDate(r.date).slice(0, 5)} · {r.shiftId}{extra.length ? ', ' + extra.join(', ') : ''}</p>
+                  <p className="text-[13px] text-slate-600">เข้า {displaySafeTime(r.timeIn)} · ออก {displaySafeTime(r.timeOut)} · เครดิต {r.credit}</p>
                 </div>
-                <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div><span className="text-slate-400 text-xs font-bold block mb-0.5">เข้า</span><span className="font-semibold text-slate-800">{displaySafeTime(r.timeIn)}</span></div>
-                  <div><span className="text-slate-400 text-xs font-bold block mb-0.5">ออก</span><span className="font-semibold text-slate-800">{displaySafeTime(r.timeOut)}</span></div>
-                </div>
+                <span className={`text-xs font-bold rounded-full px-2.5 py-1 whitespace-nowrap ${chip[0]}`}>{chip[1]}</span>
               </div>
-              <div className="flex items-center gap-3">
-                {r.isLate && <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded text-xs font-bold border border-red-200">สาย {r.lateMinutes} นาที</span>}
-                <span className="text-slate-600 text-xs font-bold px-2 py-0.5 bg-slate-100 rounded border border-slate-200">เครดิต: {r.credit}</span>
-              </div>
-              {warn && <div className="w-full text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"><i className="fa-solid fa-triangle-exclamation mr-1.5"></i>{warn} — โปรดแจ้ง HR ตรวจสอบ</div>}
+              {warn && <div className="mt-2 flex gap-2 items-start bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 text-[13px] font-semibold text-amber-800 leading-snug"><i className="fa-solid fa-triangle-exclamation mt-0.5"></i><span>{warn} · โปรดแจ้ง HR ตรวจสอบ</span></div>}
             </div>
           );
         })}
-        {!mine.length && <div className="p-8 text-center text-slate-400 text-sm font-medium">ไม่พบประวัติในเดือนนี้</div>}
+        {!mine.length && <div className="py-8 text-center text-slate-500 text-sm font-medium">ไม่พบประวัติในเดือนนี้</div>}
       </div>
     </div>
   );
