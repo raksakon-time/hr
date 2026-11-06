@@ -176,7 +176,7 @@ const ScanHint = ({ cam, prog, scanning, color }) => {
     <div className="space-y-2">
       <div className="flex justify-between text-sm font-semibold text-slate-600"><span>{scanning ? 'กำลังบันทึก...' : 'บันทึกอัตโนมัติเมื่อใบหน้านิ่งในกรอบ'}</span><span>{cam && !scanning ? pct + '%' : ''}</span></div>
       {!scanning && <div className="h-2 rounded bg-pink-100 overflow-hidden"><div className={`h-2 rounded transition-all ${color}`} style={{ width: pct + '%' }}></div></div>}
-      <p className="text-sm text-slate-600 leading-relaxed">มองตรงที่กล้อง ถอดหน้ากากและแว่นกันแดดชั่วคราว ถ้าสแกนไม่ติดนาน ปุ่ม "กดบันทึกเอง" จะปรากฏให้</p>
+      <p className="text-sm text-slate-600 leading-relaxed">มองตรงที่กล้อง ถ้าสแกนไม่ติดนาน ปุ่ม "กดบันทึกเอง" จะปรากฏให้</p>
     </div>
   );
 };
@@ -214,11 +214,17 @@ const loadFaceLite = () => liteReady || (liteReady = (async () => {
 // ใบหน้าอยู่กลางกรอบ -> คืน true (กรอบเขียว) และถ้าอยู่นิ่งต่อเนื่อง เรียก onStable ครั้งเดียวเพื่อบันทึกอัตโนมัติ
 // ถ้าตัวตรวจใบหน้าโหลดไม่ได้จะไม่ทำอะไร ผู้ใช้กดปุ่มยืนยันเองได้ตามเดิม
 function useFaceFrame(vref, active, onStable) {
-  const [found, setFound] = useState(false), [manual, setManual] = useState(false), [ready, setReady] = useState(liteDone), [dbg, setDbg] = useState(''), [prog, setProg] = useState(0), cb = useRef(onStable);
+  const [found, setFound] = useState(false), [manual, setManual] = useState(false), [ready, setReady] = useState(liteDone), [dbg, setDbg] = useState(''), [prog, setProg] = useState(0), sinceRef = useRef(0), cb = useRef(onStable);
   cb.current = onStable;
   useEffect(() => {
+    if (!active) return;
+    const t = setInterval(() => setProg(sinceRef.current ? Math.min(1, (performance.now() - sinceRef.current) / FACE_HOLD_MS) : 0), 50);
+    return () => clearInterval(t);
+  }, [active]);
+  useEffect(() => {
     if (!active) { setFound(false); setManual(false); setProg(0); return; }
-    let stop = false, hits = 0, since = 0, n = 0, lastErr = '';
+    let stop = false, hits = 0, n = 0, lastErr = '';
+    sinceRef.current = 0;
     const t = setTimeout(() => setManual(true), 20000);
     (async () => {
       for (;;) {   // โหลดไม่สำเร็จให้ลองใหม่เรื่อย ๆ (ระหว่างนั้นปุ่มสำรองจะโผล่ให้กดเองได้)
@@ -239,10 +245,9 @@ function useFaceFrame(vref, active, onStable) {
           n++;
           if (FACE_DEBUG) setDbg(`${W}x${H} rs${v.readyState} #${n} ${Math.round(performance.now() - t0)}ms ` + (b ? `หน้า w${Math.round(b.width / W * 100)}% x${Math.round((b.x + b.width / 2) / W * 100)}% y${Math.round((b.y + b.height / 2) / H * 100)}%` : 'ไม่พบหน้า') + (lastErr ? ' ERR:' + lastErr : ''));
           hits = ok ? hits + 1 : 0;
-          if (!ok) since = 0; else if (!since) since = performance.now();
-          setProg(ok ? Math.min(1, (performance.now() - since) / FACE_HOLD_MS) : 0);
+          if (!ok) sinceRef.current = 0; else if (!sinceRef.current) sinceRef.current = performance.now();
           setFound(hits >= 1);
-          if (hits >= 4 && performance.now() - since >= FACE_HOLD_MS) { stop = true; cb.current(); break; }
+          if (hits >= 4 && performance.now() - sinceRef.current >= FACE_HOLD_MS) { stop = true; cb.current(); break; }
         } else if (FACE_DEBUG) setDbg('รอวิดีโอ ' + (v ? v.videoWidth + 'x' + v.videoHeight + ' rs' + v.readyState : 'ไม่มี element'));
         await new Promise(res => setTimeout(res, 100));
       }
