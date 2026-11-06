@@ -4,16 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ระบบลงเวลา รพ.รักษ์สกล</title>
+<script>try { var __t = localStorage.getItem('rt_theme'); if (__t) document.documentElement.setAttribute('data-theme', __t); } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://unpkg.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
+const twRgb = n => `rgb(var(--${n}) / <alpha-value>)`;
+const twScale = p => Object.fromEntries([50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map(k => [k, twRgb(p + k)]));
 tailwind.config = { theme: { extend: {
   fontFamily: { sans: ['Sarabun', 'sans-serif'] },
   boxShadow: { soft: '0 4px 20px -2px rgba(0,0,0,0.04)', subtle: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)' },
-  colors: { primary: '#db2777', secondary: '#9d174d', dark: '#1e293b' }
+  colors: { primary: twRgb('primary'), secondary: twRgb('secondary'), pink: twScale('p'), rose: twScale('r'), dark: '#1e293b' }
 } } }
 </script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -23,10 +26,16 @@ tailwind.config = { theme: { extend: {
 <script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
 <style>
+:root{--primary:219 39 119;--secondary:157 23 77;--hex-p:#db2777;--hex-s:#9d174d;
+--p50:253 242 248;--p100:252 231 243;--p200:251 207 232;--p300:249 168 212;--p400:244 114 182;--p500:236 72 153;--p600:219 39 119;--p700:190 24 93;--p800:157 23 77;--p900:131 24 67;
+--r50:255 241 242;--r100:255 228 230;--r200:254 205 211;--r300:253 164 175;--r400:251 113 133;--r500:244 63 94;--r600:225 29 72;--r700:190 18 60;--r800:159 18 57;--r900:136 19 55}
+html[data-theme="navy"]{--primary:42 60 118;--secondary:214 57 63;--hex-p:#2A3C76;--hex-s:#D6393F;
+--p50:243 245 251;--p100:232 236 247;--p200:211 218 238;--p300:182 195 230;--p400:137 160 207;--p500:91 115 179;--p600:42 60 118;--p700:36 52 104;--p800:31 44 88;--p900:24 35 74;
+--r50:255 241 241;--r100:255 227 228;--r200:255 201 203;--r300:255 163 166;--r400:254 105 110;--r500:240 73 79;--r600:214 57 63;--r700:184 45 51;--r800:165 38 43;--r900:143 29 33}
 body { font-family: 'Sarabun', sans-serif; background: #f8fafc; -webkit-font-smoothing: antialiased; color: #1e293b; font-size: 15px; margin: 0; }
 input, select { transition: all .2s ease; }
 input[type=date], input[type=month], input[type=time] { min-width: 0; max-width: 100%; box-sizing: border-box; }
-input:focus, select:focus { outline: none; border-color: #db2777 !important; box-shadow: 0 0 0 3px rgba(219,39,119,.2); }
+input:focus, select:focus { outline: none; border-color: rgb(var(--primary)) !important; box-shadow: 0 0 0 3px rgb(var(--primary) / .2); }
 select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right .75rem center; background-repeat: no-repeat; background-size: 1.25em; padding-right: 2.5rem; }
 .print-show { display: none; }
 @keyframes blob { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-50px) scale(1.1); } 66% { transform: translate(-20px,20px) scale(.9); } }
@@ -62,6 +71,13 @@ const SHIFT_TYPES = Object.fromEntries(Object.entries(SHIFT_DEF).map(([k, [start
 const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ลาชั่วโมง', 'ขาด'];
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
+
+// ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
+const THEMES = [
+  { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
+  { key: 'navy', name: 'น้ำเงินกรมท่า + แดงปะการัง', desc: 'โทนทางการ สไตล์องค์กรการแพทย์', sw: ['#2A3C76', '#D6393F', '#E8ECF7'] }
+];
+const themeHex = k => getComputedStyle(document.documentElement).getPropertyValue('--hex-' + k).trim() || '#db2777';
 
 // ================= Helpers =================
 const pad = n => String(n).padStart(2, '0');
@@ -100,12 +116,12 @@ const postToSheet_ = async (action, payload = {}, retries = 3) => {
     try {
       const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, payload }) });
       const data = await res.json();
-      if (data.status === 'error') Swal.fire({ title: 'แจ้งเตือน', text: data.message, icon: 'warning', confirmButtonColor: '#db2777' });
+      if (data.status === 'error') Swal.fire({ title: 'แจ้งเตือน', text: data.message, icon: 'warning', confirmButtonColor: themeHex('p') });
       return data;
     } catch (e) {
       console.warn(`การเชื่อมต่อล้มเหลวครั้งที่ ${i + 1}: ${e.message}`);
       if (i === retries - 1) {
-        Swal.fire({ title: 'ข้อผิดพลาดเครือข่าย', text: 'การเชื่อมต่อล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ตของท่าน', icon: 'error', confirmButtonColor: '#db2777' });
+        Swal.fire({ title: 'ข้อผิดพลาดเครือข่าย', text: 'การเชื่อมต่อล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ตของท่าน', icon: 'error', confirmButtonColor: themeHex('p') });
         return { status: 'error', message: e.message };
       }
       await new Promise(r => setTimeout(r, 1500));
@@ -313,7 +329,7 @@ const LoyPhoto = () => (
 // ================= App =================
 function App() {
   const [user, setUser] = useState(null), [tab, setTab] = useState('home'), [imgErr, setImgErr] = useState(false), [formOpen, setFormOpen] = useState(false);
-  const [now, setNow] = useState(new Date()), [loading, setLoading] = useState(true), [syncedAt, setSyncedAt] = useState(null);
+  const [now, setNow] = useState(new Date()), [loading, setLoading] = useState(true), [syncedAt, setSyncedAt] = useState(null), [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'pink'), [themeOpen, setThemeOpen] = useState(false);
   const [records, setRecords] = useState([]), [employees, setEmployees] = useState({}), [schedules, setSchedules] = useState({});
   const [settings, setSettings] = useState({ standardWorkDays: {} });
 
@@ -380,9 +396,14 @@ function App() {
   const isManager = user.level === 'หัวหน้า' || user.dept === 'ADMIN';
   const role = user.dept === 'ADMIN' ? 'admin' : user.level === 'หัวหน้า' ? 'supervisor' : 'employee';
   const lastPhoto = records.reduce((b, r) => r.empId === user.id && r.photoInUrl && (!b || r.id > b.id) ? r : b, null);
-  const avatar = lastPhoto && !imgErr ? driveImg(lastPhoto.photoInUrl, 'w400-h400') : `https://ui-avatars.com/api/?name=${user.fname}+${user.lname}&background=fbcfe8&color=1e293b&size=150`;
+  const avatar = lastPhoto && !imgErr ? driveImg(lastPhoto.photoInUrl, 'w400-h400') : `https://ui-avatars.com/api/?name=${user.fname}+${user.lname}&background=${theme === 'navy' ? 'e8ecf7' : 'fbcfe8'}&color=1e293b&size=150`;
   const compact = tab === 'home' && formOpen;
   const fest = festivalFor(now);   // หน้าลงเวลาเข้า/ออก: ย่อแถบชมพู
+  const applyTheme = t => {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('rt_theme', t); } catch (e) {}
+    setTheme(t); setThemeOpen(false);
+  };
   const logout = () => { setUser(null); setTab('home'); setImgErr(false); };
   const tabs = [['home', 'fa-solid fa-clock', 'ลงเวลา'], ['calendar', 'fa-regular fa-calendar-days', 'ตารางเวร'], ['history', 'fa-solid fa-clock-rotate-left', 'ประวัติ'],
     ...(isManager ? [['manager', 'fa-solid fa-layer-group', 'จัดการ']] : [])];
@@ -396,7 +417,10 @@ function App() {
       <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col h-full">
         <header className={`flex justify-between items-center px-6 ${compact ? 'pt-3 pb-0' : 'pt-5 pb-2'} text-white print-hide`}>
           <div className="flex flex-col">{tab !== 'home' ? <span className="font-semibold tracking-wider">รักษ์สกล Time</span> : fest && <div className="leading-tight"><p className="font-bold tracking-wide">{fest.emoji} {fest.greet}</p>{fest.sub && <p className="text-xs font-semibold text-yellow-200">{fest.sub}</p>}</div>}</div>
-          <button onClick={logout} className="text-white/90 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors"><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i></button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setThemeOpen(true)} aria-label="เลือกสีของแอป" className="text-white/90 hover:text-white hover:bg-white/10 w-11 h-11 rounded-full transition-colors"><i className="fa-solid fa-palette text-lg"></i></button>
+            <button onClick={logout} aria-label="ออกจากระบบ" className="text-white/90 hover:text-white hover:bg-white/10 w-11 h-11 rounded-full transition-colors"><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i></button>
+          </div>
         </header>
         <main className={`flex-grow px-4 sm:px-6 lg:px-8 ${compact ? 'mt-1' : 'mt-4'}`}>
           {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} onForm={setFormOpen} syncedAt={syncedAt} />}
@@ -411,6 +435,22 @@ function App() {
       {!compact && <a href={LEAVE_SYSTEM_URL} target="_blank" className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 bg-white text-primary border border-primary/20 px-4 py-3 rounded-full shadow-soft hover:shadow-md transition-all z-[100] flex items-center gap-2 print-hide" style={{ textDecoration: 'none' }}>
         <i className="fa-solid fa-notes-medical"></i><span className="text-sm font-medium">ลางาน</span>
       </a>}
+
+      {themeOpen && (
+        <div className="fixed inset-0 z-[300] bg-slate-900/50 flex items-end sm:items-center justify-center print-hide" onClick={() => setThemeOpen(false)}>
+          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-3" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="text-lg font-bold text-slate-800">เลือกสีของแอป</h3><button onClick={() => setThemeOpen(false)} aria-label="ปิด" className="w-11 h-11 rounded-full text-slate-500 hover:bg-slate-100"><i className="fa-solid fa-xmark"></i></button></div>
+            <p className="text-sm text-slate-600">เลือกได้ตามชอบ ใช้เฉพาะในเครื่องนี้ เปลี่ยนได้ทุกเมื่อ</p>
+            {THEMES.map(t => (
+              <button key={t.key} onClick={() => applyTheme(t.key)} className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-colors ${theme === t.key ? 'border-primary bg-pink-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                <div className="flex -space-x-2">{t.sw.map(c => <span key={c} className="w-9 h-9 rounded-full border-2 border-white" style={{ background: c }}></span>)}</div>
+                <div className="flex-1"><p className="font-bold text-slate-800">{t.name}</p><p className="text-xs text-slate-500">{t.desc}</p></div>
+                {theme === t.key && <i className="fa-solid fa-circle-check text-primary text-xl"></i>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 pb-safe print-hide bottom-nav-hide z-50">
         <div className="max-w-md mx-auto flex justify-around px-2">
@@ -589,7 +629,7 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
       isLate, lateMinutes: isLate ? actual - dl : 0, credit: sd.credit, lat: pos?.lat, lon: pos?.lon, photoBase64 };
     const res = await sendToGoogleSheet('clockIn', rec, 3);
     if (res?.status === 'success') { setRecords([...records, rec]); setResult({ ...rec, shiftName: sd.label }); }
-    else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#db2777' });
+    else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: themeHex('p') });
     setScanning(false); setCam(false);
   };
 
@@ -660,7 +700,7 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
     const timeOut = formatTime24(now);
     const res = await sendToGoogleSheet('clockOut', { id: found.id, timeOut, photoBase64 }, 3);
     if (res?.status === 'success') { setRecords(records.map(r => r.id === found.id ? { ...r, timeOut } : r)); setOk({ timeOut, shiftName: SHIFT_TYPES[found.shiftId]?.label }); }
-    else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: '#9d174d' });
+    else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: themeHex('s') });
     setScanning(false); setCam(false);
   };
 
@@ -730,7 +770,7 @@ function MyCalendarView({ user, schedules }) {
       </div>
       <div className={`${CARD} p-2`}>
         <div className="grid grid-cols-7 gap-1 mb-1">
-          {['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map((d, i) => <div key={d} className={`text-center text-xs font-bold py-1 ${i === 0 || i === 6 ? 'text-pink-700' : 'text-slate-600'}`}>{d}</div>)}
+          {['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map((d, i) => <div key={d} className={`text-center text-xs font-bold py-1 ${i === 0 || i === 6 ? 'text-rose-700' : 'text-slate-600'}`}>{d}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: blanks }, (_, i) => <div key={`b${i}`}></div>)}
@@ -739,7 +779,7 @@ function MyCalendarView({ user, schedules }) {
             const today = dateStr === todayStr, wk = [0, 6].includes(new Date(y, m, day).getDay());
             return (
               <button key={day} onClick={() => setSel(dateStr)} className={`min-h-[48px] rounded-lg text-xs text-slate-600 flex flex-col items-center gap-0.5 py-1 px-0.5 ${today ? 'bg-pink-50 outline outline-2 outline-pink-600' : dateStr === sel ? 'bg-white ring-2 ring-pink-300' : 'bg-slate-50'}`}>
-                <span className={wk ? 'text-pink-700 font-bold' : ''}>{day}</span>
+                <span className={wk ? 'text-rose-700 font-bold' : ''}>{day}</span>
                 {dayShifts.slice(0, 2).map((s, k) => <b key={k} className={`max-w-full truncate leading-tight ${s === 'Off' ? 'text-xs text-slate-500 font-semibold' : isLeave(s) ? 'text-xs text-amber-800 bg-amber-100 rounded px-1' : 'text-[13px] text-slate-900'}`}>{s}</b>)}
               </button>
             );
@@ -1035,7 +1075,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
     const res = await sendToGoogleSheet('saveSettings', { standardWorkDays: localWorkDays, monthYear: matrixMonth });
     if (res?.status === 'success') { setSettings({ ...settings, standardWorkDays: { ...settings.standardWorkDays, [matrixMonth]: localWorkDays } }); info('บันทึกวันทำการสำเร็จ'); }
   };
-  const okToast = text => Swal.fire({ icon: 'success', title: 'สำเร็จ!', text, confirmButtonColor: '#db2777', timer: 2000, showConfirmButton: false });
+  const okToast = text => Swal.fire({ icon: 'success', title: 'สำเร็จ!', text, confirmButtonColor: themeHex('p'), timer: 2000, showConfirmButton: false });
 
   const saveEdit = async () => {
     setSaving(true);
