@@ -1,1450 +1,549 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ระบบลงเวลา รพ.รักษ์สกล</title>
-<script>try { var __t = localStorage.getItem('rt_theme'); if (__t) document.documentElement.setAttribute('data-theme', __t); } catch (e) {}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://unpkg.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-const twRgb = n => `rgb(var(--${n}) / <alpha-value>)`;
-const twScale = p => Object.fromEntries([50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map(k => [k, twRgb(p + k)]));
-tailwind.config = { theme: { extend: {
-  fontFamily: { sans: ['Sarabun', 'sans-serif'] },
-  boxShadow: { soft: '0 4px 20px -2px rgba(0,0,0,0.04)', subtle: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)' },
-  colors: { primary: twRgb('primary'), secondary: twRgb('secondary'), pink: twScale('p'), rose: twScale('r'), dark: '#1e293b' }
-} } }
-</script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
-<style>
-:root{--primary:219 39 119;--secondary:157 23 77;--hex-p:#db2777;--hex-s:#9d174d;
---p50:253 242 248;--p100:252 231 243;--p200:251 207 232;--p300:249 168 212;--p400:244 114 182;--p500:236 72 153;--p600:219 39 119;--p700:190 24 93;--p800:157 23 77;--p900:131 24 67;
---r50:255 241 242;--r100:255 228 230;--r200:254 205 211;--r300:253 164 175;--r400:251 113 133;--r500:244 63 94;--r600:225 29 72;--r700:190 18 60;--r800:159 18 57;--r900:136 19 55}
-html[data-theme="navy"]{--primary:42 60 118;--secondary:214 57 63;--hex-p:#2A3C76;--hex-s:#D6393F;
---p50:243 245 251;--p100:232 236 247;--p200:211 218 238;--p300:182 195 230;--p400:137 160 207;--p500:91 115 179;--p600:42 60 118;--p700:36 52 104;--p800:31 44 88;--p900:24 35 74;
---r50:255 241 241;--r100:255 227 228;--r200:255 201 203;--r300:255 163 166;--r400:254 105 110;--r500:240 73 79;--r600:214 57 63;--r700:184 45 51;--r800:165 38 43;--r900:143 29 33}
-body { font-family: 'Sarabun', sans-serif; background: #f8fafc; -webkit-font-smoothing: antialiased; color: #1e293b; font-size: 15px; margin: 0; }
-input, select { transition: all .2s ease; }
-input[type=date], input[type=month], input[type=time] { min-width: 0; max-width: 100%; box-sizing: border-box; }
-input:focus, select:focus { outline: none; border-color: rgb(var(--primary)) !important; box-shadow: 0 0 0 3px rgb(var(--primary) / .2); }
-select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right .75rem center; background-repeat: no-repeat; background-size: 1.25em; padding-right: 2.5rem; }
-.print-show { display: none; }
-@keyframes blob { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-50px) scale(1.1); } 66% { transform: translate(-20px,20px) scale(.9); } }
-.animate-blob { animation: blob 7s infinite; }
-@keyframes festi-float { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-6px) rotate(4deg); } }
-.festi-float { animation: festi-float 4s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .festi-float { animation: none; } }
-</style>
-</head>
-<body>
-<div id="root"></div>
+// ==========================================
+// ตั้งค่า
+// ==========================================
+const SHEET_ID = "1dTQshZ0RqULY5j69oO5S8lf4IKH4UxKQBmC5mxd0sYk";
+const FOLDER_ID = "1_kLiVtN2sxcDO9_0WbGusjSzuxPhRJfW";
+const SH = { EMP: 'Employees', SCH: 'Schedule', LOG: 'TimeLog', AUDIT: 'AuditLog' };
 
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef, useMemo } = React;
+// เปิด Spreadsheet ครั้งเดียวต่อ request (เดิมเปิดซ้ำทุกฟังก์ชัน)
+let _ss, _tz;
+const ss_ = () => _ss || (_ss = SpreadsheetApp.openById(SHEET_ID));
+const tz_ = () => _tz || (_tz = ss_().getSpreadsheetTimeZone());
+const sheet_ = name => ss_().getSheetByName(name);
+const now_ = () => Utilities.formatDate(new Date(), tz_(), "yyyy-MM-dd HH:mm:ss");
+const ok_ = extra => Object.assign({ status: 'success' }, extra);
+const err_ = message => ({ status: 'error', message });
+const json_ = obj => ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 
-// ================= ตั้งค่า =================
-const GAS_URL = "https://script.google.com/macros/s/AKfycbwN_t3I53y5PoZY0lGVENHiTvR7Ne_K_OxvTjxfCaAUqyLt3lPPLLBY4gQ8XC2V8ddK/exec";
-const LEAVE_SYSTEM_URL = "https://raksakon-time.github.io/raksakon-leave-web/";
-const HOSPITAL_LAT = 17.162383247325145, HOSPITAL_LON = 104.14513206230059, ALLOWED_RADIUS = 100;
+// อ่านเฉพาะแถวข้อมูล (ไม่รวมหัวตาราง) ตามจำนวนคอลัมน์ที่ใช้จริง
+function rows_(name, cols) {
+  const s = sheet_(name), n = s ? s.getLastRow() - 1 : 0;
+  return n > 0 ? s.getRange(2, 1, n, Math.min(cols, s.getMaxColumns())).getValues() : [];
+}
 
-const POLL_MS = 30000; // ความถี่ตรวจข้อมูลใหม่ (มิลลิวินาที)
+// ==========================================
+// Routing
+// ==========================================
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('ระบบลงเวลา รพ.รักษ์สกล')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1.0');
+}
 
-// กะ: [เริ่ม, เลิก, เครดิต] — label สร้างอัตโนมัติ
-const SHIFT_DEF = {
-  'ด': ['00:00','08:00',1], 'ช616': ['06:00','16:00',1.25], 'ช618': ['06:00','18:00',1.5], 'ช619': ['06:00','19:00',1.625],
-  'ช6': ['06:00','14:00',1], 'ช716': ['07:00','16:00',1.125], 'ช719': ['07:00','19:00',1.5], 'ช7': ['07:00','15:00',1],
-  'ช21': ['07:00','21:00',1.75], 'ชบ7': ['07:00','23:00',2], 'ช': ['08:00','16:00',1], 'ชบ': ['08:00','00:00',2],
-  'ช20': ['08:00','20:00',1.5], 'ช83': ['08:30','16:30',1], 'ช9': ['09:00','21:00',1.5], 'ช917': ['09:00','17:00',1],
-  'บ15': ['15:00','23:00',1], 'บ': ['16:00','00:00',1], 'บด': ['16:00','08:00',2], 'บ4': ['17:00','21:00',0.5]
-};
-const SHIFT_TYPES = Object.fromEntries(Object.entries(SHIFT_DEF).map(([k, [start, end, credit]]) =>
-  [k, { start, end, credit, label: `${start.replace(':', '.')} - ${end.replace(':', '.')} (${k})` }]));
-const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ลาชั่วโมง', 'ขาด'];
-const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
+// เลขเวอร์ชันข้อมูล: เพิ่มทุกครั้งที่มีการเขียนสำเร็จ ให้หน้าเว็บตรวจว่ามีข้อมูลใหม่หรือไม่
+const version_ = () => PropertiesService.getScriptProperties().getProperty('dataVersion') || '0';
+const touch_ = () => PropertiesService.getScriptProperties().setProperty('dataVersion', String(Date.now()));
+const WRITES = ['faceRegister', 'clockIn', 'clockOut', 'editRecord', 'deleteRecord', 'saveSchedule', 'saveScheduleBulk', 'saveSettings', 'register', 'adminAddRecord', 'requestSwap', 'cancelSwap', 'decideSwap'];
+function withLock_(f) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try { return f(); } finally { lock.releaseLock(); }
+}
+function getVersion() { return ok_({ version: version_() }); }
 
-// ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
-const THEMES = [
-  { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
-  { key: 'navy', name: 'น้ำเงินกรมท่า + แดงปะการัง', desc: 'โทนทางการ สไตล์องค์กรการแพทย์', sw: ['#2A3C76', '#D6393F', '#E8ECF7'] }
-];
-const themeHex = k => getComputedStyle(document.documentElement).getPropertyValue('--hex-' + k).trim() || '#db2777';
-
-// ================= Helpers =================
-const pad = n => String(n).padStart(2, '0');
-const ymd = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
-const fmtInput = d => ymd(d.getFullYear(), d.getMonth() + 1, d.getDate());
-const formatTime24 = d => d ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : '';
-const formatDisplayDate = s => { if (!s) return ''; const [y, m, d] = s.split('-'); return `${d}/${m}/${parseInt(y, 10) + 543}`; };
-const formatFullThaiDate = d => d ? `${THAI_DAYS[d.getDay()]}ที่ ${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}` : '';
-const displaySafeTime = t => !t ? '-' : (t.includes('T') ? t.split('T')[1].substring(0, 5) : t) + ' น.';
-const driveImg = (url, size) => { const m = url && url.match(/[-\w]{25,}/); return m ? `https://drive.google.com/thumbnail?id=${m[0]}&sz=${size}` : url || null; };
-const shiftsOf = (sch, date, id) => { const o = sch[date]?.[id]; return o?.shifts || (Array.isArray(o) ? o : []); };
-const distM = (a, b, c, d) => {
-  const r = x => x * Math.PI / 180, h = Math.sin(r(c - a) / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(r(d - b) / 2) ** 2;
-  return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+const ACTIONS = {
+  getVersion, getInitialData, clockIn, clockOut, editRecord, deleteRecord,
+  saveSchedule, saveScheduleBulk, saveSettings,
+  register: registerEmployee,
+  adminAddRecord: p => clockIn(p, true),   // แอดมินเพิ่มย้อนหลัง: ไม่ต้องสแกนหน้า
+  faceRegister,
+  requestSwap, cancelSwap, decideSwap   // ขอสลับเวร
 };
 
-// ช่วง 00:00-03:59 ให้นับเป็นกะของเมื่อวานถ้ามีเวรเมื่อวาน (shift ไม่ระบุ = มีเวรเมื่อวานก็ใช้)
-const resolveTarget = (now, sch, id, shift) => {
-  if (now.getHours() <= 3) {
-    const y = fmtInput(new Date(now.getTime() - 864e5)), ys = shiftsOf(sch, y, id);
-    if (shift === undefined ? ys.length > 0 : ys.includes(shift)) return { date: y, shifts: ys };
+function doPost(e) {
+  try {
+    const { action, payload } = JSON.parse(e.postData.contents);
+    const fn = ACTIONS[action];
+    if (!fn) return json_(err_('Invalid POST action'));
+    const res = WRITES.includes(action)
+      ? withLock_(() => { const r = fn(payload); if (r.status === 'success') touch_(); return r; })
+      : fn(payload);
+    return json_(res);
+  } catch (error) {
+    return json_(err_(error.message));
   }
-  const t = fmtInput(now);
-  return { date: t, shifts: shiftsOf(sch, t, id) };
-};
+}
 
-let pendingWrites = 0, writeSeq = 0, syncing = false;
-const sendToGoogleSheet = async (action, payload = {}, retries = 3) => {
-  const write = action !== 'getInitialData';
-  if (write) { pendingWrites++; writeSeq++; }
-  try { return await postToSheet_(action, payload, retries); }
-  finally { if (write) { pendingWrites--; writeSeq++; } }
-};
-const postToSheet_ = async (action, payload = {}, retries = 3) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, payload }) });
-      const data = await res.json();
-      if (data.status === 'error') Swal.fire({ title: 'แจ้งเตือน', text: data.message, icon: 'warning', confirmButtonColor: themeHex('p') });
-      return data;
-    } catch (e) {
-      console.warn(`การเชื่อมต่อล้มเหลวครั้งที่ ${i + 1}: ${e.message}`);
-      if (i === retries - 1) {
-        Swal.fire({ title: 'ข้อผิดพลาดเครือข่าย', text: 'การเชื่อมต่อล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ตของท่าน', icon: 'error', confirmButtonColor: themeHex('p') });
-        return { status: 'error', message: e.message };
-      }
-      await new Promise(r => setTimeout(r, 1500));
-    }
+// ==========================================
+// Utilities
+// ==========================================
+function saveImageToDrive(base64Data, fileName) {
+  if (!base64Data) return "";
+  try {
+    const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), MimeType.JPEG, fileName);
+    const file = DriveApp.getFolderById(FOLDER_ID).createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return file.getUrl();
+  } catch (error) { return ""; }
+}
+
+function fmtDate_(v) {
+  if (!v) return "";
+  if (v instanceof Date) return Utilities.formatDate(v, tz_(), "yyyy-MM-dd");
+  return typeof v === 'string' && v.includes('T') ? v.split('T')[0] : v.toString().trim();
+}
+
+function fmtTime_(v) {
+  if (!v) return "";
+  if (v instanceof Date) return Utilities.formatDate(v, tz_(), "HH:mm");
+  if (typeof v !== 'string') return v.toString();
+  if (!v.includes('T')) return v.trim();
+  const d = new Date(v);
+  return isNaN(d) ? v.split('T')[1].substring(0, 5) : Utilities.formatDate(d, tz_(), "HH:mm");
+}
+
+function audit_() {
+  let s = sheet_(SH.AUDIT);
+  if (!s) {
+    s = ss_().insertSheet(SH.AUDIT);
+    s.appendRow(['Timestamp', 'EditorID', 'EditorName', 'Action', 'TargetDate', 'TargetEmpID', 'OldValue', 'NewValue']);
+    s.getRange('A1:H1').setFontWeight('bold').setBackground('#f3f4f6');
   }
-};
-
-const captureImage = v => {
-  if (!v || !v.videoWidth || !v.videoHeight) return null;
-  const c = document.createElement('canvas'), ctx = c.getContext('2d');
-  c.width = v.videoWidth * .5; c.height = v.videoHeight * .5;
-  ctx.translate(c.width, 0); ctx.scale(-1, 1); ctx.drawImage(v, 0, 0, c.width, c.height);
-  return c.toDataURL('image/jpeg', .6).split(',')[1];
-};
-
-function useCamera(active, onFail) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (!active) return;
-    let dead = false, tries = 0, timer, stream = null;
-    // เก็บ stream ไว้ในตัวแปรนี้เสมอ เพื่อปิดกล้องได้แม้ element วิดีโอถูกถอดไปแล้ว (เดิมกล้องค้างจนเปิดใหม่ได้ภาพดำบน iOS)
-    const release = () => { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } };
-    const start = () => navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }).then(s => {
-      if (dead) { s.getTracks().forEach(t => t.stop()); return; }   // ผลมาช้าหลังปิดไปแล้ว: ปล่อยกล้องทิ้ง
-      release(); stream = s;
-      const v = ref.current;
-      if (v) { v.srcObject = s; const p = v.play && v.play(); if (p && p.catch) p.catch(() => {}); }
-      // ถ้า 4 วินาทียังไม่มีภาพ (ภาพดำ) ให้เปิดกล้องใหม่ ลองซ้ำไม่เกิน 3 ครั้ง
-      timer = setTimeout(() => { if (!dead && ref.current && !ref.current.videoWidth && ++tries < 3) { release(); start(); } }, 4000);
-    }).catch(err => { if (!dead) onFail(err); });
-    start();
-    return () => { dead = true; clearTimeout(timer); release(); if (ref.current) ref.current.srcObject = null; };
-  }, [active]);
-  return ref;
+  return s;
 }
 
-// ================= UI ใช้ร่วมกัน =================
-const TONE = {
-  primary: { soft: 'bg-pink-50 text-primary border-pink-100', ico: 'bg-pink-100 text-primary', text: 'text-primary', btn: 'bg-primary hover:bg-pink-700', main: 'bg-primary hover:bg-pink-700' },
-  secondary: { soft: 'bg-rose-50 text-secondary border-rose-100', ico: 'bg-rose-100 text-secondary', text: 'text-secondary', btn: 'bg-secondary hover:bg-pink-900', main: 'bg-secondary hover:bg-pink-900' }
-};
-const CARD = 'bg-white rounded-2xl shadow-sm border border-slate-200';
-const FIELD = 'w-full min-w-0 max-w-full p-3 sm:p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800';
-const LABEL = 'block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider';
-
-const Panel = ({ children }) => <div className="space-y-3 animate-fade-in">{children}</div>;
-
-const ErrorBox = ({ msg }) => msg ? <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{msg}</span></div> : null;
-
-const CORNERS = ['top-0 left-0 border-t-4 border-l-4 rounded-tl-xl', 'top-0 right-0 border-t-4 border-r-4 rounded-tr-xl', 'bottom-0 left-0 border-b-4 border-l-4 rounded-bl-xl', 'bottom-0 right-0 border-b-4 border-r-4 rounded-br-xl'];
-const CameraBox = ({ active, vref, onOpen, disabled, label, found, ready, dbg, prog, saving }) => (
-  <div className={`border border-slate-200 rounded-xl h-[min(18rem,34dvh)] flex items-center justify-center overflow-hidden relative shadow-inner ${active ? 'bg-slate-900' : 'bg-slate-100'}`}>
-    {active ? <>
-      <video ref={vref} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
-      <div className="absolute inset-8 pointer-events-none">{CORNERS.map(c => <span key={c} className={`absolute w-10 h-10 transition-colors ${c} ${found ? 'border-green-500' : 'border-white/70'}`}></span>)}</div>
-      <p className="absolute bottom-4 inset-x-0 text-center"><span className="inline-block bg-black/60 text-white text-sm font-bold rounded-full px-4 py-1.5">{!ready ? 'กำลังเตรียมระบบสแกน...' : found ? 'พบใบหน้า อยู่นิ่งสักครู่...' : 'จัดใบหน้าให้อยู่ในกรอบ'}</span></p>
-      {saving && <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-3 text-white"><div className="w-14 h-14 rounded-full border-4 border-white/30 border-t-white animate-spin"></div><p className="text-base font-bold">กำลังบันทึก...</p></div>}
-      {FACE_DEBUG && dbg && <p className="absolute top-1 inset-x-0 text-center text-[10px] font-mono text-yellow-300 drop-shadow">{dbg}</p>}
-    </> : <button onClick={onOpen} disabled={disabled} className="flex flex-col items-center text-slate-400 hover:text-slate-600 transition-colors">
-      <i className="fa-solid fa-camera text-4xl mb-3"></i><span className="text-sm font-semibold">{label}</span>
-    </button>}
-  </div>
-);
-
-const ScanHint = ({ cam, prog, scanning, color }) => {
-  const pct = Math.round((prog || 0) * 100);
-  return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm font-semibold text-slate-600"><span>{scanning ? 'กำลังบันทึก...' : 'บันทึกอัตโนมัติเมื่อใบหน้านิ่งในกรอบ'}</span><span>{cam && !scanning ? pct + '%' : ''}</span></div>
-      {!scanning && <div className="h-2 rounded bg-pink-100 overflow-hidden"><div className={`h-2 rounded transition-all ${color}`} style={{ width: pct + '%' }}></div></div>}
-      <p className="text-sm text-slate-600 leading-relaxed">มองตรงที่กล้อง ถ้าสแกนไม่ติดนาน ปุ่ม "กดบันทึกเอง" จะปรากฏให้</p>
-    </div>
-  );
-};
-
-const ResultModal = ({ tone, icon, title, time, shiftName, late, onDone }) => (
-  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
-    <div className="bg-white rounded-2xl w-full max-w-sm shadow-soft p-8 text-center border border-slate-100 relative">
-      <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 border ${TONE[tone].soft}`}><i className={`fa-solid ${icon} text-4xl`}></i></div>
-      <h2 className="text-2xl font-bold text-slate-800">{title}</h2>
-      <div className="my-6">
-        <p className={`text-5xl font-semibold mb-2 tracking-tight ${TONE[tone].text}`}>{displaySafeTime(time)}</p>
-        <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-md border border-slate-200">{shiftName}</p>
-      </div>
-      {late > 0 && <div className="mb-6 text-sm text-red-600 font-bold bg-red-50 py-2 rounded-lg border border-red-100">บันทึกสาย {late} นาที</div>}
-      <button onClick={onDone} className={`w-full p-4 text-white rounded-xl font-bold transition-colors shadow-sm text-lg ${TONE[tone].btn}`}>เสร็จสิ้น</button>
-    </div>
-  </div>
-);
-
-// ================= ตรวจใบหน้าเข้ากรอบ (face-api tinyFaceDetector เท่านั้น ~190KB) =================
-const FACE_MODELS = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
-const FACE_HOLD_MS = 1200;   // ใบหน้าต้องอยู่ในกรอบนิ่งต่อเนื่องกี่มิลลิวินาทีก่อนบันทึกอัตโนมัติ (เพิ่ม = ช้าลง)
-const FACE_DEBUG = false; // ชั่วคราว: แสดงสถานะตัวตรวจใบหน้าบนกรอบกล้องเพื่อหาสาเหตุ (ตั้ง false เมื่อใช้งานจริง)
-const MANUAL_FALLBACK = true; // true = ถ้าสแกนอัตโนมัติไม่ติด (โหลดตัวตรวจไม่ได้/เกิน 20 วินาที) จะมีปุ่มบันทึกเองให้กด
-let liteReady = null, liteDone = false;
-const loadFaceLite = () => liteReady || (liteReady = (async () => {
-  if (!window.faceapi) throw new Error('faceapi not loaded');
-  await faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODELS);
-  // วอร์มอัป: ตรวจภาพเปล่า 1 ครั้งเพื่อเตรียมตัวประมวลผล (ครั้งแรกช้า) ให้การสแกนจริงเร็ว
-  const c = document.createElement('canvas'); c.width = c.height = 96;
-  try { await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 })); } catch (e) { console.warn('face warm-up', e); }
-  liteDone = true;
-})().catch(e => { liteReady = null; throw e; }));
-
-// ใบหน้าอยู่กลางกรอบ -> คืน true (กรอบเขียว) และถ้าอยู่นิ่งต่อเนื่อง เรียก onStable ครั้งเดียวเพื่อบันทึกอัตโนมัติ
-// ถ้าตัวตรวจใบหน้าโหลดไม่ได้จะไม่ทำอะไร ผู้ใช้กดปุ่มยืนยันเองได้ตามเดิม
-function useFaceFrame(vref, active, onStable) {
-  const [found, setFound] = useState(false), [manual, setManual] = useState(false), [ready, setReady] = useState(liteDone), [dbg, setDbg] = useState(''), [prog, setProg] = useState(0), sinceRef = useRef(0), cb = useRef(onStable);
-  cb.current = onStable;
-  useEffect(() => {
-    if (!active) return;
-    const t = setInterval(() => setProg(sinceRef.current ? Math.min(1, (performance.now() - sinceRef.current) / FACE_HOLD_MS) : 0), 50);
-    return () => clearInterval(t);
-  }, [active]);
-  useEffect(() => {
-    if (!active) { setFound(false); setManual(false); setProg(0); return; }
-    let stop = false, hits = 0, n = 0, lastErr = '';
-    sinceRef.current = 0;
-    const t = setTimeout(() => setManual(true), 20000);
-    (async () => {
-      for (;;) {   // โหลดไม่สำเร็จให้ลองใหม่เรื่อย ๆ (ระหว่างนั้นปุ่มสำรองจะโผล่ให้กดเองได้)
-        try { await loadFaceLite(); break; } catch (e) { setManual(true); await new Promise(res => setTimeout(res, 2000)); if (stop) return; }
-      }
-      if (stop) return;
-      setReady(true);
-      while (!stop) {
-        const v = vref.current;
-        if (v && v.videoWidth && v.readyState >= 2) {   // รอให้เฟรมแรกพร้อมก่อน (ถ้าไม่รออาจเกิด error ในรอบแรก)
-          const t0 = performance.now();
-          let r = null;
-          try { r = await faceapi.detectSingleFace(v, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 })); }
-          catch (e) { lastErr = String((e && e.message) || e).slice(0, 40); console.warn('face detect error', e); }   // ข้ามรอบนี้ ไม่ให้การสแกนหยุดทั้งหมด
-          if (stop) break;
-          const b = r && r.box, W = v.videoWidth, H = v.videoHeight;
-          const ok = !!b && b.width > W * .22 && Math.abs(b.x + b.width / 2 - W / 2) < W * .25 && Math.abs(b.y + b.height / 2 - H / 2) < H * .25;
-          n++;
-          if (FACE_DEBUG) setDbg(`${W}x${H} rs${v.readyState} #${n} ${Math.round(performance.now() - t0)}ms ` + (b ? `หน้า w${Math.round(b.width / W * 100)}% x${Math.round((b.x + b.width / 2) / W * 100)}% y${Math.round((b.y + b.height / 2) / H * 100)}%` : 'ไม่พบหน้า') + (lastErr ? ' ERR:' + lastErr : ''));
-          hits = ok ? hits + 1 : 0;
-          if (!ok) sinceRef.current = 0; else if (!sinceRef.current) sinceRef.current = performance.now();
-          setFound(hits >= 1);
-          if (hits >= 4 && performance.now() - sinceRef.current >= FACE_HOLD_MS) { stop = true; cb.current(); break; }
-        } else if (FACE_DEBUG) setDbg('รอวิดีโอ ' + (v ? v.videoWidth + 'x' + v.videoHeight + ' rs' + v.readyState : 'ไม่มี element'));
-        await new Promise(res => setTimeout(res, 100));
-      }
-    })();
-    return () => { stop = true; clearTimeout(t); };
-  }, [active]);
-  return { found, manual: MANUAL_FALLBACK && manual, ready, dbg, prog };
+// หาแถวของ TimeLog จาก id (อ่านเฉพาะคอลัมน์ A, ค้นจากล่างขึ้นบน)
+function findLogRow_(sh, id) {
+  const n = sh.getLastRow() - 1;
+  if (n < 1) return -1;
+  const ids = sh.getRange(2, 1, n, 1).getValues();
+  for (let i = n - 1; i >= 0; i--) if (ids[i][0].toString() === id.toString()) return i + 2;
+  return -1;
 }
 
-// ================= ธีมเทศกาล (แถบสีชมพูด้านบน) =================
-// from/to เป็น MM-DD (ข้ามปีได้) / เทศกาลตามจันทรคติใช้ YYYY-MM-DD และต้องแก้วันที่ทุกปี
-const FESTIVAL_ON = true;      // false = ปิดธีมเทศกาลทั้งหมด
-const FESTIVAL_PREVIEW = '';   // ใส่ key เช่น 'halloween' เพื่อทดสอบหน้าตา (ปล่อยว่างเมื่อใช้งานจริง)
-// แต่ละเทศกาลมีพื้นหลัง 3 แบบ x ชุดอีโมจิ 4 ชุด หมุนตามปี (ปีไม่ซ้ำกัน 12 ปี) ไม่ต้องแก้ไฟล์ทุกปี
-const FESTIVALS = [
-  { key: 'valentine', from: '02-12', to: '02-14', greet: 'Happy Valentine',
-    bgs: [['#db2777', '#e11d48'], ['#be185d', '#7c3aed'], ['#e11d48', '#f59e0b']],
-    decos: ['💖 💌 🌹 💕 💖', '🌷 💘 🍫 💝 💖', '🧸 💞 🌹 🎀 💗', '💍 💓 💐 💕 🥰'] },
-  { key: 'songkran', from: '04-13', to: '04-15', greet: 'สุขสันต์วันสงกรานต์',
-    bgs: [['#0ea5e9', '#14b8a6'], ['#0369a1', '#22d3ee'], ['#0d9488', '#facc15']],
-    decos: ['💦 🌸 🐘 💧 🌸', '🔫 💦 🌼 🧴 💧', '🙏 🌸 💦 🌺 🐘', '🛶 💧 🌼 💦 🐚'] },
-  { key: 'mother', from: '08-12', to: '08-12', greet: 'สุขสันต์วันแม่',
-    bgs: [['#38bdf8', '#818cf8'], ['#0ea5e9', '#a78bfa'], ['#06b6d4', '#6366f1']],
-    decos: ['💙 🌼 🌷 💙 🌼', '🤍 🌸 💐 💙 🕊️', '🌻 💙 🌷 🦋 🌼', '💐 💙 🌺 🤍 🌼'] },
-  { key: 'halloween', from: '10-28', to: '10-31', greet: 'Happy Halloween',
-    bgs: [['#6d28d9', '#ea580c'], ['#111827', '#f97316'], ['#4c1d95', '#16a34a']],
-    decos: ['🎃 🦇 👻 🕸️ 🎃', '🧙 🕷️ 🌙 🦇 🎃', '💀 🍬 🎃 👻 🍭', '🧛 🕯️ 🦇 🌕 🎃'] },
-  // ลอยกระทงเป็นวันตามจันทรคติ ต้องแก้วันที่ (YYYY-MM-DD) ปีละครั้ง: แสดงแบนเนอร์ภาพตั้งแต่ 6 ถึง 25 พ.ย. 2569 (วันลอยกระทง 24 พ.ย.)
-  { key: 'loykrathong', from: '2026-11-06', to: '2026-11-25', greet: 'สุขสันต์วันลอยกระทง', sub: '24 พฤศจิกายน 2569', art: 'loy',
-    bgs: [['#1e1b4b', '#c2410c']], decos: ['🌕 🏮 🌸 🏮 🌕'] },
-  { key: 'father', from: '12-05', to: '12-05', greet: 'สุขสันต์วันพ่อ',
-    bgs: [['#d97706', '#f59e0b'], ['#b45309', '#eab308'], ['#a16207', '#f59e0b']],
-    decos: ['💛 🌟 💛 🌟 💛', '🌼 👔 💛 ⭐ 🌻', '🌻 💛 🏆 🌟 🌼', '🧢 💛 🌟 🎖️ 🌻'] },
-  { key: 'christmas', from: '12-20', to: '12-26', greet: 'Merry Christmas',
-    bgs: [['#b91c1c', '#15803d'], ['#1e3a8a', '#b91c1c'], ['#065f46', '#b45309']],
-    decos: ['🎄 ⛄ 🎁 ❄️ 🎄', '🎅 🔔 ⭐ 🎁 🦌', '🤶 🍪 🎄 ❄️ 🕯️', '🧦 🎁 ⛄ ✨ 🎄'] },
-  { key: 'newyear', from: '12-29', to: '01-02', greet: 'สุขสันต์วันปีใหม่',
-    bgs: [['#1d4ed8', '#7c3aed'], ['#0f172a', '#f59e0b'], ['#7c3aed', '#db2777']],
-    decos: ['🎆 🎉 ✨ 🥂 🎆', '🎇 🎶 ✨ 🎊 🥳', '🧨 🎉 🎆 🍾 ✨', '🕛 🎊 ✨ 🎆 🥂'] }
-];
-const festivalFor = d => {
-  if (!FESTIVAL_ON) return null;
-  const full = fmtInput(d), md = full.slice(5), y = +full.slice(0, 4);
-  const f = FESTIVAL_PREVIEW ? FESTIVALS.find(x => x.key === FESTIVAL_PREVIEW) : FESTIVALS.find(x => {
-    const v = x.from.length > 5 ? full : md;
-    return x.from <= x.to ? v >= x.from && v <= x.to : v >= x.from || v <= x.to;
+// ==========================================
+// อ่านข้อมูล
+// ==========================================
+// ---------- ตารางเวร: รองรับหลายแถวของ วันที่+พนักงาน เดียวกัน (เช่น แถวเวร + แถวลา) ----------
+const WORK_SHIFTS = ['ด', 'ช616', 'ช618', 'ช619', 'ช6', 'ช716', 'ช719', 'ช7', 'ช21', 'ชบ7', 'ช', 'ชบ', 'ช20', 'ช83', 'ช9', 'ช917', 'บ15', 'บ', 'บด', 'บ4'];
+const tsNum_ = v => v instanceof Date ? v.getTime() : (Date.parse(v) || 0);
+const shiftList_ = r => r[2] ? r[2].toString().split(',').filter(Boolean) : [];
+
+// จัดกลุ่มแถวตามคีย์ วันที่_รหัสพนักงาน -> [index แถว เรียงจากบนลงล่าง]
+function schedGroups_(rows) {
+  const g = {};
+  rows.forEach((r, i) => {
+    if (!r[0] || !r[1]) return;
+    const k = fmtDate_(r[0]) + '_' + r[1].toString().toUpperCase();
+    (g[k] = g[k] || []).push(i);
   });
-  if (!f) return null;
-  const yr = f.from.length === 5 && f.from > f.to && md <= f.to ? y - 1 : y;   // ปีใหม่ใช้ธีมเดียวกันทั้งช่วงข้ามปี
-  const deco = f.decos[yr % f.decos.length].split(' '), [a, b] = f.bgs[yr % f.bgs.length];
-  return { key: f.key, greet: f.greet, sub: f.sub, art: f.art, bg: `linear-gradient(135deg,${a},${b})`, deco, emoji: deco[0] };
-};
-
-// ภาพแถบลอยกระทง: ภาพประกอบที่ผู้ใช้จัดหา (ครอปส่วนข้อความออกแล้ว) ฝังเป็น data URI
-const LOY_IMG = 'data:image/jpeg;base64,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';
-const LoyPhoto = () => (
-  <>
-    <img src={LOY_IMG} alt="" aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 top-0 h-[160px] w-auto max-w-none select-none pointer-events-none" />
-    <div className="absolute inset-0 bg-gradient-to-b from-[#1e1b4b]/70 via-[#1e1b4b]/10 to-transparent pointer-events-none"></div>
-  </>
-);
-
-// ================= App =================
-function App() {
-  const [user, setUser] = useState(null), [tab, setTab] = useState('home'), [imgErr, setImgErr] = useState(false), [formOpen, setFormOpen] = useState(false);
-  const [now, setNow] = useState(new Date()), [loading, setLoading] = useState(true), [syncedAt, setSyncedAt] = useState(null), [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'pink'), [themeOpen, setThemeOpen] = useState(false);
-  const [records, setRecords] = useState([]), [employees, setEmployees] = useState({}), [schedules, setSchedules] = useState({});
-  const [settings, setSettings] = useState({ standardWorkDays: {} });
-
-  // อัปเดตเฉพาะตอนนาทีเปลี่ยน (ค่าเดิม = ไม่ render ซ้ำ)
-  useEffect(() => {
-    const t = setInterval(() => setNow(p => { const n = new Date(); return n.getMinutes() === p.getMinutes() ? p : n; }), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  const verRef = useRef(null);
-  const applyData = d => {
-    setEmployees(d.employees || {}); setRecords(d.records || []); setSchedules(d.schedules || {});
-    if (d.settings) setSettings(d.settings);
-    verRef.current = d.version;
-    setSyncedAt(new Date());
-  };
-  const quiet = async action => { // เรียกแบบเงียบ ไม่เด้งแจ้งเตือนเมื่อเน็ตสะดุด
-    try {
-      const r = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, payload: {} }) });
-      return await r.json();
-    } catch (e) { return null; }
-  };
-  const sync = async () => {
-    if (pendingWrites > 0 || syncing) return;   // กำลังบันทึกอยู่ ไม่ดึงข้อมูลมาทับ
-    syncing = true;
-    const seq = writeSeq;
-    try {
-      const v = await quiet('getVersion');
-      if (v?.status === 'success' && v.version !== verRef.current) {
-        const r = await quiet('getInitialData');
-        // ถ้ามีการบันทึกเกิดขึ้นระหว่างดึง ให้ทิ้งผลนี้ (รอบถัดไปจะดึงใหม่)
-        if (r?.status === 'success' && pendingWrites === 0 && seq === writeSeq) applyData(r.data);
-      } else if (v?.status === 'success') setSyncedAt(new Date());   // ข้อมูลเป็นปัจจุบันแล้ว
-    } finally { syncing = false; }
-  };
-
-  useEffect(() => {
-    (async () => {
-      const res = await sendToGoogleSheet('getInitialData');
-      if (res?.status === 'success') applyData(res.data);
-      setLoading(false);
-    })();
-  }, []);
-
-  // เรียลไทม์แบบ polling: ตรวจเวอร์ชันทุก POLL_MS และทันทีที่กลับมาเปิดหน้า
-  useEffect(() => {
-    if (!user) return;
-    const tick = () => { if (!document.hidden) sync(); };
-    const t = setInterval(tick, POLL_MS);
-    document.addEventListener('visibilitychange', tick);
-    return () => { clearInterval(t); document.removeEventListener('visibilitychange', tick); };
-  }, [user]);
-
-  useEffect(() => { loadFaceLite().catch(() => {}); }, []); // โหลดตัวตรวจใบหน้าล่วงหน้า
-
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <div className="w-10 h-10 border-4 border-gray-200 border-t-primary rounded-full animate-spin mb-4"></div>
-      <h2 className="text-gray-600 font-medium">กำลังโหลดข้อมูล...</h2>
-    </div>
-  );
-  if (!user) return <LoginView employees={employees} onLogin={u => { setUser(u); setImgErr(false); }} />;
-
-  const isManager = user.level === 'หัวหน้า' || user.dept === 'ADMIN';
-  const role = user.dept === 'ADMIN' ? 'admin' : user.level === 'หัวหน้า' ? 'supervisor' : 'employee';
-  const lastPhoto = records.reduce((b, r) => r.empId === user.id && r.photoInUrl && (!b || r.id > b.id) ? r : b, null);
-  const avatar = lastPhoto && !imgErr ? driveImg(lastPhoto.photoInUrl, 'w400-h400') : `https://ui-avatars.com/api/?name=${user.fname}+${user.lname}&background=${theme === 'navy' ? 'e8ecf7' : 'fbcfe8'}&color=1e293b&size=150`;
-  const compact = tab === 'home' && formOpen;
-  const fest = festivalFor(now);   // หน้าลงเวลาเข้า/ออก: ย่อแถบชมพู
-  const applyTheme = t => {
-    document.documentElement.setAttribute('data-theme', t);
-    try { localStorage.setItem('rt_theme', t); } catch (e) {}
-    setTheme(t); setThemeOpen(false);
-  };
-  const logout = () => { setUser(null); setTab('home'); setImgErr(false); };
-  const tabs = [['home', 'fa-solid fa-clock', 'ลงเวลา'], ['calendar', 'fa-regular fa-calendar-days', 'ตารางเวร'], ['history', 'fa-solid fa-clock-rotate-left', 'ประวัติ'],
-    ...(isManager ? [['manager', 'fa-solid fa-layer-group', 'จัดการ']] : [])];
-
-  return (
-    <div className="min-h-screen flex flex-col bg-slate-50 pb-20 font-sans text-slate-900 relative">
-      <div className={`bg-primary ${compact ? 'h-32' : 'h-40'} w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm transition-all overflow-hidden`} style={fest ? { background: fest.art ? 'linear-gradient(180deg,#1e1b4b 0%,#5b21b6 62%,#c2410c 100%)' : fest.bg } : undefined}>
-        {fest && fest.art === 'loy' && <LoyPhoto />}
-        {fest && !fest.art && fest.deco.map((e, i) => <span key={i} className="absolute select-none pointer-events-none festi-float" style={{ left: `${6 + i * 16}%`, top: `${10 + (i % 3) * 24}%`, fontSize: 20 + (i % 3) * 6, opacity: .4, animationDelay: `${i * .7}s` }}>{e}</span>)}
-      </div>
-      <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col h-full">
-        <header className={`flex justify-between items-center px-6 ${compact ? 'pt-3 pb-0' : 'pt-5 pb-2'} text-white print-hide`}>
-          <div className="flex flex-col">{tab !== 'home' ? <span className="font-semibold tracking-wider">รักษ์สกล Time</span> : fest && <div className="leading-tight"><p className="font-bold tracking-wide">{fest.emoji} {fest.greet}</p>{fest.sub && <p className="text-xs font-semibold text-yellow-200">{fest.sub}</p>}</div>}</div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setThemeOpen(true)} aria-label="เลือกสีของแอป" className="text-white/90 hover:text-white hover:bg-white/10 w-11 h-11 rounded-full transition-colors"><i className="fa-solid fa-palette text-lg"></i></button>
-            <button onClick={logout} aria-label="ออกจากระบบ" className="text-white/90 hover:text-white hover:bg-white/10 w-11 h-11 rounded-full transition-colors"><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i></button>
-          </div>
-        </header>
-        <main className={`flex-grow px-4 sm:px-6 lg:px-8 ${compact ? 'mt-1' : 'mt-4'}`}>
-          {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} onForm={setFormOpen} syncedAt={syncedAt} />}
-          {tab === 'calendar' && <MyCalendarView user={user} schedules={schedules} />}
-          {tab === 'history' && <MyHistoryView user={user} records={records} schedules={schedules} settings={settings} now={now} />}
-          {tab === 'manager' && isManager && (typeof ReportView !== 'undefined'
-            ? <ReportView role={role} user={user} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} />
-            : <div className={`${CARD} p-8 text-center text-slate-500`}>ยังไม่ได้ติดตั้งโมดูลจัดการ (ReportView)</div>)}
-        </main>
-      </div>
-
-      {!compact && <a href={LEAVE_SYSTEM_URL} target="_blank" className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 bg-white text-primary border border-primary/20 px-4 py-3 rounded-full shadow-soft hover:shadow-md transition-all z-[100] flex items-center gap-2 print-hide" style={{ textDecoration: 'none' }}>
-        <i className="fa-solid fa-notes-medical"></i><span className="text-sm font-medium">ลางาน</span>
-      </a>}
-
-      {themeOpen && (
-        <div className="fixed inset-0 z-[300] bg-slate-900/50 flex items-end sm:items-center justify-center print-hide" onClick={() => setThemeOpen(false)}>
-          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-3" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between"><h3 className="text-lg font-bold text-slate-800">เลือกสีของแอป</h3><button onClick={() => setThemeOpen(false)} aria-label="ปิด" className="w-11 h-11 rounded-full text-slate-500 hover:bg-slate-100"><i className="fa-solid fa-xmark"></i></button></div>
-            <p className="text-sm text-slate-600">เลือกได้ตามชอบ ใช้เฉพาะในเครื่องนี้ เปลี่ยนได้ทุกเมื่อ</p>
-            {THEMES.map(t => (
-              <button key={t.key} onClick={() => applyTheme(t.key)} className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-colors ${theme === t.key ? 'border-primary bg-pink-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                <div className="flex -space-x-2">{t.sw.map(c => <span key={c} className="w-9 h-9 rounded-full border-2 border-white" style={{ background: c }}></span>)}</div>
-                <div className="flex-1"><p className="font-bold text-slate-800">{t.name}</p><p className="text-xs text-slate-500">{t.desc}</p></div>
-                {theme === t.key && <i className="fa-solid fa-circle-check text-primary text-xl"></i>}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 pb-safe print-hide bottom-nav-hide z-50">
-        <div className="max-w-md mx-auto flex justify-around px-2">
-          {tabs.map(([k, ico, label]) => (
-            <button key={k} onClick={() => setTab(k)} className={`flex flex-col items-center justify-center w-full py-3 gap-1 transition-colors ${tab === k ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}>
-              <i className={`${ico} text-lg ${tab === k ? 'scale-110 transition-transform' : ''}`}></i>
-              <span className="text-xs font-semibold">{label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
-    </div>
-  );
+  return g;
 }
 
-// ================= Login =================
-function LoginView({ employees, onLogin }) {
-  const [empId, setEmpId] = useState(''), [password, setPassword] = useState(''), [needsPw, setNeedsPw] = useState(false), [err, setErr] = useState('');
-  const inputCls = 'w-full pl-12 pr-4 py-4 border-2 border-slate-100 rounded-2xl bg-white/50 outline-none text-slate-800 font-bold focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-inner';
-  const grad = 'bg-primary hover:bg-pink-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2';
-
-  const next = e => {
-    e?.preventDefault(); setErr('');
-    const id = empId.trim().toUpperCase();
-    if (!id) return setErr('กรุณากรอกรหัสพนักงาน');
-    const emp = employees[id];
-    if (!emp) return setErr('ไม่พบรหัสพนักงานนี้ในระบบ');
-    const pw = emp.password || '';
-    if (pw !== '' && !needsPw) return setNeedsPw(true);
-    if (needsPw && password !== pw) return setErr('รหัสผ่านไม่ถูกต้อง');
-    onLogin({ id, ...emp });
-  };
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 relative overflow-hidden">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-soft border border-slate-200 p-8 sm:p-10 text-center relative z-10">
-        <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-pink-500/30 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
-          <i className="fa-solid fa-fingerprint text-4xl text-white"></i>
-        </div>
-        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">รักษ์สกล <span className="text-primary">Time</span></h1>
-        <p className="text-slate-500 text-sm font-medium mb-8">เข้าสู่ระบบเพื่อปฏิบัติงาน</p>
-        {err && <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-sm border border-red-100 flex items-center justify-center gap-2 font-bold shadow-sm"><i className="fa-solid fa-circle-exclamation text-lg"></i>{err}</div>}
-        <form onSubmit={next} className="space-y-5 text-left">
-          {!needsPw ? (
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider ml-1">รหัสพนักงาน</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i className="fa-regular fa-id-badge text-slate-400 text-lg"></i></div>
-                <input type="text" placeholder="เช่น EMP01" value={empId} onChange={e => setEmpId(e.target.value.toUpperCase())} className={inputCls} />
-              </div>
-              <button type="submit" className={`w-full mt-8 py-4 text-base ${grad}`}>ดำเนินการต่อ <i className="fa-solid fa-arrow-right"></i></button>
-            </div>
-          ) : (
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider ml-1">รหัสผ่านสำหรับ <span className="text-primary">{employees[empId.toUpperCase()]?.fname}</span></label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i className="fa-solid fa-lock text-slate-400 text-lg"></i></div>
-                <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className={`${inputCls} tracking-widest`} autoFocus />
-              </div>
-              <div className="flex gap-3 mt-8">
-                <button type="button" onClick={() => { setNeedsPw(false); setPassword(''); }} className="w-1/3 py-4 bg-white border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-600 rounded-2xl font-bold transition-all">กลับ</button>
-                <button type="submit" className={`w-2/3 py-4 ${grad}`}>เข้าสู่ระบบ <i className="fa-solid fa-arrow-right-to-bracket"></i></button>
-              </div>
-            </div>
-          )}
-        </form>
-      </div>
-    </div>
-  );
+// รวมกะของหลายแถว: แถวที่แก้ล่าสุดกำหนดกะทำงาน/Off, รายการลา (ลา พักร้อน ป่วย ลาชั่วโมง ฯลฯ) รวมจากทุกแถว
+function mergeShifts_(rows, idxs) {
+  if (idxs.length === 1) return shiftList_(rows[idxs[0]]);
+  const isWork = s => WORK_SHIFTS.includes(s);
+  const newest = idxs.slice().sort((a, b) => tsNum_(rows[b][5]) - tsNum_(rows[a][5]) || b - a)[0];
+  const cur = shiftList_(rows[newest]);
+  const work = cur.filter(isWork), off = cur.includes('Off');
+  const leaves = [...new Set(idxs.flatMap(i => shiftList_(rows[i])).filter(s => !isWork(s) && s !== 'Off'))];
+  return work.length ? [...work, ...leaves] : leaves.length ? leaves : off ? ['Off'] : [];
 }
 
-// ================= หน้าลงเวลา =================
-function ActionPanelView({ user, now, records, setRecords, schedules, avatar, setTab, onForm, syncedAt }) {
-  const [type, setType] = useState(null);
-  useEffect(() => { onForm(!!type); return () => onForm(false); }, [type]);
-  const fest = festivalFor(now);
-  // ป้ายสถานะของวันนี้
-  const today = fmtInput(now), yest = fmtInput(new Date(now.getTime() - 864e5));
-  const open = records.find(r => r.empId === user.id && !r.timeOut && (r.date === today || (now.getHours() <= 8 && r.date === yest)));
-  const last = !open && records.filter(r => r.empId === user.id && r.date === today && r.timeOut).sort((a, b) => b.id.localeCompare(a.id))[0];
-  const todayShifts = shiftsOf(schedules, today, user.id).filter(s => SHIFT_TYPES[s]);
-  const chip = open ? ['green', `เข้างานแล้ว ${displaySafeTime(open.timeIn)} · กะ ${SHIFT_TYPES[open.shiftId]?.label || open.shiftId}`]
-    : last ? ['slate', `ออกงานแล้ว ${displaySafeTime(last.timeOut)}`]
-    : todayShifts.length ? ['amber', `วันนี้เวร ${todayShifts.join(', ')} · ยังไม่ได้ลงเวลา`] : ['slate', 'วันนี้ไม่มีเวร'];
-  const CHIP_CLS = { green: 'bg-emerald-100 text-emerald-800', amber: 'bg-amber-100 text-amber-800', slate: 'bg-slate-100 text-slate-700' };
-  if (!type) return (
-    <div className="max-w-md mx-auto flex flex-col items-center mt-4">
-      <div className="relative mb-3 shrink-0">
-        <div className="w-28 h-28 rounded-full border-4 border-white overflow-hidden bg-slate-100 shadow-md">
-          <img src={avatar} alt="Profile" className="w-full h-full object-cover transform scale-x-[-1]" />
-        </div>
-        {fest && <span className="absolute -bottom-1 -right-1 text-3xl drop-shadow select-none">{fest.emoji}</span>}
-      </div>
-      <h2 className="text-xl font-bold text-slate-800">{user.fname} {user.lname}</h2>
-      <p className="text-sm text-slate-500 mb-8 font-medium">แผนก{user.dept}</p>
-      <div className="text-7xl leading-none font-medium text-primary tracking-tighter mb-2 font-mono">{formatTime24(now)}</div>
-      <p className="text-sm font-semibold text-slate-500 mb-3">{formatFullThaiDate(now)}</p>
-      <div className={`text-sm font-bold px-4 py-1.5 rounded-full mb-8 text-center ${CHIP_CLS[chip[0]]}`}>{chip[1]}</div>
-      <div className="flex gap-4 w-full px-4 mb-5">
-        <button onClick={() => setType('in')} className="flex-1 bg-primary text-white py-4 rounded-2xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all text-sm tracking-wide">ลงเวลาเข้า</button>
-        <button onClick={() => setType('out')} className="flex-1 bg-secondary text-white py-4 rounded-2xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all text-sm tracking-wide">ลงเวลาออก</button>
-      </div>
-      <div className="w-full px-4">
-        <button onClick={() => setTab('history')} className="w-full bg-white border shadow-sm border-slate-200 text-slate-600 py-3.5 rounded-2xl font-semibold hover:bg-slate-50 transition-colors text-sm tracking-wide">ประวัติการลงเวลา</button>
-      </div>
-      <p className="mt-4 text-xs text-slate-500">ข้อมูลอัปเดตล่าสุด {syncedAt ? formatTime24(syncedAt) + ' น.' : '-'}</p>
-    </div>
-  );
-  const props = { user, now, records, setRecords, onDone: () => setType(null) };
-  return (
-    <div className="max-w-md mx-auto mt-2">
-      <div className="flex items-center gap-3 mb-3 text-white">
-        <button onClick={() => setType(null)} aria-label="ย้อนกลับ" className="w-11 h-11 shrink-0 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"><i className="fa-solid fa-chevron-left"></i></button>
-        <div><p className="text-xs font-semibold">{formatFullThaiDate(now)}</p><h2 className="text-xl font-bold leading-tight">{type === 'in' ? 'ลงเวลาเข้างาน' : 'ลงเวลาออกงาน'}</h2></div>
-      </div>
-      {type === 'in' ? <ClockInModule {...props} schedules={schedules} /> : <ClockOutModule {...props} />}
-    </div>
-  );
-}
+// ---------- สแกนใบหน้า ----------
+const FACE_ENABLED = false;   // false = ไม่ตรวจใบหน้า (ใช้ภาพเซลฟี่เหมือนเดิม) / true = เปิดระบบเทียบใบหน้า
+const FACE_THRESHOLD = 0.5;   // ระยะ Euclidean ที่ยอมรับ (น้อย = เข้ม) ค่าแนะนำ 0.45-0.55
+const FACE_REQUIRED = false;  // true = พนักงานที่ยังไม่ลงทะเบียนใบหน้า ลงเวลาไม่ได้
+const SH_FACE = 'FaceData';
 
-function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
-  const [shift, setShift] = useState(''), [valid, setValid] = useState([]), [loc, setLoc] = useState('checking'), [pos, setPos] = useState(null);
-  const [cam, setCam] = useState(false), [scanning, setScanning] = useState(false), [result, setResult] = useState(null), [err, setErr] = useState('');
-  const vref = useCamera(cam && !result && loc === 'ok', () => { setErr('ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาต'); setCam(false); });
-  const already = shift && records.some(r => r.empId === user.id && r.date === resolveTarget(now, schedules, user.id, shift).date && r.shiftId === shift);
-  const canGo = cam && loc === 'ok' && valid.length > 0 && !already;
-  const { found: faceOk, manual, ready, dbg, prog } = useFaceFrame(vref, canGo && !scanning && !result, () => handleClockIn());
-  // เปิดกล้องอัตโนมัติเมื่อพิกัดผ่านและมีกะเดียว (ถ้ามีหลายกะ ให้เลือกกะก่อนแล้วกดเปิดกล้อง)
-  useEffect(() => { if (loc === 'ok' && valid.length === 1 && !already) setCam(true); }, [loc, valid.length, already]);
-
-  useEffect(() => {
-    const today = fmtInput(now);
-    const active = records.find(r => r.empId === user.id && !r.timeOut && (r.date === today || (now.getHours() <= 8 && r.date === fmtInput(new Date(now.getTime() - 864e5)))));
-    if (active) { setErr(`ค้างลงเวลาออกกะ "${SHIFT_TYPES[active.shiftId]?.label || active.shiftId}"`); setLoc('error'); return; }
-    const { date, shifts } = resolveTarget(now, schedules, user.id);
-    const done = records.filter(r => r.empId === user.id && r.date === date).map(r => r.shiftId);
-    const ok = shifts.filter(s => s && !NON_WORK.includes(s) && !done.includes(s));
-    setValid(ok);
-    if (ok.length) { setShift(ok[0]); checkLocation(); }
-    else { setShift(''); setErr(shifts.length && done.length ? 'ลงเวลาครบทุกกะของวันนี้แล้ว' : 'ไม่พบตารางเวรของคุณในระบบ'); setLoc('error'); }
-  }, []);
-
-  const checkLocation = () => {
-    setLoc('checking'); setErr('');
-    if (!navigator.geolocation) { setErr('เบราว์เซอร์ไม่รองรับ GPS'); setLoc('error'); return; }
-    const t = setTimeout(() => { setErr('GPS ไม่ตอบสนอง ลองสลับเน็ตหรือรีเฟรชหน้าเว็บ'); setLoc('error'); }, 15000);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords: { latitude: lat, longitude: lon } }) => {
-        clearTimeout(t); setPos({ lat, lon });
-        const d = distM(lat, lon, HOSPITAL_LAT, HOSPITAL_LON);
-        if (d <= ALLOWED_RADIUS) { setLoc('ok'); setErr(''); } else { setErr(`อยู่นอกพื้นที่ (${Math.round(d)}ม.)`); setLoc('error'); }
-      },
-      e => { clearTimeout(t); setErr({ 1: 'กรุณาอนุญาตการเข้าถึงตำแหน่ง (Location)', 2: 'สัญญาณ GPS ขัดข้อง', 3: 'หมดเวลาการค้นหาพิกัด' }[e.code] || 'ไม่สามารถระบุตำแหน่งได้'); setLoc('error'); },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  };
-
-  const handleClockIn = async () => {
-    if (already) { setErr('ไม่อนุญาต: คุณได้ลงเวลาสำหรับกะนี้ไปแล้ว'); setCam(false); return; }
-    setErr(''); setScanning(true);
-    const photoBase64 = captureImage(vref.current);
-    if (!photoBase64) { setErr('จับภาพล้มเหลว รอให้กล้องชัดเจนก่อนกดสแกน'); setScanning(false); return; }
-    const sd = SHIFT_TYPES[shift], [h, m] = sd.start.split(':').map(Number);
-    const actual = now.getHours() * 60 + now.getMinutes(), deadline = h * 60 + m + 5;
-    const tgt = resolveTarget(now, schedules, user.id, shift);
-    // วันที่ช่องเวรมี "ลาชั่วโมง" ไม่นับสาย (ระบบไม่ทราบช่วงเวลาที่ลา)
-    let dl = deadline;
-    if (tgt.shifts.includes('ลาชั่วโมง')) {
-      // ไม่ทราบเวลาลา หรือ ลาครอบเวลาเริ่มกะ = ไม่นับสาย / ลาช่วงอื่น (เช่น ท้ายกะ) = นับสายตามปกติ
-      const lt = schedules[tgt.date]?.[user.id]?.leaveTime || '', tm = t => +t.slice(0, 2) * 60 + +t.slice(3, 5);
-      const cover = lt.split(';').filter(Boolean).map(x => x.split('-').map(tm)).find(([a, b]) => a <= h * 60 + m && b > h * 60 + m);
-      dl = !lt || cover ? Infinity : deadline;
-    }
-    const isLate = actual > dl && actual < dl + 720;
-    const rec = { id: Date.now().toString(), date: tgt.date, empId: user.id, shiftId: shift, timeIn: formatTime24(now), timeOut: null,
-      isLate, lateMinutes: isLate ? actual - dl : 0, credit: sd.credit, lat: pos?.lat, lon: pos?.lon, photoBase64 };
-    const res = await sendToGoogleSheet('clockIn', rec, 3);
-    if (res?.status === 'success') { setRecords([...records, rec]); setResult({ ...rec, shiftName: sd.label }); }
-    else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: themeHex('p') });
-    setScanning(false); setCam(false);
-  };
-
-  if (result) return <ResultModal tone="primary" icon="fa-check" title="บันทึกเข้างานสำเร็จ" time={result.timeIn} shiftName={result.shiftName} late={result.isLate ? result.lateMinutes : 0} onDone={onDone} />;
-
-  const locCls = loc === 'ok' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : loc === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-slate-50 border-slate-200 text-slate-600';
-  return (
-    <Panel>
-      <ErrorBox msg={err} />
-      <div className="bg-white rounded-xl border border-slate-200 shadow-soft p-3 space-y-2.5">
-        {valid.length === 1 ? (
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 shrink-0 rounded-lg bg-pink-100 text-pink-900 text-xl font-bold flex items-center justify-center">{valid[0]}</div>
-            <div className="flex-1 min-w-0"><p className="text-xs text-slate-500">กะการทำงาน</p><p className="text-lg font-bold text-slate-800 leading-tight">{SHIFT_TYPES[valid[0]] ? `${SHIFT_TYPES[valid[0]].start.replace(':', '.')} - ${SHIFT_TYPES[valid[0]].end.replace(':', '.')} น.` : valid[0]}</p></div>
-            {SHIFT_TYPES[valid[0]] && <p className="text-xs font-bold text-slate-500">เครดิต {SHIFT_TYPES[valid[0]].credit}</p>}
-          </div>
-        ) : (
-          <div>
-            <label className={LABEL}>กะการทำงาน</label>
-            {valid.length > 0
-              ? <select value={shift} onChange={e => setShift(e.target.value)} className={`${FIELD} focus:border-primary`}>{valid.map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}</select>
-              : <div className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 text-sm font-medium">ไม่พบตารางเวรที่ลงได้</div>}
-          </div>
-        )}
-        <div className={`p-2.5 rounded-lg flex items-center gap-2 text-sm border font-semibold ${locCls}`}>
-          {loc === 'ok' ? <><i className="fa-solid fa-location-dot"></i> พิกัดถูกต้อง · อยู่ในพื้นที่โรงพยาบาล</> : loc === 'error' ? <><i className="fa-solid fa-location-xmark"></i> {err || 'พิกัดอยู่นอกพื้นที่'}</> : <><i className="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบพิกัด...</>}
-        </div>
-      </div>
-      <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} saving={scanning} />
-      <ScanHint cam={cam} prog={prog} scanning={scanning} color="bg-primary" />
-      {manual && canGo && !scanning && <button onClick={handleClockIn} className="w-full p-3 rounded-xl font-bold text-sm text-white bg-primary hover:bg-pink-700 shadow-md">สแกนไม่ติด? กดบันทึกเข้างานเอง</button>}
-    </Panel>
-  );
-}
-
-function ClockOutModule({ user, now, records, setRecords, onDone }) {
-  const [outDate, setOutDate] = useState(fmtInput(now)), [found, setFound] = useState(null), [err, setErr] = useState('');
-  const [cam, setCam] = useState(false), [scanning, setScanning] = useState(false), [warn, setWarn] = useState(false), [ok, setOk] = useState(null);
-  const vref = useCamera(cam && !ok, () => { setErr('ไม่สามารถเข้าถึงกล้องได้'); setCam(false); });
-  const { found: faceOk, manual, ready, dbg, prog } = useFaceFrame(vref, cam && !ok && !scanning && !warn && !!found, () => attempt());
-  useEffect(() => { if (found) setCam(true); }, [found]);   // เปิดกล้องอัตโนมัติเมื่อพบประวัติเข้างาน
-
-  const search = date => {
-    setErr(''); setFound(null); setCam(false);
-    const r = records.find(x => x.empId === user.id && x.date === date && !x.timeOut);
-    if (!r) setErr('ไม่พบประวัติค้างออกของวันที่เลือก'); else setFound(r);
-  };
-  useEffect(() => {
-    // ถ้าวันนี้ไม่มีรายการค้างออก แต่เมื่อวานมี (เช่น เวรดึก) ให้เลือกวันนั้นให้เลย
-    const y = fmtInput(new Date(now.getTime() - 864e5));
-    const open = records.filter(r => r.empId === user.id && !r.timeOut && (r.date === outDate || r.date === y)).sort((a, b) => b.date.localeCompare(a.date))[0];
-    if (open && open.date !== outDate) setOutDate(open.date);
-    search(open ? open.date : outDate);
-  }, []);
-
-  const attempt = () => {
-    if (!cam) return;
-    const sd = SHIFT_TYPES[found.shiftId], [eh, em] = (sd.end === '24:00' ? '23:59' : sd.end).split(':').map(Number), sh = +sd.start.split(':')[0];
-    const end = new Date(now); end.setHours(eh, em, 0, 0);
-    if (eh < sh && now.getHours() >= 12) end.setDate(end.getDate() + 1);
-    now < end ? setWarn(true) : process();
-  };
-
-  const process = async () => {
-    setWarn(false); setScanning(true); setErr('');
-    const photoBase64 = captureImage(vref.current);
-    if (!photoBase64) { setScanning(false); return; }
-    const timeOut = formatTime24(now);
-    const res = await sendToGoogleSheet('clockOut', { id: found.id, timeOut, photoBase64 }, 3);
-    if (res?.status === 'success') { setRecords(records.map(r => r.id === found.id ? { ...r, timeOut } : r)); setOk({ timeOut, shiftName: SHIFT_TYPES[found.shiftId]?.label }); }
-    else if (res?.status === 'error') Swal.fire({ icon: 'error', text: res.message, confirmButtonColor: themeHex('s') });
-    setScanning(false); setCam(false);
-  };
-
-  if (ok) return <ResultModal tone="secondary" icon="fa-arrow-right-from-bracket" title="บันทึกออกงานสำเร็จ" time={ok.timeOut} shiftName={ok.shiftName} onDone={onDone} />;
-
-  return (
-    <Panel>
-      <ErrorBox msg={err} />
-      <div className="bg-white rounded-xl border border-slate-200 shadow-soft p-3 space-y-2.5">
-        <div>
-          <label className={LABEL}>วันที่เข้างาน</label>
-          <input type="date" value={outDate} onChange={e => { setOutDate(e.target.value); search(e.target.value); }} className={`${FIELD} focus:border-secondary`} />
-        </div>
-        {found && (
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 shrink-0 rounded-lg bg-pink-100 text-pink-900 text-xl font-bold flex items-center justify-center">{found.shiftId}</div>
-            <div className="flex-1 min-w-0"><p className="text-xs text-slate-500">กะที่บันทึก</p><p className="text-lg font-bold text-slate-800 leading-tight">{SHIFT_TYPES[found.shiftId] ? `${SHIFT_TYPES[found.shiftId].start.replace(':', '.')} - ${SHIFT_TYPES[found.shiftId].end.replace(':', '.')} น.` : found.shiftId}</p></div>
-            <div className="text-right"><p className="text-xs text-slate-500">เข้าเมื่อ</p><p className="text-base font-bold text-slate-800">{displaySafeTime(found.timeIn)}</p></div>
-          </div>
-        )}
-      </div>
-      {!found ? <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 text-sm font-medium">ไม่พบประวัติเข้างานของวันที่เลือก</div> : (
-        <div className="space-y-3">
-          <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} label="เปิดกล้องสแกนหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} saving={scanning} />
-          <ScanHint cam={cam} prog={prog} scanning={scanning} color="bg-secondary" />
-          {warn ? (
-            <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-sm">
-              <p className="text-amber-800 mb-4 text-sm font-bold">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
-              <div className="flex gap-2">
-                <button onClick={process} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-2.5 text-sm font-bold transition-colors">ยืนยัน</button>
-                <button onClick={() => setWarn(false)} className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg py-2.5 text-sm font-bold transition-colors">ยกเลิก</button>
-              </div>
-            </div>
-          ) : (
-            <>
-              {manual && cam && !scanning && <button onClick={attempt} className="w-full p-3 rounded-xl font-bold text-sm text-white bg-secondary hover:bg-pink-900 shadow-md">สแกนไม่ติด? กดบันทึกออกงานเอง</button>}
-            </>
-          )}
-        </div>
-      )}
-    </Panel>
-  );
-}
-
-// ================= ตารางเวร / ประวัติ =================
-const PageTitle = ({ sub, title, right }) => (
-  <div className="flex items-center justify-between gap-3 text-white mb-3">
-    <div><p className="text-sm font-semibold">{sub}</p><h2 className="text-[22px] font-bold leading-tight">{title}</h2></div>
-    {right}
-  </div>
-);
-
-function MyCalendarView({ user, schedules }) {
-  const [cur, setCur] = useState(new Date()), [sel, setSel] = useState(fmtInput(new Date()));
-  const y = cur.getFullYear(), m = cur.getMonth(), todayStr = fmtInput(new Date());
-  const blanks = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
-  const isLeave = s => NON_WORK.includes(s);
-  const selShifts = shiftsOf(schedules, sel, user.id), selLeaveTime = schedules[sel]?.[user.id]?.leaveTime || '';
-  const arrow = 'w-11 h-11 rounded-full bg-pink-50 text-pink-900 hover:bg-pink-100 flex items-center justify-center transition-colors';
-  return (
-    <div className="max-w-md mx-auto space-y-3">
-      <PageTitle sub={`แผนก${user.dept}`} title="ตารางเวรของฉัน" />
-      <div className={`${CARD} px-3 py-2 flex items-center justify-between shadow-soft`}>
-        <button aria-label="เดือนก่อนหน้า" onClick={() => setCur(new Date(y, m - 1, 1))} className={arrow}><i className="fa-solid fa-chevron-left"></i></button>
-        <h3 className="text-lg font-bold text-slate-800">{THAI_MONTHS[m]} {y + 543}</h3>
-        <button aria-label="เดือนถัดไป" onClick={() => setCur(new Date(y, m + 1, 1))} className={arrow}><i className="fa-solid fa-chevron-right"></i></button>
-      </div>
-      <div className={`${CARD} p-2`}>
-        <div className="grid grid-cols-7 gap-1 mb-1">
-          {['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map((d, i) => <div key={d} className={`text-center text-xs font-bold py-1 ${i === 0 || i === 6 ? 'text-rose-700' : 'text-slate-600'}`}>{d}</div>)}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {Array.from({ length: blanks }, (_, i) => <div key={`b${i}`}></div>)}
-          {Array.from({ length: days }, (_, i) => i + 1).map(day => {
-            const dateStr = ymd(y, m + 1, day), dayShifts = schedules[dateStr]?.[user.id]?.shifts || [];
-            const today = dateStr === todayStr, wk = [0, 6].includes(new Date(y, m, day).getDay());
-            return (
-              <button key={day} onClick={() => setSel(dateStr)} className={`min-h-[48px] rounded-lg text-xs text-slate-600 flex flex-col items-center gap-0.5 py-1 px-0.5 ${today ? 'bg-pink-50 outline outline-2 outline-pink-600' : dateStr === sel ? 'bg-white ring-2 ring-pink-300' : 'bg-slate-50'}`}>
-                <span className={wk ? 'text-rose-700 font-bold' : ''}>{day}</span>
-                {dayShifts.slice(0, 2).map((s, k) => <b key={k} className={`max-w-full truncate leading-tight ${s === 'Off' ? 'text-xs text-slate-500 font-semibold' : isLeave(s) ? 'text-xs text-amber-800 bg-amber-100 rounded px-1' : 'text-[13px] text-slate-900'}`}>{s}</b>)}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div className={`${CARD} p-3 space-y-2 shadow-soft`}>
-        <p className="text-xs text-slate-500 font-semibold">{sel === todayStr ? 'วันนี้ · ' : ''}{formatFullThaiDate(new Date(sel + 'T00:00:00'))}</p>
-        {selShifts.length ? selShifts.map((s, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className={`w-11 h-11 shrink-0 rounded-lg text-xl font-bold flex items-center justify-center ${isLeave(s) ? 'bg-amber-100 text-amber-900 text-sm' : 'bg-pink-100 text-pink-900'}`}>{isLeave(s) ? 'ลา' : s}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[17px] font-bold text-slate-800 leading-tight">{SHIFT_TYPES[s] ? `${SHIFT_TYPES[s].start.replace(':', '.')} - ${SHIFT_TYPES[s].end.replace(':', '.')} น.` : s}</p>
-              {s === 'ลาชั่วโมง' && selLeaveTime && <p className="text-xs text-slate-500">ช่วงเวลาที่ลา {selLeaveTime.split(';').map(x => x.replace(/-/g, ' - ')).join(', ')} น.</p>}
-            </div>
-            {SHIFT_TYPES[s] && <span className="text-xs font-bold text-emerald-800 bg-emerald-100 rounded-full px-2.5 py-1">เครดิต {SHIFT_TYPES[s].credit}</span>}
-          </div>
-        )) : <p className="text-sm font-semibold text-slate-500 py-2">ไม่มีเวรในวันนี้</p>}
-      </div>
-      <p className="text-xs text-slate-500 pb-2">ช เวรปกติ · Off วันหยุด · <span className="text-amber-800 font-bold">พักร้อน/ลา</span> · แตะวันเพื่อดูรายละเอียด</p>
-    </div>
-  );
-}
-
-function MyHistoryView({ user, records, schedules, settings, now }) {
-  const [month, setMonth] = useState(`${now.getFullYear()}-${pad(now.getMonth() + 1)}`);
-  const mine = records.filter(r => r.empId === user.id && r.date.startsWith(month)).sort((a, b) => b.date.localeCompare(a.date) || b.timeIn.localeCompare(a.timeIn));
-  const late = mine.filter(r => r.isLate).length, lateMin = mine.reduce((a, r) => a + (r.isLate ? Number(r.lateMinutes) || 0 : 0), 0);
-
-  // สรุปเดือน: เครดิตรวม (วิธีเดียวกับหน้าสรุป OT ของหัวหน้า), วันทำงาน, พักร้อน, ลา, OT
-  const [y, m] = month.split('-').map(Number), today = fmtInput(now), workDays = parseInt(settings?.standardWorkDays?.[month]) || 22;
-  let credit = 0, vac = 0, leave = 0, hourly = 0;
-  for (let d = 1, n = new Date(y, m, 0).getDate(); d <= n; d++) {
-    const ds = ymd(y, m, d), recs = mine.filter(r => r.date === ds), sched = shiftsOf(schedules, ds, user.id), worked = recs.map(r => r.shiftId);
-    credit += recs.reduce((a, r) => a + (r.credit || 0), 0);
-    if (sched.some(s => s === 'Vac' || s === 'พักร้อน')) vac++;
-    if (sched.some(s => s === 'ลา' || s === 'ป่วย')) leave++;
-    if (sched.includes('ลาชั่วโมง')) hourly++;
-    sched.filter(s => !worked.includes(s)).forEach(s => { credit += ds >= today ? creditOf(s) : (PAID.includes(s) ? 1 : 0); });
+function faceSheet_() {
+  let sh = sheet_(SH_FACE);
+  if (!sh) {
+    sh = ss_().insertSheet(SH_FACE);
+    sh.appendRow(['EmpID', 'Templates', 'UpdatedAt', 'UpdatedBy']);
+    sh.hideSheet();
   }
-  const f = n => +n.toFixed(3), ot = credit - workDays;
-  const stats = [['วันทำงาน', new Set(mine.map(r => r.date)).size, ''], ['Vac', vac, ''], ['ลา', leave, hourly ? `+ลาชม. ${hourly} ครั้ง` : ''], ['OT', (ot > 0 ? '+' : '') + f(ot), ''], ['สาย (ครั้ง)', late, ''], ['สายรวม (นาที)', lateMin, '']];
-
-  return (
-    <div className="max-w-md mx-auto space-y-3">
-      <PageTitle sub={`แผนก${user.dept}`} title="ประวัติของฉัน" right={<input type="month" aria-label="เลือกเดือน" value={month} onChange={e => setMonth(e.target.value)} className="h-11 rounded-full bg-white/20 text-white text-sm font-bold px-3 outline-none" />} />
-      <div className="bg-pink-700 text-white rounded-xl p-3.5 shadow-soft">
-        <div className="flex items-end justify-between">
-          <div><p className="text-xs font-bold">เครดิตเวร</p><p className="text-[40px] font-bold leading-none">{f(credit)}</p></div>
-          <p className="text-xs text-right">รวมเวรล่วงหน้าและลา<br />วันทำการ {workDays}</p>
-        </div>
-        <div className="grid grid-cols-3 gap-2 mt-3">{stats.map(([l, v, sub]) => (
-          <div key={l} className="bg-white/15 rounded-lg px-2.5 py-1.5"><p className="text-xs font-semibold">{l}</p><p className="text-lg font-bold leading-tight">{v}</p>{sub && <p className="text-[11px]">{sub}</p>}</div>))}
-        </div>
-      </div>
-      <div className={`${CARD} px-3.5`}>
-        {mine.map((r, i) => {
-          const cur = shiftsOf(schedules, r.date, user.id), extra = cur.filter(s => s !== r.shiftId && NON_WORK.includes(s) && s !== 'Off');
-          // เวรในตารางไม่ตรงกับที่ลงเวลาไว้ (เช่น สแกน ชบ แล้วถูกเปลี่ยนเป็น ช)
-          const warn = !cur.includes(r.shiftId) && (cur.length ? `ตารางเวรวันนี้เปลี่ยนเป็น ${cur.join(', ')} แต่ลงเวลาไว้เป็น ${r.shiftId}` : `ไม่พบเวรของวันนี้ในตารางเวร (ลงเวลาไว้เป็น ${r.shiftId})`);
-          const chip = r.isLate ? ['bg-amber-100 text-amber-800', `สาย ${r.lateMinutes} นาที`]
-            : !r.timeOut ? (r.date < today ? ['bg-rose-100 text-rose-800', 'ลืมออก'] : ['bg-slate-100 text-slate-700', 'ยังไม่ออก'])
-            : ['bg-emerald-100 text-emerald-800', 'ตรงเวลา'];
-          return (
-            <div key={r.id} className={`py-2.5 ${i ? 'border-t border-slate-200' : ''}`}>
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[15px] font-semibold text-slate-800">{formatDisplayDate(r.date).slice(0, 5)} · {r.shiftId}{extra.length ? ', ' + extra.join(', ') : ''}</p>
-                  <p className="text-[13px] text-slate-600">เข้า {displaySafeTime(r.timeIn)} · ออก {displaySafeTime(r.timeOut)} · เครดิต {r.credit}</p>
-                </div>
-                <span className={`text-xs font-bold rounded-full px-2.5 py-1 whitespace-nowrap ${chip[0]}`}>{chip[1]}</span>
-              </div>
-              {warn && <div className="mt-2 flex gap-2 items-start bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 text-[13px] font-semibold text-amber-800 leading-snug"><i className="fa-solid fa-triangle-exclamation mt-0.5"></i><span>{warn} · โปรดแจ้ง HR ตรวจสอบ</span></div>}
-            </div>
-          );
-        })}
-        {!mine.length && <div className="py-8 text-center text-slate-500 text-sm font-medium">ไม่พบประวัติในเดือนนี้</div>}
-      </div>
-    </div>
-  );
+  return sh;
+}
+function faceTemplates_() { // { EMPID: [[128 ตัวเลข], ...] }
+  const m = {};
+  rows_(SH_FACE, 4).forEach(r => { if (r[0] && r[1]) try { m[r[0].toString().toUpperCase()] = JSON.parse(r[1]); } catch (e) {} });
+  return m;
+}
+// คืน null = ผ่าน, ไม่ผ่าน = object error
+function faceCheck_(empId, desc) {
+  if (!FACE_ENABLED) return null;
+  const t = faceTemplates_()[String(empId).toUpperCase()];
+  if (!t) return FACE_REQUIRED ? err_('ยังไม่ได้ลงทะเบียนใบหน้า กรุณาลงทะเบียนก่อน') : null;
+  if (!Array.isArray(desc) || desc.length !== 128 || !desc.every(Number.isFinite)) return err_('ไม่พบข้อมูลใบหน้าที่สแกน กรุณาสแกนใหม่');
+  const d = Math.min.apply(null, t.map(x => Math.sqrt(x.reduce((a, v, i) => a + (v - desc[i]) * (v - desc[i]), 0))));
+  return d <= FACE_THRESHOLD ? null : err_('ใบหน้าไม่ตรงกับที่ลงทะเบียนไว้');
+}
+function faceRegister(p) {
+  const emp = String(p.empId || '').toUpperCase();
+  const me = rows_(SH.EMP, 6).find(r => r[0] && r[0].toString().toUpperCase() === emp);
+  if (!me) return err_('ไม่พบรหัสพนักงาน');
+  const pw = me[5] ? me[5].toString().trim() : '';
+  if (pw && pw !== String(p.password || '').trim()) return err_('ยืนยันรหัสผ่านไม่ถูกต้อง');
+  if (faceTemplates_()[emp]) return err_('ลงทะเบียนใบหน้าแล้ว หากต้องการลงทะเบียนใหม่ ให้ผู้ดูแลลบแถวของพนักงานในชีต FaceData ก่อน');
+  const t = p.templates;
+  if (!Array.isArray(t) || t.length < 3 || t.length > 10 || !t.every(d => Array.isArray(d) && d.length === 128 && d.every(Number.isFinite)))
+    return err_('ข้อมูลใบหน้าไม่ถูกต้อง');
+  faceSheet_().appendRow([emp, JSON.stringify(t), now_(), emp]);
+  return ok_({ message: 'ลงทะเบียนใบหน้าสำเร็จ' });
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-</script>
-
-<style>
-@media print {
-  @page { size: A4 landscape; margin: 5mm; }
-  body { font-size: 9pt; background: #fff; color: #000; }
-  nav, .print-hide, .bottom-nav-hide { display: none !important; }
-  .print-show { display: block !important; }
-  main.max-w-7xl { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
-  .print-table-wrapper { overflow: visible !important; width: 100% !important; border: none !important; }
-  table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; min-width: 0 !important; }
-  tr { page-break-inside: avoid; }
-  th, td { border: 1px solid #9ca3af !important; padding: 1px !important; font-size: 8pt !important; color: #000 !important; text-align: center !important; overflow: hidden; word-wrap: break-word; }
-  th:first-child, td:first-child { width: 14% !important; text-align: left !important; padding-left: 2px !important; font-size: 9pt !important; font-weight: bold !important; }
-  .day-col { width: 2.2% !important; }
-  th { background: #f3f4f6 !important; }
-  td span:not(.shift-chip) { background: none !important; border: none !important; color: #000 !important; box-shadow: none !important; padding: 0 !important; }
-  .shift-chip { font-size: 9pt !important; font-weight: 900 !important; color: #000 !important; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; line-height: 1 !important; }
-  .shift-chip strong { font-size: 11pt !important; }
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-}
-</style>
-<script type="text/babel" data-presets="react">
-// ================= โมดูลจัดการ (ReportView) =================
-const DEPARTMENTS = ["HR-IT","บัญชี","การเงินผู้ป่วย-สิทธิประโยชน์","OPD","NA OPD","IPD","NA IPD","ห้องยา","ห้องปฏิบัติการทางการแพทย์","เอกซเรย์","OR-LR","แม่บ้าน","ซักฟอก","หน่วยจ่ายกลาง","โภชนาการ","เปล-ยานยนต์","ช่าง","เวชระเบียน","ส่งเสริมสุขภาพ","ADMIN"];
-const OPD_SH = ['ช6','ช7','ช716','ช917','ช21','ช','ชบ','ช9','บ','ด','บ4'], IPD_SH = ['ช','บ','ด','ชบ','บด'];
-const DEPT_SHIFTS = {
-  "HR-IT": ['ช7','ช'], "บัญชี": ['ช','ช83'], "การเงินผู้ป่วย-สิทธิประโยชน์": ['ช','ชบ','บ'], "OPD": OPD_SH, "NA OPD": OPD_SH, "IPD": IPD_SH, "NA IPD": IPD_SH,
-  "ห้องยา": ['ช716','ช','บ','ด','ชบ','บด','ช20'], "ห้องปฏิบัติการทางการแพทย์": ['ช','ช7','ชบ7','บ15','ช20','ช719'], "เอกซเรย์": ['ช','ชบ','ช7','บ'],
-  "OR-LR": ['ช'], "แม่บ้าน": ['ช7','ชบ7','บ15'], "ซักฟอก": ['ช'], "หน่วยจ่ายกลาง": ['ช','ช716','ช7'], "โภชนาการ": ['ช6','ช','ช616','ช618'],
-  "เปล-ยานยนต์": ['ช','ชบ','บ','ด'], "ช่าง": ['ช'], "เวชระเบียน": ['ช7','ช','ช20','ชบ','ช917','บ','บ4','ด'], "ส่งเสริมสุขภาพ": ['ช7','ช'], "ADMIN": ['ช','ช83']
-};
-const SHIFT_CATEGORY_MAP = { 'ด':{ด:1}, 'ช616':{ช:1,บ:.25}, 'ช618':{ช:1,บ:.5}, 'ช619':{ช:1,บ:.625}, 'ช6':{ช:1}, 'ช716':{ช:1,บ:.125}, 'ช719':{ช:1,บ:.5}, 'ช7':{ช:1}, 'ช21':{ช:1,บ:.75}, 'ชบ7':{ช:1,บ:1}, 'ช':{ช:1}, 'ชบ':{ช:1,บ:1}, 'ช20':{ช:1,บ:.5}, 'ช83':{ช:1}, 'ช9':{ช:1,บ:.5}, 'ช917':{ช:1}, 'บ15':{บ:1}, 'บ':{บ:1}, 'บด':{บ:1,ด:1}, 'บ4':{บ:.5} };
-const PAID = ['Vac','พักร้อน','ป่วย','ลา'], LEAVE_LOCK = [...PAID, 'ลาชั่วโมง'], CAT_ORD = { 'ช':1, 'บ':2, 'ด':3 };
-const byCat = (a, b) => (CAT_ORD[a] || 99) - (CAT_ORD[b] || 99);
-const creditOf = s => SHIFT_TYPES[s] ? SHIFT_TYPES[s].credit : (PAID.includes(s) ? 1 : 0);
-
-const getSortedShiftKeys = dept => {
-  let keys = Object.keys(SHIFT_TYPES);
-  if (dept && DEPT_SHIFTS[dept]) keys = keys.filter(k => DEPT_SHIFTS[dept].includes(k));
-  return keys.sort((a, b) => SHIFT_TYPES[a].start.localeCompare(SHIFT_TYPES[b].start) || SHIFT_TYPES[a].label.localeCompare(SHIFT_TYPES[b].label));
-};
-
-const downloadCSV = (rows, name) => {
-  const body = rows.map(r => Array.isArray(r) ? '"' + r.join('","') + '"' : r).join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['\uFEFF' + body], { type: 'text/csv;charset=utf-8;' }));
-  a.download = name; a.click();
-};
-
-const BTN = 'px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm';
-const IN = 'p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary';
-const TH = 'px-4 py-4', TD = 'px-4 py-3';
-const THEAD = 'bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-xs tracking-wider';
-const CHIP = 'bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs';
-
-const Modal = ({ children, z = 'z-[200]', wide, onClose }) => (
-  <div className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm ${z} flex items-center justify-center p-4 print-hide`} onClick={onClose}>
-    <div className={`bg-white rounded-2xl w-full ${wide ? 'max-w-lg' : 'max-w-sm'} shadow-soft overflow-hidden border border-slate-200`} onClick={e => e.stopPropagation()}>{children}</div>
-  </div>
-);
-const ModalHead = ({ title, onClose }) => (
-  <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 shrink-0">
-    <h3 className="font-semibold text-gray-900 text-lg">{title}</h3>
-    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors"><i className="fa-solid fa-xmark text-lg"></i></button>
-  </div>
-);
-const Actions = ({ onCancel, onOk, okText, disabled }) => (
-  <div className="flex gap-2 pt-3">
-    <button onClick={onCancel} className="flex-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors">ยกเลิก</button>
-    <button onClick={onOk} disabled={disabled} className="flex-1 p-3 bg-primary hover:bg-pink-700 text-white rounded-xl font-bold text-sm transition-colors">{okText}</button>
-  </div>
-);
-const ShiftSelect = ({ dept, leave, value, onChange, empty, cls = 'w-full p-2.5 rounded-xl border border-slate-300 font-semibold bg-white focus:border-primary' }) => (
-  <select value={value} onChange={e => onChange(e.target.value)} className={cls}>
-    {empty && <option value="">{empty}</option>}
-    {value && !SHIFT_TYPES[value] && !leave.includes(value) && <option value={value}>{value}</option>}
-    <optgroup label="กะเวรปกติ">{getSortedShiftKeys(dept).map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}</optgroup>
-    <optgroup label="วันหยุด/อื่นๆ">{leave.map(k => <option key={k} value={k}>{k}</option>)}</optgroup>
-  </select>
-);
-const EmpCell = ({ id, emp }) => <td className={TD}><span className="font-bold text-slate-800">{emp?.fname} {emp?.lname}</span><span className="block text-[10px] text-slate-400 mt-0.5">{id}</span></td>;
-const ShiftCell = ({ r }) => <td className={TD}><span className={CHIP}>{r.shiftId} {SHIFT_TYPES[r.shiftId] ? `${SHIFT_TYPES[r.shiftId].start}-${SHIFT_TYPES[r.shiftId].end}` : ''}</span></td>;
-const TimeCells = ({ r }) => <><td className={`${TD} text-center font-semibold text-slate-700`}>{displaySafeTime(r.timeIn)}</td><td className={`${TD} text-center font-semibold text-slate-700`}>{displaySafeTime(r.timeOut)}</td></>;
-
-const MapModal = ({ lat, lon, onClose }) => (
-  <Modal z="z-[100]" wide onClose={onClose}><ModalHead title="พิกัดลงเวลา" onClose={onClose} />
-    <iframe src={`https://maps.google.com/maps?q=${lat},${lon}&hl=th&z=17&output=embed`} width="100%" height="350" frameBorder="0" className="bg-gray-50" /></Modal>
-);
-
-const PhotoModal = ({ record, employees, onClose }) => {
-  const emp = employees[record.empId] || {};
-  const box = (url, label) => url ? (
-    <div className="flex-1 flex flex-col">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 text-center">{label}</p>
-      <div className="w-full flex-1 border border-gray-200 rounded-xl bg-white shadow-subtle overflow-hidden flex items-center justify-center">
-        <img src={driveImg(url, 'w800')} className="w-full h-full object-cover transform scale-x-[-1]" onError={e => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<i class="fa-solid fa-image text-gray-300 text-2xl"></i>'; }} />
-      </div>
-    </div>
-  ) : <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-gray-200 rounded-xl bg-white"><i className="fa-regular fa-image text-gray-300 text-2xl"></i></div>;
-  return (
-    <Modal z="z-[100]" onClose={onClose}><ModalHead title="รูปสแกนใบหน้า" onClose={onClose} />
-      <div className="p-6 bg-gray-50 flex gap-5 h-72 overflow-hidden">{box(record.photoInUrl, 'เข้างาน')}{box(record.photoOutUrl, 'ออกงาน')}</div>
-      <div className="p-5 border-t border-gray-100 text-base bg-white">
-        <p className="font-semibold text-gray-900">{emp.fname} {emp.lname} <span className="font-normal text-gray-500 text-sm ml-1">({record.empId})</span></p>
-        <p className="text-sm mt-1 text-gray-600">วันที่: {formatDisplayDate(record.date)}</p>
-      </div>
-    </Modal>
-  );
-};
-
-// จัดเวรตามกรอบกำลัง: เติมทีละวัน เริ่มจากกะที่หายาก (ดึก > บ > ช+บ > ช) หมุนเวียนคนที่ทำกะนั้นน้อยสุด (เสมอกันดูเครดิตน้อยสุด) ที่ไม่ผิดกติกา
-function planFrame({ dates, emps, schedules, frame, maxRun, restNight }) {
-  const cur = {}, credit = {}, cnt = {}, updates = [], short = [];
-  const prevOf = d => fmtInput(new Date(new Date(d + 'T00:00:00').getTime() - 864e5));
-  const getS = (id, d) => cur[id][d] || schedules[d]?.[id]?.shifts || [];
-  emps.forEach(id => {
-    cur[id] = {}; cnt[id] = {};
-    dates.forEach(d => { cur[id][d] = [...(schedules[d]?.[id]?.shifts || [])]; });
-    credit[id] = dates.reduce((a, d) => a + cur[id][d].reduce((b, s) => b + creditOf(s), 0), 0);
+function getInitialData() {
+  const version = version_(); // อ่านก่อนดึงข้อมูล กันพลาดการเขียนที่เกิดระหว่างอ่าน
+  const props = PropertiesService.getScriptProperties().getProperties();
+  const standardWorkDays = {};
+  const frames = {};
+  Object.keys(props).forEach(k => {
+    if (k.startsWith('workDays_')) standardWorkDays[k.slice(9)] = parseInt(props[k]);
+    else if (k.startsWith('frame_')) try { frames[k.slice(6)] = JSON.parse(props[k]); } catch (e) {}
   });
-  const before = { ...credit };
-  const prio = s => { const c = SHIFT_CATEGORY_MAP[s] || {}; return c['ด'] ? 0 : c['ช'] ? (c['บ'] ? 2 : 3) : 1; };
-  dates.forEach(d => {
-    const wk = [0, 6].includes(new Date(d + 'T00:00:00').getDay());
-    [...(wk ? frame.we : frame.wd)].sort((a, b) => prio(a.shift) - prio(b.shift)).forEach(({ shift, count }) => {
-      const free = id => {
-        if (cur[id][d].length) return false;                       // ช่องที่มีเวร/ลา/Off อยู่แล้ว ไม่แตะ
-        let p = prevOf(d), run = 0;
-        if (restNight && getS(id, p).some(s => s.includes('ด'))) return false; // พักหลังเวรดึก
-        while (run < maxRun && getS(id, p).some(s => SHIFT_TYPES[s])) { run++; p = prevOf(p); }
-        return run < maxRun;                                         // ทำงานติดกันไม่เกิน maxRun วัน
-      };
-      const pick = emps.filter(free).sort((a, b) => (cnt[a][shift] || 0) - (cnt[b][shift] || 0) || credit[a] - credit[b] || Math.random() - .5).slice(0, count);
-      pick.forEach(id => { cur[id][d] = [shift]; credit[id] += creditOf(shift); cnt[id][shift] = (cnt[id][shift] || 0) + 1; updates.push({ date: d, empId: id, shifts: [shift] }); });
-      if (pick.length < count) short.push({ date: d, shift, need: count, got: pick.length });
-    });
+
+  const faces = new Set(rows_(SH_FACE, 2).filter(r => r[0] && r[1]).map(r => r[0].toString().toUpperCase()));
+  const employees = {};
+  rows_(SH.EMP, 6).forEach(r => {
+    if (r[0]) employees[r[0].toString().toUpperCase()] = {
+      fname: r[1], lname: r[2], dept: r[3], level: r[4],
+      password: r[5] ? r[5].toString().trim() : '',
+      face: faces.has(r[0].toString().toUpperCase())
+    };
   });
-  return { updates, short, before, credit };
+
+  const records = rows_(SH.LOG, 13).filter(r => r[0]).map(r => ({
+    id: r[0].toString(), date: fmtDate_(r[1]), empId: r[2].toString().toUpperCase(),
+    shiftId: r[3].toString(), timeIn: fmtTime_(r[4]), timeOut: fmtTime_(r[5]),
+    isLate: r[6] === true || r[6] === 'true', lateMinutes: parseInt(r[7]) || 0, credit: parseFloat(r[8]) || 0,
+    lat: r[9] || null, lon: r[10] || null, photoInUrl: r[11] || null, photoOutUrl: r[12] || null
+  }));
+
+  const schedules = {}, sRows = rows_(SH.SCH, 7), groups = schedGroups_(sRows);
+  Object.values(groups).forEach(idxs => {
+    const first = sRows[idxs[0]], date = fmtDate_(first[0]);
+    const newest = idxs.slice().sort((a, b) => tsNum_(sRows[b][5]) - tsNum_(sRows[a][5]) || b - a)[0];
+    (schedules[date] = schedules[date] || {})[first[1].toString().toUpperCase()] = {
+      shifts: mergeShifts_(sRows, idxs),
+      isEdited: idxs.some(k => [true, 'true', 'TRUE'].includes(sRows[k][3])),
+      editedBy: sRows[newest][4] ? sRows[newest][4].toString() : '',
+      leaveTime: Array.from(new Set(idxs.map(k => String(sRows[k][6] || '')).join(';').split(';').filter(Boolean))).join(';') // ช่วงเวลาลาชั่วโมง
+    };
+  });
+
+  // คำขอสลับเวร: ทุกคำขอที่รออยู่ + คำขอใน 90 วันล่าสุด
+  const cutoff = Date.now() - 90 * 864e5;
+  const swaps = swapRows_().filter(s => s.status === 'pending' || tsNum_(s.createdAt) >= cutoff).map(s => { const { row, ...rest } = s; return rest; });
+
+  return ok_({ data: { employees, records, schedules, settings: { standardWorkDays, frames }, swaps, version } });
 }
 
-function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings }) {
-  const now = new Date(), todayStr = fmtInput(now), defMonth = todayStr.slice(0, 7);
-  const [adminTab, setAdminTab] = useState(role === 'supervisor' ? 'summary' : 'logs');
-  const [startDate, setStartDate] = useState(''), [endDate, setEndDate] = useState(''), [matrixMonth, setMatrixMonth] = useState(defMonth);
-  const [filterDept, setFilterDept] = useState(role === 'supervisor' ? user.dept : ''), [filterEmp, setFilterEmp] = useState('');
-  const [exclByMonth, setExclByMonth] = useState(() => { try { return JSON.parse(localStorage.getItem('excludedEmpIdsByMonth_' + user.id)) || {}; } catch (e) { return {}; } });
-  useEffect(() => { localStorage.setItem('excludedEmpIdsByMonth_' + user.id, JSON.stringify(exclByMonth)); }, [exclByMonth, user.id]);
-  const excluded = exclByMonth[matrixMonth] || [];
-  const setExcluded = fn => setExclByMonth(p => ({ ...p, [matrixMonth]: fn(p[matrixMonth] || []) }));
-  const [showDrop, setShowDrop] = useState(false), [exFilter, setExFilter] = useState('late');
-  const [localWorkDays, setLocalWorkDays] = useState(22);
-  useEffect(() => { setLocalWorkDays(parseInt(settings?.standardWorkDays?.[matrixMonth]) || 22); }, [settings, matrixMonth]);
-  const [mapRec, setMapRec] = useState(null), [photoRec, setPhotoRec] = useState(null), [editData, setEditData] = useState(null), [addData, setAddData] = useState(null);
-  const [saving, setSaving] = useState(false), [cellData, setCellData] = useState(null), [autoOpen, setAutoOpen] = useState(false);
-  const [auto, setAuto] = useState({ shiftId: '', dayPattern: 'all', overwrite: false, assignMode: 'all', requiredCount: 1 });
-  const [autoEmps, setAutoEmps] = useState([]), [autoMode, setAutoMode] = useState('frame'), [frame, setFrame] = useState({ wd: [], we: [] }), [plan, setPlan] = useState(null), [params, setParams] = useState({ maxRun: 6, restNight: true });
-  const leaveOptions = role === 'admin' ? NON_WORK : ['Off', 'ลา', 'ป่วย', 'ขาด'];
-  const info = (text, icon = 'success') => Swal.fire({ icon, text, timer: 1500, showConfirmButton: false });
-  const nodata = () => Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสำหรับส่งออก", "info");
-
-  const matches = (id, e) => { if (!filterEmp) return true; const s = filterEmp.toLowerCase(); return id.toLowerCase().includes(s) || `${e.fname} ${e.lname}`.toLowerCase().includes(s); };
-  const filteredRecords = records.filter(r => { const e = employees[r.empId]; return e && (!startDate || r.date >= startDate) && (!endDate || r.date <= endDate) && (!filterDept || e.dept === filterDept) && matches(r.empId, e); });
-  const exceptionRecords = filteredRecords.filter(r => exFilter === 'late' ? r.isLate : (r.date < todayStr && !r.timeOut));
-
-  const [my, mm] = matrixMonth.split('-').map(Number);
-  const daysArray = Array.from({ length: new Date(my, mm, 0).getDate() }, (_, i) => i + 1);
-  const dayStr = d => ymd(my, mm, d);
-  const dropdownEmps = Object.keys(employees).filter(id => (!filterDept || employees[id].dept === filterDept) && matches(id, employees[id]));
-  const matrixEmployees = dropdownEmps.filter(id => !excluded.includes(id));
-
-  const recByEmp = useMemo(() => { const m = {}; records.forEach(r => { if (r.date.startsWith(matrixMonth)) (m[r.empId] = m[r.empId] || []).push(r); }); return m; }, [records, matrixMonth]);
-
-  const summaryMatrix = useMemo(() => matrixEmployees.map(empId => {
-    const recs = recByEmp[empId] || [], shiftsByDay = {}, shiftCounts = {};
-    let credit = 0, late = 0;
-    const add = s => { shiftCounts[s] = (shiftCounts[s] || 0) + 1; };
-    daysArray.forEach(day => {
-      const ds = dayStr(day), dayRecs = recs.filter(r => r.date === ds), sched = schedules[ds]?.[empId]?.shifts || [], ui = [];
-      let absent = false;
-      if (adminTab === 'schedules') { sched.forEach(s => { if (s) add(s); credit += creditOf(s); }); shiftsByDay[day] = { absent, ui }; return; }
-      const worked = dayRecs.map(r => r.shiftId).filter(Boolean);
-      worked.forEach(s => { add(s); ui.push({ shift: s, type: 'worked' }); });
-      credit += dayRecs.reduce((a, r) => a + (r.credit || 0), 0);
-      late += dayRecs.reduce((a, r) => a + (r.isLate ? Number(r.lateMinutes) : 0), 0);
-      sched.filter(s => s && !worked.includes(s)).forEach(s => {
-        if (ds >= todayStr) { add(s); credit += creditOf(s); ui.push({ shift: s, type: 'pending' }); }
-        else if (LEAVE_LOCK.includes(s) || s === 'Off') { add(s); if (PAID.includes(s)) credit += 1; ui.push({ shift: s, type: 'leave' }); }
-        else { add('ขาด'); absent = true; ui.push({ shift: s, type: 'absent' }); }
-      });
-      shiftsByDay[day] = { absent, ui };
-    });
-    const e = employees[empId];
-    return { empId, fname: e.fname, lname: e.lname, dept: e.dept, level: e.level, shiftsByDay, credit, late, ot: credit - localWorkDays, shiftCounts };
-  }), [matrixEmployees.join(), recByEmp, schedules, employees, adminTab, matrixMonth, localWorkDays]);
-
-  const getDaily = day => {
-    const counts = {};
-    summaryMatrix.forEach(row => {
-      const list = adminTab === 'schedules' ? (schedules[dayStr(day)]?.[row.empId]?.shifts || [])
-        : adminTab === 'summary' ? row.shiftsByDay[day].ui.filter(e => e.type === 'worked' || e.type === 'pending').map(e => e.shift) : [];
-      list.forEach(s => { if (s && !NON_WORK.includes(s)) Object.entries(SHIFT_CATEGORY_MAP[s] || { [s]: 1 }).forEach(([c, n]) => { counts[c] = (counts[c] || 0) + n; }); });
-    });
-    return counts;
-  };
-  const types = [...new Set(summaryMatrix.flatMap(r => Object.keys(r.shiftCounts)))].sort((a, b) => (NON_WORK.includes(a) - NON_WORK.includes(b)) || a.localeCompare(b));
-
-  // ---------- Actions ----------
-  const saveSettings = async () => {
-    const res = await sendToGoogleSheet('saveSettings', { standardWorkDays: localWorkDays, monthYear: matrixMonth });
-    if (res?.status === 'success') { setSettings({ ...settings, standardWorkDays: { ...settings.standardWorkDays, [matrixMonth]: localWorkDays } }); info('บันทึกวันทำการสำเร็จ'); }
-  };
-  const okToast = text => Swal.fire({ icon: 'success', title: 'สำเร็จ!', text, confirmButtonColor: themeHex('p'), timer: 2000, showConfirmButton: false });
-
-  const saveEdit = async () => {
-    setSaving(true);
-    const credit = SHIFT_TYPES[editData.shiftId]?.credit || 0;
-    const res = await sendToGoogleSheet('editRecord', { id: editData.id, timeIn: editData.timeIn || '', timeOut: editData.timeOut || '', shiftId: editData.shiftId, credit });
-    if (res?.status === 'success') {
-      setRecords(records.map(r => r.id === editData.id ? { ...r, timeIn: editData.timeIn, timeOut: editData.timeOut, shiftId: editData.shiftId, credit } : r));
-      setEditData(null); okToast('แก้ไขข้อมูลประวัติเรียบร้อยแล้ว');
-    }
-    setSaving(false);
-  };
-
-  const saveAdd = async () => {
-    const empId = addData.empId.trim().toUpperCase();
-    if (!employees[empId]) return Swal.fire({ icon: 'warning', text: 'ไม่พบรหัสพนักงานนี้' });
-    setSaving(true);
-    const rec = { id: Date.now().toString(), date: addData.date, empId, shiftId: addData.shiftId, timeIn: addData.timeIn, timeOut: addData.timeOut || '', isLate: false, lateMinutes: 0, credit: SHIFT_TYPES[addData.shiftId]?.credit || 0, lat: null, lon: null, photoBase64: null };
-    const res = await sendToGoogleSheet('adminAddRecord', rec);
-    if (res?.status === 'success') { setRecords([...records, rec]); setAddData(null); okToast('เพิ่มข้อมูลประวัติย้อนหลังเรียบร้อยแล้ว'); }
-    setSaving(false);
-  };
-
-  const del = async id => {
-    const c = await Swal.fire({ text: 'ยืนยันการลบ?', showCancelButton: true, confirmButtonColor: '#1e293b', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก' });
-    if (!c.isConfirmed) return;
-    const res = await sendToGoogleSheet('deleteRecord', { id });
-    if (res?.status === 'success') setRecords(records.filter(r => r.id !== id));
-  };
-
-  // อัปเดต schedule พร้อมธง isEdited
-  const withEdit = (sch, date, empId, shifts) => {
-    const old = (sch[date]?.[empId]?.shifts || []).join(','), isEdited = sch[date]?.[empId]?.isEdited || (old !== '' && old !== shifts.join(','));
-    if (!sch[date]) sch[date] = {};
-    sch[date][empId] = { shifts, isEdited, editedBy: user.id };
-  };
-  const editor = { editorId: user.id, editorName: `${user.fname} ${user.lname}` };
-
-  const runAuto = async () => {
-    if (!autoEmps.length) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกพนักงานอย่างน้อย 1 คน' });
-    if (!auto.shiftId) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกกะ' });
-    setSaving(true);
-    const quota = auto.assignMode === 'quota', req = auto.requiredCount || 1, updates = [], sch = { ...schedules }, cnt = {};
-    const targets = autoEmps, keep = s => s && !SHIFT_TYPES[s] && s !== 'Off', isWork = !!SHIFT_TYPES[auto.shiftId], curOf = (id, ds) => (sch[ds]?.[id]?.shifts || []).filter(Boolean);
-    if (quota) targets.forEach(id => { cnt[id] = daysArray.filter(d => (sch[dayStr(d)]?.[id]?.shifts || []).includes(auto.shiftId)).length; });
-    daysArray.forEach(day => {
-      const ds = dayStr(day), dow = new Date(my, mm - 1, day).getDay();
-      if (!(auto.dayPattern === 'all' || (auto.dayPattern === 'weekdays' && dow >= 1 && dow <= 5) || (auto.dayPattern === 'weekends' && (dow === 0 || dow === 6)))) return;
-      let el = targets.filter(id => { const s = curOf(id, ds); return ((isWork ? s.every(keep) : s.length === 0) || auto.overwrite) && !(quota && s.includes(auto.shiftId)); });
-      if (quota) el = el.sort((a, b) => cnt[a] - cnt[b] || Math.random() - .5).slice(0, req);
-      el.forEach(id => { const next = isWork ? [auto.shiftId, ...curOf(id, ds).filter(keep)] : [auto.shiftId]; withEdit(sch, ds, id, next); updates.push({ date: ds, empId: id, shifts: next }); if (quota) cnt[id]++; });
-    });
-    if (updates.length) {
-      setSchedules(sch); setAutoOpen(false);
-      const res = await sendToGoogleSheet('saveScheduleBulk', { updates, ...editor });
-      if (res?.status === 'success') info(`บันทึกสำเร็จ ${updates.length} ช่อง`);
-    }
-    setSaving(false);
-  };
-
-  // กรอบเริ่มต้น = ค่าเฉลี่ยจำนวนคนต่อกะต่อวัน (ธรรมดา/หยุด) จากตารางเดือนที่เลือก
-  const deriveFrame = () => {
-    const acc = { wd: {}, we: {} }, n = { wd: 0, we: 0 };
-    daysArray.forEach(d => {
-      const k = [0, 6].includes(new Date(my, mm - 1, d).getDay()) ? 'we' : 'wd'; n[k]++;
-      matrixEmployees.forEach(id => (schedules[dayStr(d)]?.[id]?.shifts || []).forEach(s => { if (SHIFT_TYPES[s]) acc[k][s] = (acc[k][s] || 0) + 1; }));
-    });
-    const out = k => Object.entries(acc[k]).map(([shift, c]) => ({ shift, count: Math.round(c / Math.max(n[k], 1)) })).filter(x => x.count > 0);
-    return { wd: out('wd'), we: out('we') };
-  };
-  const openAuto = () => { setAutoEmps(matrixEmployees); setFrame(settings?.frames?.[filterDept] || deriveFrame()); setPlan(null); setAutoOpen(true); };
-  const preview = () => {
-    if (!autoEmps.length) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกพนักงานอย่างน้อย 1 คน' });
-    const f = { wd: frame.wd.filter(r => r.shift && r.count > 0), we: frame.we.filter(r => r.shift && r.count > 0) };
-    setPlan(planFrame({ dates: daysArray.map(dayStr), emps: autoEmps, schedules, frame: f, ...params }));
-  };
-  const saveFrame = async () => {
-    const res = await sendToGoogleSheet('saveSettings', { frameDept: filterDept, frame });
-    if (res?.status === 'success') { setSettings({ ...settings, frames: { ...(settings.frames || {}), [filterDept]: frame } }); info('บันทึกกรอบกำลังของแผนกแล้ว'); }
-  };
-  const commitPlan = async updates => {
-    if (!updates.length) return info('ไม่มีช่องที่ต้องจัดเพิ่ม', 'info');
-    setSaving(true);
-    const sch = { ...schedules };
-    updates.forEach(u => withEdit(sch, u.date, u.empId, u.shifts));
-    setSchedules(sch); setAutoOpen(false); setPlan(null);
-    const res = await sendToGoogleSheet('saveScheduleBulk', { updates, ...editor });
-    if (res?.status === 'success') info(`บันทึกสำเร็จ ${updates.length} ช่อง`);
-    setSaving(false);
-  };
-  const setRow = (k, i, patch) => setFrame(f => ({ ...f, [k]: f[k].map((x, j) => j === i ? { ...x, ...patch } : x) }));
-
-  const saveCell = async () => {
-    const { empId, dateStr, shifts } = cellData, f = shifts.filter(s => s !== ''), sch = { ...schedules };
-    withEdit(sch, dateStr, empId, f); setSchedules(sch); setCellData(null);
-    await sendToGoogleSheet('saveSchedule', { date: dateStr, empId, shifts: f, ...editor });
-  };
-
-  // ---------- Export ----------
-  const head = (title, cols) => [[title, ...cols], ''];
-  const recRow = r => { const e = employees[r.empId] || {}; return [formatDisplayDate(r.date), r.empId, `${e.fname} ${e.lname}`, e.dept, SHIFT_TYPES[r.shiftId]?.label || '', r.timeIn, r.timeOut || '-']; };
-  const range = [`แผนก: ${filterDept || 'ทั้งหมด'}`, `ตั้งแต่วันที่: ${startDate || '-'}`, `ถึงวันที่: ${endDate || '-'}`];
-  const dailyRows = () => {
-    const t = {};
-    daysArray.forEach(d => Object.entries(getDaily(d)).forEach(([s, c]) => { (t[s] = t[s] || {})[d] = c; }));
-    return ['', ['สรุปอัตรากำลัง/วัน'], ...Object.keys(t).sort(byCat).map(s => ['', `ยอดกะ ${s}`, '', ...daysArray.map(d => t[s][d] || 0)])];
-  };
-  const exportLogs = () => filteredRecords.length ? downloadCSV([...head('ประวัติลงเวลาทั้งหมด', range), 'วันที่,รหัสพนักงาน,ชื่อ-สกุล,แผนก,กะ,เวลาเข้า,เวลาออก,สถานะ,สาย (นาที),จำนวนเวร',
-    ...filteredRecords.map(r => [...recRow(r), r.isLate ? 'สาย' : 'ปกติ', r.isLate ? r.lateMinutes : '0', r.credit])], `ประวัติลงเวลา_${Date.now()}.csv`) : nodata();
-  const exportEx = () => {
-    if (!exceptionRecords.length) return nodata();
-    const title = exFilter === 'late' ? 'รายงานพนักงานผู้มาสาย' : 'รายงานพนักงานลืมลงเวลาออก';
-    downloadCSV([...head(title, range), 'วันที่,รหัสพนักงาน,ชื่อ-สกุล,แผนก,กะ,เวลาเข้า,เวลาออก,สาย (นาที)', ...exceptionRecords.map(r => [...recRow(r), r.isLate ? r.lateMinutes : '0'])], `${title}_${Date.now()}.csv`);
-  };
-  const exportSummary = () => {
-    if (!summaryMatrix.length) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสรุปสำหรับส่งออก", "info");
-    const hdr = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'แผนก', ...daysArray, ...types, 'รวมเวรทั้งหมด', 'วันทำการ', 'เวร OT', ...(role === 'admin' ? ['รวมสาย (นาที)'] : [])].join(',');
-    const body = summaryMatrix.map(r => [r.empId, `${r.fname} ${r.lname}`, r.dept, ...daysArray.map(d => r.shiftsByDay[d].ui.map(e => e.shift).join(',') || '-'), ...types.map(t => r.shiftCounts[t] || 0), r.credit, localWorkDays, r.ot, ...(role === 'admin' ? [r.late] : [])]);
-    const sum = k => summaryMatrix.reduce((a, r) => a + r[k], 0);
-    downloadCSV([[`สรุปภาพรวมแผนก: ${filterDept || 'ทุกแผนก'}`, `ประจำเดือน: ${matrixMonth}`], '', hdr, ...body, '',
-      ['รวมยอดทั้งแผนก', ...Array(3 + daysArray.length + types.length - 1).fill(''), sum('credit'), '', sum('ot')], '', ...dailyRows()], `สรุปภาพรวมแผนก_${matrixMonth}.csv`);
-  };
-  const exportSchedule = () => {
-    if (!matrixEmployees.length) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลพนักงานสำหรับส่งออก", "info");
-    downloadCSV([[`ตารางเวรแผนก: ${filterDept || 'ทุกแผนก'}`, `ประจำเดือน: ${matrixMonth}`], '', 'รหัสพนักงาน,ชื่อ-สกุล,แผนก,' + daysArray.join(','),
-      ...matrixEmployees.map(id => { const e = employees[id]; return [id, `${e.fname} ${e.lname}`, e.dept, ...daysArray.map(d => (schedules[dayStr(d)]?.[id]?.shifts || []).join(', ') || '-')]; }), '', ...dailyRows()], `ตารางเวร_${matrixMonth}.csv`);
-  };
-
-  // ---------- UI ----------
-  const tabBtn = (k, label) => <button key={k} onClick={() => setAdminTab(k)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{label}</button>;
-  const exportBtn = (fn, ico = 'fa-file-csv') => <button onClick={fn} className={BTN}><i className={`fa-solid ${ico} mr-1.5 text-emerald-600`}></i>ส่งออก</button>;
-  const title = adminTab === 'logs' ? 'ประวัติลงเวลา' : adminTab === 'summary' ? 'สรุปภาพรวมแผนกและการเบิก OT' : adminTab === 'schedules' ? 'ตารางเวรปฏิบัติงาน' : (exFilter === 'late' ? 'รายงานพนักงานผู้มาสาย' : 'รายงานพนักงานลืมลงเวลาออก');
-  const isMatrix = adminTab === 'summary' || adminTab === 'schedules';
-  const chipCls = { worked: 'text-blue-900 bg-blue-100 border-blue-300', pending: 'text-emerald-900 bg-emerald-50 border-emerald-200', absent: 'text-red-900 bg-red-100 border-red-300', leave: 'text-amber-900 bg-amber-50 border-amber-300' };
-  const showLate = adminTab === 'summary' && role === 'admin';
-  const dayName = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
-
-  return (
-    <div className="mt-2 pb-12">
-      <div className="hidden print-show text-center mb-6">
-        <h2 className="text-2xl font-bold text-black mb-1">{title}</h2>
-        <p className="text-base font-bold text-gray-700">แผนก: {filterDept || 'ทั้งหมด'} | ประจำเดือน: {matrixMonth}</p>
-      </div>
-
-      {mapRec && <MapModal lat={mapRec.lat} lon={mapRec.lon} onClose={() => setMapRec(null)} />}
-      {photoRec && <PhotoModal record={photoRec} employees={employees} onClose={() => setPhotoRec(null)} />}
-
-      {editData && <Modal><div className="p-6"><h3 className="font-bold text-slate-800 mb-4">แก้ไขประวัติ</h3><div className="space-y-4 text-sm">
-        <ShiftSelect dept={employees[editData.empId]?.dept} leave={leaveOptions} value={editData.shiftId} onChange={v => setEditData({ ...editData, shiftId: v })} />
-        <div className="flex gap-2">
-          <input type="time" value={editData.timeIn} onChange={e => setEditData({ ...editData, timeIn: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" />
-          <input type="time" value={editData.timeOut || ''} onChange={e => setEditData({ ...editData, timeOut: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" />
-        </div>
-        <Actions onCancel={() => setEditData(null)} onOk={saveEdit} okText="บันทึก" disabled={saving} />
-      </div></div></Modal>}
-
-      {addData && <Modal><div className="p-6"><h3 className="font-bold text-slate-800 mb-4">เพิ่มข้อมูลย้อนหลัง</h3><div className="space-y-3 text-sm">
-        <input type="text" placeholder="รหัสพนักงาน (EMP01)" value={addData.empId} onChange={e => setAddData({ ...addData, empId: e.target.value.toUpperCase() })} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold" />
-        <input type="date" value={addData.date} onChange={e => setAddData({ ...addData, date: e.target.value })} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold" />
-        <ShiftSelect dept={employees[addData.empId]?.dept} leave={leaveOptions} empty="-- เลือกกะ --" value={addData.shiftId} onChange={v => setAddData({ ...addData, shiftId: v })} />
-        <div className="flex gap-2">
-          <input type="time" value={addData.timeIn} onChange={e => setAddData({ ...addData, timeIn: e.target.value })} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold" />
-          <input type="time" value={addData.timeOut} onChange={e => setAddData({ ...addData, timeOut: e.target.value })} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold" />
-        </div>
-        <Actions onCancel={() => setAddData(null)} onOk={saveAdd} okText={saving ? 'บันทึก...' : 'เพิ่มข้อมูล'} disabled={saving} />
-      </div></div></Modal>}
-
-      {cellData && <Modal><div className="p-6">
-        <h3 className="font-bold text-slate-800 mb-1">จัดการเวร <span className="text-slate-500 font-semibold text-sm ml-2">{formatDisplayDate(cellData.dateStr)}</span></h3>
-        <p className="text-xs font-bold text-primary mb-4">{employees[cellData.empId]?.fname}</p>
-        <div className="space-y-2 max-h-48 overflow-y-auto mb-4 pr-1">
-          {cellData.shifts.map((s, i) => (
-            <div key={i} className="flex gap-2">
-              {LEAVE_LOCK.includes(s) ? <div className="flex-1 p-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-sm font-bold flex items-center gap-2"><i className="fa-solid fa-lock text-xs"></i>{s}</div> : <ShiftSelect dept={employees[cellData.empId]?.dept} leave={leaveOptions} empty="- ว่าง -" value={s} cls="flex-1 p-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50" onChange={v => { const a = [...cellData.shifts]; a[i] = v; setCellData({ ...cellData, shifts: a }); }} />}
-              <button onClick={() => setCellData({ ...cellData, shifts: cellData.shifts.filter((_, k) => k !== i) })} className="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"><i className="fa-solid fa-trash-can"></i></button>
-            </div>
-          ))}
-        </div>
-        <button onClick={() => setCellData({ ...cellData, shifts: [...cellData.shifts, ''] })} className="w-full p-2.5 border-2 border-dashed border-slate-300 text-slate-500 font-bold rounded-xl text-sm mb-4 hover:bg-slate-50 transition-colors">+ เพิ่มกะ</button>
-        <Actions onCancel={() => setCellData(null)} onOk={saveCell} okText="บันทึก" />
-      </div></Modal>}
-
-      {autoOpen && <Modal wide><div className="p-6 max-h-[88vh] overflow-y-auto"><h3 className="font-bold text-slate-800 mb-3">จัดเวรอัตโนมัติ <span className="text-xs font-semibold text-slate-400 ml-1">{filterDept}</span></h3><div className="space-y-3 text-sm">
-        <div className="flex bg-slate-100 p-1 rounded-xl">{[['frame', 'ตามกรอบกำลัง'], ['single', 'ใส่กะเดียว']].map(([k, l]) => <button key={k} onClick={() => { setAutoMode(k); setPlan(null); }} className={`flex-1 py-2 rounded-lg font-bold ${autoMode === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500'}`}>{l}</button>)}</div>
-        <div className="border border-slate-200 rounded-xl">
-          <div className="flex justify-between px-3 py-2 border-b border-slate-100 text-xs font-bold"><span>พนักงานที่จะจัด ({autoEmps.length}/{dropdownEmps.length})</span><span><button onClick={() => setAutoEmps(dropdownEmps)} className="text-primary mr-3">ทั้งหมด</button><button onClick={() => setAutoEmps([])} className="text-slate-500">ล้าง</button></span></div>
-          <div className="max-h-32 overflow-y-auto p-2 grid grid-cols-2 gap-1">{dropdownEmps.map(id => <label key={id} className="flex items-center gap-2 p-1 cursor-pointer"><input type="checkbox" checked={autoEmps.includes(id)} onChange={e => setAutoEmps(p => e.target.checked ? [...p, id] : p.filter(x => x !== id))} className="w-4 h-4" /><span className="truncate font-semibold text-slate-700">{employees[id].fname}</span></label>)}</div>
-        </div>
-        {autoMode === 'single' ? <>
-          <ShiftSelect dept={filterDept} leave={leaveOptions} empty="-- เลือกกะ --" value={auto.shiftId} onChange={v => setAuto({ ...auto, shiftId: v })} cls="w-full p-3 rounded-xl border border-slate-300 font-semibold" />
-          <select value={auto.dayPattern} onChange={e => setAuto({ ...auto, dayPattern: e.target.value })} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="all">ทุกวัน</option><option value="weekdays">วันธรรมดา</option><option value="weekends">วันหยุด (ส-อา)</option></select>
-          <select value={auto.assignMode} onChange={e => setAuto({ ...auto, assignMode: e.target.value })} className="w-full p-3 rounded-xl border border-slate-300 font-semibold"><option value="all">ใส่ให้ทุกคนที่เลือก</option><option value="quota">จำกัดโควต้าคน/วัน</option></select>
-          {auto.assignMode === 'quota' && <input type="number" min="1" placeholder="จำนวนคน/วัน" value={auto.requiredCount} onChange={e => setAuto({ ...auto, requiredCount: parseInt(e.target.value) || 1 })} className="w-full p-3 rounded-xl border border-slate-300 font-semibold" />}
-          <label className="flex items-center gap-2 mt-2 font-semibold text-slate-700 cursor-pointer"><input type="checkbox" checked={auto.overwrite} onChange={e => setAuto({ ...auto, overwrite: e.target.checked })} className="rounded border-slate-300 w-4 h-4" /> เขียนทับกะเดิม (เก็บรายการลาไว้)</label>
-          <Actions onCancel={() => setAutoOpen(false)} onOk={runAuto} okText="เริ่มจัดเวร" disabled={saving} />
-        </> : plan ? <>
-          <p className="font-bold text-slate-700">จัดได้ {plan.updates.length} ช่อง · {plan.short.length ? <span className="text-red-600">ขาดกรอบ {plan.short.length} จุด</span> : <span className="text-emerald-600">ครบตามกรอบ</span>}</p>
-          {plan.short.length > 0 && <div className="max-h-24 overflow-y-auto text-xs bg-red-50 border border-red-100 rounded-lg p-2 space-y-0.5">{plan.short.slice(0, 40).map((x, i) => <div key={i}>วันที่ {+x.date.slice(8)} · {x.shift} ขาด {x.need - x.got} (ได้ {x.got}/{x.need})</div>)}</div>}
-          <div className="max-h-44 overflow-y-auto border border-slate-200 rounded-lg"><table className="w-full text-xs"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-2 text-left">พนักงาน</th><th className="p-2">ก่อน</th><th className="p-2">หลัง</th><th className="p-2">OT</th></tr></thead>
-            <tbody>{autoEmps.map(id => <tr key={id} className="border-t border-slate-100"><td className="p-2 font-semibold">{employees[id].fname}</td><td className="p-2 text-center">{plan.before[id]}</td><td className="p-2 text-center font-bold">{plan.credit[id]}</td><td className="p-2 text-center text-primary font-bold">{plan.credit[id] - localWorkDays}</td></tr>)}</tbody></table></div>
-          <p className="text-xs text-slate-400">OT เทียบกับวันทำการ {localWorkDays} วัน ยังไม่บันทึกจนกว่าจะกดยืนยัน</p>
-          <Actions onCancel={() => setPlan(null)} onOk={() => commitPlan(plan.updates)} okText="บันทึกเวร" disabled={saving} />
-        </> : <>
-          {['wd', 'we'].map(k => (
-            <div key={k}><p className="font-bold text-slate-600 mb-1">{k === 'wd' ? 'กรอบวันธรรมดา' : 'กรอบวันหยุด (ส-อา)'}</p>
-              {frame[k].map((r, i) => (
-                <div key={i} className="flex gap-2 mb-1">
-                  <ShiftSelect dept={filterDept} leave={[]} value={r.shift} onChange={v => setRow(k, i, { shift: v })} cls="flex-1 p-2 border border-slate-300 rounded-xl font-semibold bg-white" />
-                  <input type="number" min="0" value={r.count} onChange={e => setRow(k, i, { count: Number(e.target.value) })} className="w-16 p-2 border border-slate-300 rounded-xl text-center font-bold" />
-                  <button onClick={() => setFrame(f => ({ ...f, [k]: f[k].filter((_, j) => j !== i) }))} className="w-9 rounded-xl bg-red-50 text-red-600"><i className="fa-solid fa-trash-can"></i></button>
-                </div>))}
-              <button onClick={() => setFrame(f => ({ ...f, [k]: [...f[k], { shift: getSortedShiftKeys(filterDept)[0], count: 1 }] }))} className="text-primary text-xs font-bold">+ เพิ่มกะในกรอบ</button>
-            </div>))}
-          <div className="flex items-center gap-3 flex-wrap text-xs font-semibold text-slate-600">
-            <label className="flex items-center gap-1">ทำงานติดกันไม่เกิน <input type="number" min="1" value={params.maxRun} onChange={e => setParams({ ...params, maxRun: Number(e.target.value) || 1 })} className="w-14 p-1 border border-slate-300 rounded-lg text-center" /> วัน</label>
-            <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked={params.restNight} onChange={e => setParams({ ...params, restNight: e.target.checked })} className="w-4 h-4" /> พักวันถัดไปหลังเวรดึก</label>
-          </div>
-          <p className="text-xs text-slate-400">เติมเฉพาะช่องที่ยังว่าง ไม่แตะลา/Off/เวรที่จัดไว้แล้ว</p>
-          <button onClick={saveFrame} className="text-xs font-bold text-slate-500 hover:text-primary">บันทึกกรอบนี้ไว้ใช้กับแผนก {filterDept}</button>
-          <Actions onCancel={() => setAutoOpen(false)} onOk={preview} okText="ดูตัวอย่าง" />
-        </>}
-      </div></div></Modal>}
-
-      <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-4 print-hide">
-        <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between mb-4 border-b border-slate-100 pb-4">
-          <div className="flex bg-slate-100 p-1.5 rounded-xl w-fit">{tabBtn('logs', 'ประวัติ')}{tabBtn('summary', 'สรุป OT')}{tabBtn('schedules', 'ตารางเวร')}{tabBtn('exceptions', 'รายงานผิดปกติ')}</div>
-          <div className="flex flex-wrap gap-2">
-            {adminTab === 'logs' && role === 'admin' && <button onClick={() => setAddData({ empId: '', date: '', shiftId: '', timeIn: '', timeOut: '' })} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-plus mr-1.5"></i>เพิ่มย้อนหลัง</button>}
-            {adminTab === 'schedules' && <button onClick={openAuto} disabled={!filterDept} className="px-4 py-2 bg-pink-50 hover:bg-pink-100 text-primary border border-pink-200 rounded-lg text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"><i className="fa-solid fa-wand-magic-sparkles mr-1.5"></i>จัดเวรออโต้</button>}
-            {exportBtn({ logs: exportLogs, exceptions: exportEx, summary: exportSummary, schedules: exportSchedule }[adminTab], adminTab === 'schedules' ? 'fa-file-excel' : 'fa-file-csv')}
-            <button onClick={() => window.print()} className={BTN}><i className="fa-solid fa-print mr-1.5 text-slate-400"></i>พิมพ์</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-          {isMatrix
-            ? <input type="month" value={matrixMonth} onChange={e => setMatrixMonth(e.target.value)} className={`col-span-2 md:col-span-1 ${IN}`} />
-            : <><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={IN} /><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={IN} /></>}
-          <select value={filterDept} onChange={e => setFilterDept(e.target.value)} disabled={role === 'supervisor'} className={`${IN} bg-white disabled:bg-slate-100 disabled:text-slate-400`}>{role === 'admin' && <option value="">ทุกแผนก</option>}{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select>
-          <input type="text" placeholder="ค้นหาชื่อ..." value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={IN} />
-          {isMatrix && (
-            <div className="relative col-span-2 md:col-span-1">
-              <button onClick={() => setShowDrop(!showDrop)} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 bg-white text-left flex justify-between items-center outline-none shadow-sm hover:bg-slate-50">
-                <span className="truncate">พนักงาน ({dropdownEmps.filter(id => !excluded.includes(id)).length}/{dropdownEmps.length})</span><i className="fa-solid fa-chevron-down text-slate-400 ml-2"></i>
-              </button>
-              {showDrop && <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowDrop(false)}></div>
-                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto p-2 flex flex-col gap-1 top-full left-0">
-                  <div className="flex justify-between items-center mb-1 pb-2 border-b border-slate-100 px-1 pt-1">
-                    <button onClick={() => setExcluded(p => p.filter(id => !dropdownEmps.includes(id)))} className="text-xs text-primary font-bold hover:underline">เลือกทั้งหมด</button>
-                    <button onClick={() => setExcluded(p => [...new Set([...p, ...dropdownEmps])])} className="text-xs text-slate-500 font-bold hover:underline">ล้างทั้งหมด</button>
-                  </div>
-                  {dropdownEmps.map(id => (
-                    <label key={id} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer transition-colors">
-                      <input type="checkbox" checked={!excluded.includes(id)} onChange={e => setExcluded(p => e.target.checked ? p.filter(x => x !== id) : [...p, id])} className="w-4 h-4 rounded border-slate-300 cursor-pointer" />
-                      <span className="text-sm font-semibold text-slate-700 truncate">{employees[id].fname} {employees[id].lname}</span>
-                    </label>
-                  ))}
-                  {!dropdownEmps.length && <div className="text-xs text-slate-400 text-center py-3 font-medium">ไม่พบรายชื่อพนักงาน</div>}
-                </div>
-              </>}
-            </div>
-          )}
-        </div>
-        {adminTab === 'summary' && role === 'admin' && (
-          <div className="mt-4 flex items-center gap-3 text-sm bg-pink-50 p-3 rounded-xl border border-pink-100 w-fit">
-            <span className="text-primary font-bold"><i className="fa-solid fa-gear mr-2"></i>วันทำการปกติ:</span>
-            <input type="number" min="0" value={localWorkDays} onChange={e => setLocalWorkDays(Number(e.target.value))} className="w-16 p-1.5 border border-pink-200 rounded-lg text-center font-bold bg-white text-slate-800" />
-            <button onClick={saveSettings} className="px-3 py-1.5 bg-primary hover:bg-pink-700 text-white rounded-lg text-xs font-bold transition-colors">บันทึก</button>
-          </div>
-        )}
-      </div>
-
-      {adminTab === 'logs' && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm"><div className="overflow-x-auto print-table-wrapper"><table className="min-w-full text-sm text-left">
-          <thead className={THEAD}><tr><th className={TH}>วันที่</th><th className={TH}>พนักงาน</th><th className={TH}>กะ</th><th className={`${TH} text-center`}>เข้า</th><th className={`${TH} text-center`}>ออก</th><th className={`${TH} text-center`}>สาย</th><th className={`${TH} text-center print-hide`}>รูป</th>{role === 'admin' && <th className={`${TH} text-right print-hide`}>จัดการ</th>}</tr></thead>
-          <tbody className="divide-y divide-slate-100">{filteredRecords.map(r => (
-            <tr key={r.id} className="hover:bg-pink-50/50 transition-colors">
-              <td className={`${TD} text-slate-500 font-semibold`}>{formatDisplayDate(r.date).slice(0, 5)}</td>
-              <EmpCell id={r.empId} emp={employees[r.empId]} /><ShiftCell r={r} /><TimeCells r={r} />
-              <td className={`${TD} text-center`}>{r.isLate ? <span className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded text-xs font-bold">{r.lateMinutes} น.</span> : '-'}</td>
-              <td className={`${TD} text-center print-hide`}>{(r.photoInUrl || r.photoOutUrl) ? <button onClick={() => setPhotoRec(r)} className="text-primary hover:text-pink-600 bg-pink-50 w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors"><i className="fa-solid fa-image"></i></button> : '-'}</td>
-              {role === 'admin' && <td className={`${TD} text-right print-hide`}><button onClick={() => setEditData({ ...r })} className="text-slate-400 hover:text-primary mr-3 transition-colors"><i className="fa-solid fa-pen"></i></button><button onClick={() => del(r.id)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fa-solid fa-trash"></i></button></td>}
-            </tr>))}</tbody>
-        </table></div></div>
-      )}
-
-      {adminTab === 'exceptions' && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="p-4 bg-slate-50 border-b border-slate-200 flex gap-2 print-hide">
-            {[['late', 'พนักงานผู้มาสาย'], ['missing_out', 'ลืมลงเวลาออก']].map(([k, l]) => <button key={k} onClick={() => setExFilter(k)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${exFilter === k ? 'bg-primary text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}`}>{l}</button>)}
-          </div>
-          <div className="overflow-x-auto print-table-wrapper"><table className="min-w-full text-sm text-left">
-            <thead className={THEAD}><tr><th className={TH}>วันที่</th><th className={TH}>พนักงาน</th><th className={TH}>กะ</th><th className={`${TH} text-center`}>เข้า</th><th className={`${TH} text-center`}>ออก</th><th className={`${TH} text-center`}>สถานะ</th></tr></thead>
-            <tbody className="divide-y divide-slate-100">
-              {exceptionRecords.map(r => (
-                <tr key={r.id} className="hover:bg-pink-50/50 transition-colors">
-                  <td className={`${TD} text-slate-500 font-semibold`}>{formatDisplayDate(r.date).slice(0, 5)}</td>
-                  <EmpCell id={r.empId} emp={employees[r.empId]} /><ShiftCell r={r} /><TimeCells r={r} />
-                  <td className={`${TD} text-center`}>{exFilter === 'late' ? <span className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded text-xs font-bold">สาย {r.lateMinutes} น.</span> : <span className="text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded text-xs font-bold">ไม่พบเวลาออก</span>}</td>
-                </tr>))}
-              {!exceptionRecords.length && <tr><td colSpan="6" className="px-4 py-8 text-center text-slate-500">ไม่พบข้อมูลความผิดปกติในช่วงเวลานี้</td></tr>}
-            </tbody>
-          </table></div>
-        </div>
-      )}
-
-      {isMatrix && filterDept && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print-table-wrapper"><div className="overflow-x-auto">
-          <table className="min-w-full text-left" style={{ tableLayout: 'fixed' }}>
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th rowSpan="2" className="px-2 py-3 font-extrabold text-slate-800 text-sm sticky left-0 bg-slate-50 z-20 border-r border-slate-200" style={{ width: '13%' }}>พนักงาน</th>
-                {daysArray.map(d => { const di = new Date(my, mm - 1, d).getDay(), wk = di === 0 || di === 6; return <th key={d} rowSpan="2" className={`day-col px-1 py-1.5 text-center text-xs font-extrabold ${wk ? 'text-rose-600 bg-rose-50/50' : 'text-slate-500'}`}><span className="block text-[9px] font-semibold opacity-75">{dayName[di]}</span>{d}</th>; })}
-                <th colSpan={types.length} className="px-1 py-1.5 font-extrabold text-primary text-center bg-pink-50/50 border-l border-b border-pink-100 border-r border-slate-200 text-[10px] uppercase tracking-widest" style={{ width: `${types.length * 2.5}%` }}>สรุปกะเวร</th>
-                <th rowSpan="2" className="px-1 py-3 text-center text-xs font-extrabold text-slate-700 bg-slate-100/50 border-l border-slate-200" style={{ width: '4%' }}>รวม</th>
-                <th rowSpan="2" className="px-1 py-3 text-center text-xs font-extrabold text-slate-800 bg-slate-100/50 border-l border-slate-200" style={{ width: '4%' }}>ทำงาน</th>
-                <th rowSpan="2" className="px-1 py-3 text-center text-[10px] font-extrabold text-white bg-primary border-l border-pink-600" style={{ width: '4%' }}>OT</th>
-                {showLate && <th rowSpan="2" className="px-1 py-3 text-center text-[10px] font-extrabold text-red-700 bg-red-50 border-l border-red-200" style={{ width: '4%' }}>สาย<br />(นาที)</th>}
-              </tr>
-              <tr>{types.map(t => <th key={t} className="px-1 py-1 font-extrabold text-primary text-center bg-pink-50/50 border-x border-white text-[10px]">{t}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {summaryMatrix.map(row => (
-                <tr key={row.empId} className="hover:bg-pink-50/30 transition-colors">
-                  <td className="px-2 py-2 sticky left-0 bg-white z-10 border-r border-slate-200"><p className="font-bold text-slate-800 leading-tight truncate">{row.fname}</p><p className="text-[9px] font-semibold text-slate-400 truncate mt-0.5">{row.empId} • {row.level}</p></td>
-                  {daysArray.map(d => {
-                    const wk = [0, 6].includes(new Date(my, mm - 1, d).getDay());
-                    if (adminTab === 'schedules') {
-                      const ds = dayStr(d), o = schedules[ds]?.[row.empId];
-                      return <td key={d} onClick={() => setCellData({ empId: row.empId, dateStr: ds, shifts: [...(o?.shifts || [])] })} className={`day-col px-0.5 py-2 text-center cursor-pointer border-r border-slate-50 hover:bg-slate-100 transition-colors relative ${wk ? 'bg-rose-50/30' : ''}`}>
-                        {o?.isEdited && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-400 rounded-full print-hide"></div>}
-                        <div className="flex flex-col gap-0.5 items-center">{(o?.shifts || []).map((s, i) => <span key={i} className="shift-chip bg-white text-slate-800 border border-slate-300 px-1 py-0.5 rounded shadow-sm text-[10px] font-bold">{s}</span>)}</div></td>;
-                    }
-                    const { ui, absent } = row.shiftsByDay[d];
-                    return <td key={d} className={`day-col px-0.5 py-1.5 text-center text-xs font-bold border-r border-slate-50 align-middle ${absent ? 'bg-red-50 ring-1 ring-inset ring-red-200' : (ui.length ? 'bg-slate-50/40' : '')} ${wk && !ui.length ? 'bg-rose-50/30' : ''}`}>
-                      {ui.length ? <div className="flex flex-col gap-0.5 items-center justify-center my-0.5">{ui.map((e, i) => <span key={i} className={`shift-chip text-[10px] font-bold px-1 py-0.5 rounded border ${chipCls[e.type]}`} title={e.type === 'pending' ? 'กะล่วงหน้า/รอสแกน' : ''}>{e.shift}</span>)}</div> : <span className="text-slate-300">-</span>}</td>;
-                  })}
-                  {types.map(t => <td key={t} className="px-1 py-2 text-center font-bold text-primary bg-pink-50/30 border-x border-slate-50 text-[10px]">{row.shiftCounts[t] || 0}</td>)}
-                  <td className="px-1 py-2 text-center font-extrabold text-slate-800 bg-slate-50/50 border-l border-slate-200">{row.credit}</td>
-                  <td className="px-1 py-2 text-center font-bold text-slate-500 bg-slate-50/50 border-l border-slate-200 text-xs">{localWorkDays}</td>
-                  <td className="px-1 py-2 text-center font-extrabold text-primary bg-pink-50 border-l border-pink-100">{row.ot > 0 ? `+${row.ot}` : row.ot}</td>
-                  {showLate && <td className="px-1 py-2 text-center font-extrabold text-red-600 bg-red-50 border-l border-red-200">{row.late > 0 ? row.late : '-'}</td>}
-                </tr>
-              ))}
-              {summaryMatrix.length > 0 && (
-                <tr className="bg-amber-50/80 border-t-2 border-amber-200">
-                  <td className="px-2 py-3 sticky left-0 bg-amber-50 z-10 border-r border-slate-200 font-extrabold text-slate-800 text-right text-xs">สรุปอัตรากำลัง/วัน</td>
-                  {daysArray.map(d => {
-                    const counts = getDaily(d), wk = [0, 6].includes(new Date(my, mm - 1, d).getDay());
-                    return <td key={d} className={`day-col px-0.5 py-1 text-center border-r border-slate-200 align-top ${wk ? 'bg-rose-50/50' : ''}`}>
-                      {Object.keys(counts).length ? <div className="flex flex-col gap-0.5 mt-1 pb-1">{Object.entries(counts).sort((a, b) => byCat(a[0], b[0])).map(([s, c]) => <div key={s} className="text-[9px] font-extrabold text-slate-700 leading-tight">{s}: <strong className="text-primary">{c}</strong></div>)}</div> : <span className="text-slate-300">-</span>}</td>;
-                  })}
-                  <td colSpan={types.length + (showLate ? 4 : 3)} className="bg-amber-50 border-l border-slate-200"></td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div></div>
-      )}
-      {isMatrix && !filterDept && (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm print-hide">
-          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100"><i className="fa-solid fa-building text-3xl text-primary/50"></i></div>
-          <h3 className="text-lg font-bold text-slate-800 mb-1">ยังไม่ได้เลือกแผนก</h3>
-          <p className="text-slate-500 font-medium">กรุณาเลือกแผนกจากเมนูด้านบนเพื่อดูตารางเวร</p>
-        </div>
-      )}
-    </div>
-  );
+// ==========================================
+// ตั้งค่า / ตารางเวร
+// ==========================================
+function saveSettings(p) {
+  if (p.frameDept) {   // กรอบกำลังของแผนก
+    PropertiesService.getScriptProperties().setProperty('frame_' + p.frameDept, JSON.stringify(p.frame || {}));
+    return ok_({ message: 'บันทึกกรอบกำลังสำเร็จ' });
+  }
+  if (!p.monthYear || !p.standardWorkDays) return err_('ข้อมูลไม่ครบถ้วน');
+  PropertiesService.getScriptProperties().setProperty('workDays_' + p.monthYear, p.standardWorkDays.toString());
+  return ok_({ message: 'บันทึกวันทำงานของเดือน ' + p.monthYear + ' สำเร็จ' });
 }
-</script>
 
-</body>
-</html>
+function saveSchedule(p) {
+  const sh = sheet_(SH.SCH);
+  if (!sh) return err_('ไม่พบแผ่นงาน Schedule');
+
+  const date = fmtDate_(p.date), emp = p.empId.toString().toUpperCase(), shifts = p.shifts.join(',');
+  const editor = p.editorId || 'Unknown', editorName = p.editorName || 'Unknown';
+  const rows = rows_(SH.SCH, 6), idxs = schedGroups_(rows)[date + '_' + emp] || [];
+  const old = idxs.length ? mergeShifts_(rows, idxs).join(',') : '';   // ค่าที่ผู้ใช้เห็นอยู่
+
+  if (idxs.length === 1 && old === shifts) return ok_({ message: 'ไม่มีการเปลี่ยนแปลง' });
+
+  const ts = now_();
+  if (idxs.length) {
+    sh.getRange(idxs[0] + 2, 3, 1, 4).setValues([[shifts, old !== '', editor, ts]]);
+    idxs.slice(1).reverse().forEach(i => sh.deleteRow(i + 2));   // ยุบแถวซ้ำให้เหลือแถวเดียว
+  } else {
+    sh.appendRow(["'" + p.date, emp, shifts, false, editor, ts]);
+  }
+
+  audit_().appendRow([ts, editor, editorName, 'EDIT_SCHEDULE', "'" + p.date, emp, old, shifts]);
+  return ok_({ message: 'บันทึกตารางเวรและประวัติสำเร็จ' });
+}
+
+// บันทึกตารางเวรแบบกลุ่ม (จัดเวรอัตโนมัติ) — เขียนเฉพาะคอลัมน์ C:F แบบ batch
+function saveScheduleBulk(p) {
+  const sh = sheet_(SH.SCH);
+  if (!sh) return err_('ไม่พบแผ่นงาน Schedule');
+
+  const rows = rows_(SH.SCH, 6), groups = schedGroups_(rows), ts = now_(), added = [], logs = [], del = [];
+  let changed = false;
+
+  p.updates.forEach(u => {
+    const date = fmtDate_(u.date), emp = u.empId.toString().toUpperCase(), shifts = u.shifts.join(',');
+    const key = date + '_' + emp, idxs = groups[key];
+    let old = '';
+    if (idxs) {
+      old = mergeShifts_(rows, idxs).join(',');
+      if (old === shifts && idxs.length === 1) return;
+      rows[idxs[0]].splice(2, 4, shifts, old !== '', p.editorId, ts);
+      del.push(...idxs.slice(1));
+      groups[key] = [idxs[0]];
+      changed = true;
+    } else {
+      added.push(["'" + date, emp, shifts, false, p.editorId, ts]);
+    }
+    logs.push([ts, p.editorId, p.editorName, p.auditAction || 'AUTO_SCHEDULE', "'" + date, emp, old, shifts]);
+  });
+
+  if (changed) sh.getRange(2, 3, rows.length, 4).setValues(rows.map(r => r.slice(2, 6)));
+  if (added.length) sh.getRange(sh.getLastRow() + 1, 1, added.length, 6).setValues(added);
+  if (logs.length) { const a = audit_(); a.getRange(a.getLastRow() + 1, 1, logs.length, 8).setValues(logs); }
+  [...new Set(del)].sort((a, b) => b - a).forEach(i => sh.deleteRow(i + 2));
+
+  return ok_({ message: `จัดเวรอัตโนมัติสำเร็จ ${p.updates.length} รายการ` });
+}
+
+// ==========================================
+// ลงเวลา / แก้ไข / ลบ
+// ==========================================
+function clockIn(p, skipFace) {
+  if (!skipFace) { const f = faceCheck_(p.empId, p.descriptor); if (f) return f; }
+  const sh = sheet_(SH.LOG), n = sh.getLastRow() - 1;
+  const emp = p.empId.toString().toUpperCase(), date = fmtDate_(p.date), shift = p.shiftId.toString();
+
+  // กันลงเวลาซ้ำฝั่งหลังบ้าน (อ่านเฉพาะคอลัมน์ B:D)
+  if (n > 0 && sh.getRange(2, 2, n, 3).getValues().some(r =>
+    fmtDate_(r[0]) === date && r[1].toString().toUpperCase() === emp && r[2].toString() === shift))
+    return err_('คุณได้ลงเวลาสำหรับกะนี้ไปแล้ว (ตรวจพบโดยฐานข้อมูล)');
+
+  const photoUrl = saveImageToDrive(p.photoBase64, `IN_${p.empId}_${p.date}.jpg`);
+  sh.appendRow([
+    p.id, "'" + p.date, p.empId, p.shiftId, "'" + p.timeIn, p.timeOut ? "'" + p.timeOut : "",
+    p.isLate, p.lateMinutes, p.credit, p.lat, p.lon, photoUrl, ""
+  ]);
+  return ok_({ message: 'บันทึกเวลาเข้างานสำเร็จ' });
+}
+
+function clockOut(p) {
+  const sh = sheet_(SH.LOG), row = findLogRow_(sh, p.id);
+  if (row < 0) return err_('ไม่พบประวัติเข้างาน');
+  const f = faceCheck_(sh.getRange(row, 3).getValue(), p.descriptor); if (f) return f;
+
+  const photoUrl = saveImageToDrive(p.photoBase64, `OUT_${p.id}.jpg`);
+  sh.getRange(row, 6).setValue("'" + p.timeOut);
+  if (photoUrl) sh.getRange(row, 13).setValue(photoUrl);
+  return ok_();
+}
+
+function editRecord(p) {
+  const sh = sheet_(SH.LOG), row = findLogRow_(sh, p.id);
+  if (row < 0) return err_('ไม่พบรหัสประวัตินี้');
+
+  sh.getRange(row, 4, 1, 3).setValues([[p.shiftId, "'" + p.timeIn, p.timeOut ? "'" + p.timeOut : ""]]);
+  sh.getRange(row, 9).setValue(p.credit);
+  return ok_();
+}
+
+function deleteRecord(p) {
+  const sh = sheet_(SH.LOG), row = findLogRow_(sh, p.id);
+  if (row < 0) return err_('ลบไม่สำเร็จ');
+  sh.deleteRow(row);
+  return ok_();
+}
+
+function registerEmployee(p) {
+  sheet_(SH.EMP).appendRow([p.empId, p.fname, p.lname, p.dept, p.level, p.password || '']);
+  return ok_();
+}
+
+
+// ==========================================
+// ขอสลับเวร: พนักงานขอ -> หัวหน้าอนุมัติ -> ตารางเวรเปลี่ยนให้อัตโนมัติ
+// ==========================================
+const SH_SWAP = 'ShiftSwaps';
+const SWAP_MIN_HOURS = 24;   // ต้องขอล่วงหน้าอย่างน้อยกี่ชั่วโมง (นับจาก 08:00 ของวันที่ขอ)
+const SWAP_MAX_RUN = 6;      // หลังสลับ ทำงานติดกันได้ไม่เกินกี่วัน
+const SWAP_HEAD = ['ID', 'CreatedAt', 'RequesterID', 'FriendID', 'DateA', 'DateB', 'ShiftA', 'ShiftB', 'Reason', 'Status', 'DecidedBy', 'DecidedAt', 'Note', 'Dept', 'Type'];
+// Type: swap (สลับกับเพื่อน) / move (ย้ายวันหยุดของตัวเอง: FriendID ว่าง, ShiftB = ค่าเดิมของวันที่จะมาทำ)
+// Status: pending (รอหัวหน้า) / approved / rejected / cancelled / invalid (ตารางเปลี่ยนไปก่อนอนุมัติ)
+
+const ts_ = v => v instanceof Date ? Utilities.formatDate(v, tz_(), 'yyyy-MM-dd HH:mm:ss') : (v ? String(v) : '');
+const workOf_ = list => list.filter(s => WORK_SHIFTS.includes(s));
+const addDays_ = (ds, n) => { const d = new Date(ds + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const msUntilDay_ = ds => Utilities.parseDate(ds + ' 08:00', tz_(), 'yyyy-MM-dd HH:mm').getTime() - Date.now();
+
+function swapSheet_() {
+  let s = sheet_(SH_SWAP);
+  if (!s) {
+    s = ss_().insertSheet(SH_SWAP);
+    s.appendRow(SWAP_HEAD);
+    s.getRange(1, 1, 1, SWAP_HEAD.length).setFontWeight('bold').setBackground('#f3f4f6');
+    s.getRange('B:B').setNumberFormat('@'); s.getRange('E:F').setNumberFormat('@');
+  }
+  if (s.getRange(1, 15).getValue() !== 'Type') {   // ชีตที่สร้างไว้ก่อนมีคอลัมน์ Type
+    if (s.getMaxColumns() < 15) s.insertColumnsAfter(s.getMaxColumns(), 15 - s.getMaxColumns());
+    s.getRange(1, 15).setValue('Type').setFontWeight('bold').setBackground('#f3f4f6');
+  }
+  return s;
+}
+
+function swapRows_() {
+  return rows_(SH_SWAP, 15).map((r, i) => ({
+    row: i + 2, id: String(r[0] || ''), createdAt: ts_(r[1]),
+    empId: String(r[2] || '').toUpperCase(), friendId: String(r[3] || '').toUpperCase(),
+    dateA: fmtDate_(r[4]), dateB: fmtDate_(r[5]), shiftA: String(r[6] || ''), shiftB: String(r[7] || ''),
+    reason: String(r[8] || ''), status: String(r[9] || ''), decidedBy: String(r[10] || ''), decidedAt: ts_(r[11]),
+    note: String(r[12] || ''), dept: String(r[13] || ''), type: String(r[14] || 'swap')
+  })).filter(x => x.id);
+}
+
+function empInfo_() {
+  const m = {};
+  rows_(SH.EMP, 6).forEach(r => { if (r[0]) m[r[0].toString().toUpperCase()] = { name: ((r[1] || '') + ' ' + (r[2] || '')).trim(), dept: r[3], level: r[4] }; });
+  return m;
+}
+
+// ช่องตาราง [รหัส, วันที่] ที่คำขอนี้เกี่ยวข้อง
+const swapCells_ = s => [[s.empId, s.dateA], [s.empId, s.dateB]].concat(s.friendId ? [[s.friendId, s.dateA], [s.friendId, s.dateB]] : []);
+
+function schedCtx_() {
+  const rows = rows_(SH.SCH, 6), groups = schedGroups_(rows);
+  return { get: (date, emp) => { const idxs = groups[date + '_' + emp]; return idxs ? mergeShifts_(rows, idxs) : []; } };
+}
+
+function swapHasRecord_(pairs) {
+  const set = new Set(pairs.map(([e, d]) => d + '_' + e));
+  return rows_(SH.LOG, 3).some(r => r[0] && set.has(fmtDate_(r[1]) + '_' + String(r[2]).toUpperCase()));
+}
+
+// คำนวณผลการสลับ: a ให้เวร (วัน dA) แก่ b และรับเวรของ b (วัน dB) / dA = dB คือสลับเวรกันในวันเดียวกัน
+function swapPlan_(ctx, emps, a, b, dA, dB) {
+  const sa = ctx.get(dA, a), sb = ctx.get(dB, b);
+  if (!workOf_(sa).length) return { err: 'ผู้ขอไม่มีเวรทำงานในวันที่ ' + dA };
+  if (!workOf_(sb).length) return { err: 'เพื่อนไม่มีเวรทำงานในวันที่ ' + dB };
+  for (const [e, d] of [[a, dA], [b, dB], [a, dB], [b, dA]]) {
+    if (ctx.get(d, e).some(s => !WORK_SHIFTS.includes(s) && s !== 'Off')) return { err: 'มีรายการลาในวันที่ ' + d + ' (' + emps[e].name + ')' };
+  }
+  let changes;
+  if (dA !== dB) {
+    if (workOf_(ctx.get(dB, a)).length) return { err: emps[a].name + ' มีเวรทำงานอยู่แล้วในวันที่ ' + dB };
+    if (workOf_(ctx.get(dA, b)).length) return { err: emps[b].name + ' มีเวรทำงานอยู่แล้วในวันที่ ' + dA };
+    changes = [
+      { emp: a, date: dA, from: sa, to: ['Off'] }, { emp: a, date: dB, from: ctx.get(dB, a), to: sb },
+      { emp: b, date: dA, from: ctx.get(dA, b), to: sa }, { emp: b, date: dB, from: sb, to: ['Off'] }
+    ];
+  } else {
+    if (sa.join(',') === sb.join(',')) return { err: 'เวรของทั้งสองคนเหมือนกัน ไม่ต้องสลับ' };
+    changes = [{ emp: a, date: dA, from: sa, to: sb }, { emp: b, date: dA, from: sb, to: sa }];
+  }
+  const rc = runCheck_(ctx, emps, changes);
+  if (rc) return { err: rc };
+  return { sa, sb, changes };
+}
+
+// หลังเปลี่ยน ต้องไม่ทำงานติดกันเกิน SWAP_MAX_RUN วัน (คืนข้อความผิดพลาด หรือ '' ถ้าผ่าน)
+function runCheck_(ctx, emps, changes) {
+  const ov = {}; changes.forEach(c => { ov[c.date + '_' + c.emp] = c.to; });
+  const at = (e, d) => ov[d + '_' + e] || ctx.get(d, e);
+  for (const c of changes) {
+    if (!workOf_(c.to).length) continue;
+    let n = 1;
+    for (let k = 1; k <= 8 && workOf_(at(c.emp, addDays_(c.date, -k))).length; k++) n++;
+    for (let k = 1; k <= 8 && workOf_(at(c.emp, addDays_(c.date, k))).length; k++) n++;
+    if (n > SWAP_MAX_RUN) return 'หลังเปลี่ยน ' + emps[c.emp].name + ' จะทำงานติดกัน ' + n + ' วัน (เกิน ' + SWAP_MAX_RUN + ' วัน)';
+  }
+  return '';
+}
+
+// ย้ายวันหยุดของตัวเอง: วัน dA (มีเวรทำงาน) -> Off, วัน dB (วันหยุด) -> ทำเวรเดิมของวัน dA
+function movePlan_(ctx, emps, a, dA, dB) {
+  if (dA === dB) return { err: 'เลือกวันที่ไม่ใช่วันเดียวกัน' };
+  const sa = ctx.get(dA, a), sb = ctx.get(dB, a);
+  if (!workOf_(sa).length) return { err: 'ไม่มีเวรทำงานในวันที่ ' + dA };
+  if (sa.some(s => !WORK_SHIFTS.includes(s) && s !== 'Off')) return { err: 'มีรายการลาในวันที่ ' + dA };
+  if (!sb.length || sb.some(s => s !== 'Off')) return { err: 'วันที่ ' + dB + ' ไม่ใช่วันหยุดในตารางเวร' };
+  const changes = [{ emp: a, date: dA, from: sa, to: ['Off'] }, { emp: a, date: dB, from: sb, to: sa }];
+  const rc = runCheck_(ctx, emps, changes);
+  return rc ? { err: rc } : { sa, sb, changes };
+}
+
+function requestMove_(p) {
+  const emps = empInfo_(), a = String(p.empId || '').toUpperCase();
+  const dA = fmtDate_(p.dateA), dB = fmtDate_(p.dateB), reason = String(p.reason || '').trim();
+  if (!emps[a] || emps[a].dept === 'ADMIN') return err_('ไม่พบข้อมูลพนักงาน');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dA) || !/^\d{4}-\d{2}-\d{2}$/.test(dB)) return err_('วันที่ไม่ถูกต้อง');
+  if (!reason) return err_('กรุณาระบุเหตุผล');
+  if (msUntilDay_(dA) < SWAP_MIN_HOURS * 36e5 || msUntilDay_(dB) < SWAP_MIN_HOURS * 36e5) return err_('ต้องขอล่วงหน้าอย่างน้อย ' + SWAP_MIN_HOURS + ' ชั่วโมง');
+  if (swapHasRecord_([[a, dA], [a, dB]])) return err_('มีบันทึกลงเวลาในวันที่เกี่ยวข้องแล้ว ขอย้ายไม่ได้');
+  const busy = new Set();
+  swapRows_().filter(s => s.status === 'pending').forEach(s => swapCells_(s).forEach(([e, d]) => busy.add(d + '_' + e)));
+  if ([[a, dA], [a, dB]].some(([e, d]) => busy.has(d + '_' + e))) return err_('มีคำขอที่เกี่ยวข้องกับวันนี้รออยู่แล้ว');
+  const plan = movePlan_(schedCtx_(), emps, a, dA, dB);
+  if (plan.err) return err_(plan.err);
+
+  const ts = now_(), id = 'SW' + Date.now() + Math.floor(Math.random() * 100);
+  swapSheet_().appendRow([id, "'" + ts, a, '', "'" + dA, "'" + dB, plan.sa.join(','), plan.sb.join(','), reason, 'pending', '', '', '', emps[a].dept, 'move']);
+  audit_().appendRow([ts, a, emps[a].name, 'MOVE_REQUEST', "'" + dA, '', '', 'หยุด ' + dA + ' (' + plan.sa.join(',') + ') มาทำ ' + dB]);
+  return ok_({ id, message: 'ส่งคำขอถึงหัวหน้าแล้ว' });
+}
+
+function requestSwap(p) {
+  if (p.type === 'move') return requestMove_(p);
+  const emps = empInfo_(), a = String(p.empId || '').toUpperCase(), b = String(p.friendId || '').toUpperCase();
+  const dA = fmtDate_(p.dateA), dB = fmtDate_(p.dateB), reason = String(p.reason || '').trim();
+  if (!emps[a] || !emps[b]) return err_('ไม่พบข้อมูลพนักงาน');
+  if (a === b) return err_('เลือกเพื่อนคนอื่นที่ไม่ใช่ตัวเอง');
+  if (emps[a].dept !== emps[b].dept || emps[a].dept === 'ADMIN') return err_('สลับเวรได้เฉพาะพนักงานในแผนกเดียวกัน');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dA) || !/^\d{4}-\d{2}-\d{2}$/.test(dB)) return err_('วันที่ไม่ถูกต้อง');
+  if (!reason) return err_('กรุณาระบุเหตุผล');
+  if (msUntilDay_(dA) < SWAP_MIN_HOURS * 36e5 || msUntilDay_(dB) < SWAP_MIN_HOURS * 36e5) return err_('ต้องขอล่วงหน้าอย่างน้อย ' + SWAP_MIN_HOURS + ' ชั่วโมง');
+  const cellsNew = [[a, dA], [a, dB], [b, dA], [b, dB]];
+  if (swapHasRecord_(cellsNew)) return err_('มีบันทึกลงเวลาในวันที่เกี่ยวข้องแล้ว ขอสลับไม่ได้');
+  const busy = new Set();
+  swapRows_().filter(s => s.status === 'pending').forEach(s => swapCells_(s).forEach(([e, d]) => busy.add(d + '_' + e)));
+  if (cellsNew.some(([e, d]) => busy.has(d + '_' + e))) return err_('มีคำขอสลับเวรที่เกี่ยวข้องกับวันนี้รออยู่แล้ว');
+  const plan = swapPlan_(schedCtx_(), emps, a, b, dA, dB);
+  if (plan.err) return err_(plan.err);
+
+  const ts = now_(), id = 'SW' + Date.now() + Math.floor(Math.random() * 100);
+  swapSheet_().appendRow([id, "'" + ts, a, b, "'" + dA, "'" + dB, plan.sa.join(','), plan.sb.join(','), reason, 'pending', '', '', '', emps[a].dept, 'swap']);
+  audit_().appendRow([ts, a, emps[a].name, 'SWAP_REQUEST', "'" + dA, b, '', dA + ':' + plan.sa.join(',') + ' <-> ' + dB + ':' + plan.sb.join(',')]);
+  return ok_({ id, message: 'ส่งคำขอถึงหัวหน้าแล้ว' });
+}
+
+function cancelSwap(p) {
+  const sw = swapRows_().find(s => s.id === p.id);
+  if (!sw) return err_('ไม่พบคำขอ');
+  if (sw.status !== 'pending') return err_('คำขอนี้ถูกดำเนินการไปแล้ว');
+  if (sw.empId !== String(p.empId || '').toUpperCase()) return err_('ยกเลิกได้เฉพาะผู้ยื่นคำขอ');
+  const ts = now_();
+  swapSheet_().getRange(sw.row, 10, 1, 4).setValues([['cancelled', sw.empId, "'" + ts, '']]);
+  audit_().appendRow([ts, sw.empId, '', 'SWAP_CANCEL', "'" + sw.dateA, sw.friendId, '', sw.id]);
+  return ok_({ message: 'ยกเลิกคำขอแล้ว' });
+}
+
+function decideSwap(p) {
+  const emps = empInfo_(), sw = swapRows_().find(s => s.id === p.id), meId = String(p.approverId || '').toUpperCase(), me = emps[meId];
+  if (!sw) return err_('ไม่พบคำขอ');
+  if (sw.status !== 'pending') return err_('คำขอนี้ถูกดำเนินการไปแล้ว');
+  if (!me) return err_('ไม่พบข้อมูลผู้พิจารณา');
+  if (!(me.dept === 'ADMIN' || (me.level === 'หัวหน้า' && me.dept === sw.dept))) return err_('ไม่มีสิทธิ์พิจารณาคำขอนี้');
+  if (meId === sw.empId || meId === sw.friendId) return err_('ไม่สามารถพิจารณาคำขอที่ตนเองเกี่ยวข้อง');
+
+  const ts = now_(), note = String(p.note || '').trim(), sh = swapSheet_();
+  const setStatus = (st, n) => sh.getRange(sw.row, 10, 1, 4).setValues([[st, meId, "'" + ts, n]]);
+  const log = (act, info) => audit_().appendRow([ts, meId, me.name, act, "'" + sw.dateA, sw.empId, '', sw.id + ' ' + info]);
+
+  if (!p.approve) { setStatus('rejected', note); log('SWAP_REJECT', note); return ok_({ message: 'ไม่อนุมัติคำขอแล้ว' }); }
+
+  // อนุมัติ: ตรวจซ้ำกับตารางเวรปัจจุบัน (ตารางอาจถูกแก้ระหว่างรอ)
+  const isMove = sw.type === 'move', ctx = schedCtx_();
+  let bad = '';
+  if (ctx.get(sw.dateA, sw.empId).join(',') !== sw.shiftA || ctx.get(sw.dateB, isMove ? sw.empId : sw.friendId).join(',') !== sw.shiftB) bad = 'ตารางเวรของผู้เกี่ยวข้องถูกแก้ไขหลังยื่นคำขอ';
+  else if (msUntilDay_(sw.dateA) <= 0 || msUntilDay_(sw.dateB) <= 0) bad = 'เลยวันที่ขอแล้ว';
+  else if (swapHasRecord_(swapCells_(sw))) bad = 'มีบันทึกลงเวลาในวันที่เกี่ยวข้องแล้ว';
+  const plan = bad ? null : (isMove ? movePlan_(ctx, emps, sw.empId, sw.dateA, sw.dateB) : swapPlan_(ctx, emps, sw.empId, sw.friendId, sw.dateA, sw.dateB));
+  if (plan && plan.err) bad = plan.err;
+  if (bad) { setStatus('invalid', bad); log('SWAP_INVALID', bad); return ok_({ invalid: true, message: 'ใช้ไม่ได้: ' + bad + ' (ปิดคำขอแล้ว ให้ผู้ขอยื่นใหม่)' }); }
+
+  saveScheduleBulk({ updates: plan.changes.map(c => ({ date: c.date, empId: c.emp, shifts: c.to })), editorId: meId, editorName: me.name, auditAction: 'SWAP_SCHEDULE' });
+  setStatus('approved', note);
+  log('SWAP_APPROVE', isMove ? 'ย้ายวันหยุด หยุด ' + sw.dateA + ' มาทำ ' + sw.dateB : sw.dateA + ' <-> ' + sw.dateB + ' กับ ' + sw.friendId);
+  return ok_({ message: 'อนุมัติแล้ว และเปลี่ยนเวรในตารางให้เรียบร้อย' });
+}
