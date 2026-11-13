@@ -710,7 +710,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 pb-20 font-sans text-slate-900 relative">
-      <div className={`bg-primary ${compact ? 'h-32' : 'h-48'} w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm transition-all overflow-hidden`} style={fest ? { background: fest.art ? 'linear-gradient(180deg,#1e1b4b 0%,#5b21b6 62%,#c2410c 100%)' : fest.bg } : undefined}>
+      <div className={`bg-primary ${compact ? 'h-44' : 'h-48'} w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm transition-all overflow-hidden`} style={fest ? { background: fest.art ? 'linear-gradient(180deg,#1e1b4b 0%,#5b21b6 62%,#c2410c 100%)' : fest.bg } : undefined}>
         {fest && fest.art === 'loy' && <LoyPhoto />}
         {fest && !fest.art && fest.deco.map((e, i) => <span key={i} className="absolute select-none pointer-events-none festi-float" style={{ left: `${6 + i * 16}%`, top: `${10 + (i % 3) * 24}%`, fontSize: 20 + (i % 3) * 6, opacity: .4, animationDelay: `${i * .7}s` }}>{e}</span>)}
       </div>
@@ -874,7 +874,9 @@ function ActionPanelView({ user, now, records, setRecords, schedules, avatar, se
         <button onClick={() => setType(null)} aria-label="ย้อนกลับ" className="w-11 h-11 shrink-0 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"><i className="fa-solid fa-chevron-left"></i></button>
         <div><p className="text-xs font-semibold">{formatFullThaiDate(now)}</p><h2 className="text-xl font-bold leading-tight">{type === 'in' ? 'ลงเวลาเข้างาน' : 'ลงเวลาออกงาน'}</h2></div>
       </div>
-      {type === 'in' ? <ClockInModule {...props} schedules={schedules} /> : <ClockOutModule {...props} />}
+      <Sheet tight>
+        {type === 'in' ? <ClockInModule {...props} schedules={schedules} /> : <ClockOutModule {...props} />}
+      </Sheet>
     </div>
   );
 }
@@ -1054,8 +1056,8 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
 }
 
 // ================= ตารางเวร / ประวัติ =================
-const Sheet = ({ children, wide }) => (
-  <div className={`-mx-4 ${wide ? 'sm:-mx-6 lg:-mx-8' : 'sm:mx-auto sm:max-w-md'} bg-white rounded-t-[2rem] sm:rounded-b-[2rem] shadow-[0_-6px_18px_rgba(15,23,42,0.14)] px-4 sm:px-5 pt-5 pb-8 min-h-[calc(100dvh-15rem)] sm:min-h-0 sm:mb-8 space-y-3 print:shadow-none print:rounded-none print:p-0 print:min-h-0 print:mb-0`}>{children}</div>
+const Sheet = ({ children, wide, tight }) => (
+  <div className={`-mx-4 ${wide ? 'sm:-mx-6 lg:-mx-8' : 'sm:mx-auto sm:max-w-md'} bg-white rounded-t-[2rem] sm:rounded-b-[2rem] shadow-[0_-6px_18px_rgba(15,23,42,0.14)] px-4 sm:px-5 ${tight ? 'pt-4 pb-4' : 'pt-5 pb-8'} min-h-[calc(100dvh-15rem)] sm:min-h-0 sm:mb-8 space-y-3 print:shadow-none print:rounded-none print:p-0 print:min-h-0 print:mb-0`}>{children}</div>
 );
 const PageTitle = ({ sub, title, right }) => (
   <div className="flex items-center justify-between gap-3 text-white">
