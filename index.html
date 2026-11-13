@@ -708,7 +708,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 pb-20 font-sans text-slate-900 relative">
-      <div className={`bg-primary ${compact ? 'h-32' : tab === 'home' ? 'h-48' : 'h-40'} w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm transition-all overflow-hidden`} style={fest ? { background: fest.art ? 'linear-gradient(180deg,#1e1b4b 0%,#5b21b6 62%,#c2410c 100%)' : fest.bg } : undefined}>
+      <div className={`bg-primary ${compact ? 'h-32' : 'h-48'} w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm transition-all overflow-hidden`} style={fest ? { background: fest.art ? 'linear-gradient(180deg,#1e1b4b 0%,#5b21b6 62%,#c2410c 100%)' : fest.bg } : undefined}>
         {fest && fest.art === 'loy' && <LoyPhoto />}
         {fest && !fest.art && fest.deco.map((e, i) => <span key={i} className="absolute select-none pointer-events-none festi-float" style={{ left: `${6 + i * 16}%`, top: `${10 + (i % 3) * 24}%`, fontSize: 20 + (i % 3) * 6, opacity: .4, animationDelay: `${i * .7}s` }}>{e}</span>)}
       </div>
@@ -724,9 +724,12 @@ function App() {
           {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} onForm={setFormOpen} syncedAt={syncedAt} />}
           {tab === 'calendar' && <MyCalendarView user={user} schedules={schedules} employees={employees} records={records} settings={settings} swaps={swaps} reload={reload} />}
           {tab === 'history' && <MyHistoryView user={user} records={records} schedules={schedules} settings={settings} now={now} />}
-          {tab === 'manager' && isManager && (typeof ReportView !== 'undefined'
+          {tab === 'manager' && isManager && (<div className="space-y-3">
+            <PageTitle sub={role === 'admin' ? 'แอดมิน · ทุกแผนก' : `หัวหน้า · แผนก${user.dept}`} title="จัดการ" />
+            <Sheet wide>{typeof ReportView !== 'undefined'
             ? <ReportView role={role} user={user} records={records} setRecords={setRecords} employees={employees} schedules={schedules} setSchedules={setSchedules} sendToGoogleSheet={sendToGoogleSheet} settings={settings} setSettings={setSettings} swaps={swaps} reload={reload} />
-            : <div className={`${CARD} p-8 text-center text-slate-500`}>ยังไม่ได้ติดตั้งโมดูลจัดการ (ReportView)</div>)}
+            : <div className={`${CARD} p-8 text-center text-slate-500`}>ยังไม่ได้ติดตั้งโมดูลจัดการ (ReportView)</div>}</Sheet>
+          </div>)}
         </main>
       </div>
 
@@ -767,8 +770,7 @@ function App() {
 
 // ================= Login =================
 function LoginView({ employees, onLogin }) {
-  const [empId, setEmpId] = useState(''), [password, setPassword] = useState(''), [needsPw, setNeedsPw] = useState(false), [err, setErr] = useState(''), [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'pink'), [themeOpen, setThemeOpen] = useState(false);
-  const fest = festivalFor(new Date());
+  const [empId, setEmpId] = useState(''), [password, setPassword] = useState(''), [needsPw, setNeedsPw] = useState(false), [err, setErr] = useState(''), [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'pink'), [themeOpen, setThemeOpen] = useState(false), [showPw, setShowPw] = useState(false);
   const pickTheme = t => { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('rt_theme', t); } catch (e) {} setTheme(t); setThemeOpen(false); };
   const inputCls = 'w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none text-slate-800 font-bold focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all';
   const grad = 'bg-primary hover:bg-pink-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2';
@@ -786,14 +788,12 @@ function LoginView({ employees, onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-primary relative overflow-hidden" style={fest ? { background: fest.art ? 'linear-gradient(180deg,#1e1b4b 0%,#5b21b6 62%,#c2410c 100%)' : fest.bg } : undefined}>
-      {fest && fest.art === 'loy' && <div className="absolute top-0 left-0 w-full h-72 overflow-hidden" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 62%, transparent)', maskImage: 'linear-gradient(to bottom, #000 62%, transparent)' }}><LoyPhoto /></div>}
-      {fest && !fest.art && fest.deco.map((e, i) => <span key={i} className="absolute select-none pointer-events-none festi-float" style={{ left: `${6 + i * 16}%`, top: `${6 + (i % 3) * 8}%`, fontSize: 20 + (i % 3) * 6, opacity: .4, animationDelay: `${i * .7}s` }}>{e}</span>)}
+    <div className="min-h-screen flex flex-col bg-primary relative overflow-hidden">
       <button onClick={() => setThemeOpen(true)} aria-label="เลือกสีของแอป" className="absolute top-4 right-4 z-20 w-11 h-11 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-colors"><i className="fa-solid fa-palette text-lg"></i></button>
       <div className="relative z-10 flex flex-col items-center text-white text-center pt-14 md:pt-20 pb-16 px-6">
         <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-4 shadow-lg"><i className="fa-solid fa-fingerprint text-4xl text-primary"></i></div>
         <h1 className="text-3xl font-extrabold tracking-tight">รักษ์สกล Time</h1>
-        <p className="text-sm font-semibold text-white/90 mt-1">{fest ? `${fest.emoji} ${fest.greet}` : 'เข้าสู่ระบบเพื่อปฏิบัติงาน'}</p>
+        <p className="text-sm font-semibold text-white/90 mt-1">เข้าสู่ระบบเพื่อปฏิบัติงาน</p>
       </div>
       <div className="relative z-10 flex-1 md:flex-none md:mb-12 w-full max-w-md mx-auto bg-white rounded-t-[2rem] md:rounded-[2rem] shadow-[0_-6px_18px_rgba(15,23,42,0.18)] md:shadow-[0_12px_32px_rgba(15,23,42,0.25)] px-6 sm:px-8 pt-8 pb-10">
         <h2 className="text-xl font-bold text-slate-800 mb-1">เข้าสู่ระบบ</h2>
@@ -814,10 +814,11 @@ function LoginView({ employees, onLogin }) {
               <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider ml-1">รหัสผ่านสำหรับ <span className="text-primary">{employees[empId.toUpperCase()]?.fname}</span></label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i className="fa-solid fa-lock text-slate-400 text-lg"></i></div>
-                <input type="password" placeholder="••••••••" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className={`${inputCls} tracking-widest`} autoFocus />
+                <input type={showPw ? 'text' : 'password'} placeholder="••••••••" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className={`${inputCls.replace('pr-4', 'pr-14')} ${showPw ? '' : 'tracking-widest'}`} autoFocus />
+                <button type="button" onClick={() => setShowPw(v => !v)} aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={showPw} className="absolute inset-y-0 right-0 w-14 flex items-center justify-center text-slate-500 hover:text-slate-800 rounded-r-2xl"><i className={`fa-solid ${showPw ? 'fa-eye-slash' : 'fa-eye'} text-lg`}></i></button>
               </div>
               <div className="flex gap-3 mt-8">
-                <button type="button" onClick={() => { setNeedsPw(false); setPassword(''); }} className="w-1/3 py-4 bg-white border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-600 rounded-2xl font-bold transition-all">กลับ</button>
+                <button type="button" onClick={() => { setNeedsPw(false); setPassword(''); setShowPw(false); }} className="w-1/3 py-4 bg-white border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-600 rounded-2xl font-bold transition-all">กลับ</button>
                 <button type="submit" className={`w-2/3 py-4 ${grad}`}>เข้าสู่ระบบ <i className="fa-solid fa-arrow-right-to-bracket"></i></button>
               </div>
             </div>
@@ -1051,8 +1052,11 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
 }
 
 // ================= ตารางเวร / ประวัติ =================
+const Sheet = ({ children, wide }) => (
+  <div className={`-mx-4 ${wide ? 'sm:-mx-6 lg:-mx-8' : 'sm:mx-auto sm:max-w-md'} bg-white rounded-t-[2rem] sm:rounded-b-[2rem] shadow-[0_-6px_18px_rgba(15,23,42,0.14)] px-4 sm:px-5 pt-5 pb-8 min-h-[calc(100dvh-15rem)] sm:min-h-0 sm:mb-8 space-y-3 print:shadow-none print:rounded-none print:p-0 print:min-h-0 print:mb-0`}>{children}</div>
+);
 const PageTitle = ({ sub, title, right }) => (
-  <div className="flex items-center justify-between gap-3 text-white mb-3">
+  <div className="flex items-center justify-between gap-3 text-white">
     <div><p className="text-sm font-semibold">{sub}</p><h2 className="text-[22px] font-bold leading-tight">{title}</h2></div>
     {right}
   </div>
@@ -1068,6 +1072,7 @@ function MyCalendarView({ user, schedules, employees = {}, records = [], setting
   return (
     <div className="max-w-md mx-auto space-y-3">
       <PageTitle sub={`แผนก${user.dept}`} title="ตารางเวรของฉัน" />
+      <Sheet>
       <div className={`${CARD} px-3 py-2 flex items-center justify-between shadow-soft`}>
         <button aria-label="เดือนก่อนหน้า" onClick={() => setCur(new Date(y, m - 1, 1))} className={arrow}><i className="fa-solid fa-chevron-left"></i></button>
         <h3 className="text-lg font-bold text-slate-800">{THAI_MONTHS[m]} {y + 543}</h3>
@@ -1106,6 +1111,7 @@ function MyCalendarView({ user, schedules, employees = {}, records = [], setting
       </div>
       <MySwaps user={user} employees={employees} schedules={schedules} records={records} settings={settings} swaps={swaps} reload={reload} />
       <p className="text-xs text-slate-500 pb-2">ช เวรปกติ · Off วันหยุด · <span className="text-amber-800 font-bold">พักร้อน/ลา</span> · แตะวันเพื่อดูรายละเอียด</p>
+      </Sheet>
     </div>
   );
 }
@@ -1132,6 +1138,7 @@ function MyHistoryView({ user, records, schedules, settings, now }) {
   return (
     <div className="max-w-md mx-auto space-y-3">
       <PageTitle sub={`แผนก${user.dept}`} title="ประวัติของฉัน" right={<input type="month" aria-label="เลือกเดือน" value={month} onChange={e => setMonth(e.target.value)} className="h-11 rounded-full bg-white/20 text-white text-sm font-bold px-3 outline-none" />} />
+      <Sheet>
       <div className="bg-pink-700 text-white rounded-xl p-3.5 shadow-soft">
         <div className="flex items-end justify-between">
           <div><p className="text-xs font-bold">เครดิตเวร</p><p className="text-[40px] font-bold leading-none">{f(credit)}</p></div>
@@ -1164,6 +1171,7 @@ function MyHistoryView({ user, records, schedules, settings, now }) {
         })}
         {!mine.length && <div className="py-8 text-center text-slate-500 text-sm font-medium">ไม่พบประวัติในเดือนนี้</div>}
       </div>
+      </Sheet>
     </div>
   );
 }
