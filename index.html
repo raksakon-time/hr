@@ -75,7 +75,7 @@ const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '14/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '16/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -809,6 +809,9 @@ function App() {
 // ================= Login =================
 function LoginView({ employees, onLogin }) {
   const [empId, setEmpId] = useState(''), [password, setPassword] = useState(''), [needsPw, setNeedsPw] = useState(false), [err, setErr] = useState(''), [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'pink'), [themeOpen, setThemeOpen] = useState(false), [showPw, setShowPw] = useState(false);
+  const [headArt, setHeadArt] = useState(() => { try { return localStorage.getItem('rt_head') || 'city'; } catch (e) { return 'city'; } });
+  const pickHead = k => { try { localStorage.setItem('rt_head', k); } catch (e) {} setHeadArt(k); };
+  const pal = HEAD_PAL[theme] || HEAD_PAL.pink;
   const pickTheme = t => { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('rt_theme', t); } catch (e) {} setTheme(t); setThemeOpen(false); };
   const inputCls = 'w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none text-slate-800 font-bold focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all';
   const grad = 'bg-primary hover:bg-pink-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2';
@@ -826,12 +829,14 @@ function LoginView({ employees, onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-primary relative overflow-hidden">
-      <button onClick={() => setThemeOpen(true)} aria-label="เลือกสีของแอป" className="absolute top-4 right-4 z-20 w-11 h-11 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-colors"><i className="fa-solid fa-palette text-lg"></i></button>
-      <div className="relative z-10 flex flex-col items-center text-white text-center pt-14 md:pt-20 pb-16 px-6">
-        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-4 shadow-lg"><i className="fa-solid fa-fingerprint text-4xl text-primary"></i></div>
-        <h1 className="text-3xl font-extrabold tracking-tight">รักษ์สกล Time</h1>
-        <p className="text-sm font-semibold text-white/90 mt-1">เข้าสู่ระบบเพื่อปฏิบัติงาน</p>
+    <div className="min-h-screen flex flex-col bg-primary relative overflow-hidden" style={{ background: `linear-gradient(180deg,${pal.top},${pal.bot})` }}>
+      <button onClick={() => setThemeOpen(true)} aria-label="เลือกสีและภาพหัวของแอป" className="absolute top-4 right-4 z-20 w-11 h-11 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-colors"><i className="fa-solid fa-palette text-lg"></i></button>
+      <div className="relative z-10 flex flex-col items-center text-white text-center pt-14 md:pt-20 pb-40 px-6">
+        {/* ภาพหัว (ตึก รพ. / พนักงาน) วางชิดขอบล่าง ให้ตึกตั้งอยู่บนแผ่นสีขาว เลือกได้ที่ปุ่มจานสี */}
+        <div className="absolute left-0 right-0 bottom-0 h-[192px] pointer-events-none"><HeaderArt kind={headArt} theme={theme} /></div>
+        <div className="relative w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-4 shadow-lg"><i className="fa-solid fa-fingerprint text-4xl text-primary"></i></div>
+        <h1 className="relative text-3xl font-extrabold tracking-tight drop-shadow-sm">รักษ์สกล Time</h1>
+        <p className="relative text-sm font-semibold text-white/90 mt-1 drop-shadow-sm">เข้าสู่ระบบเพื่อปฏิบัติงาน</p>
       </div>
       <div className="relative z-10 flex-1 md:flex-none md:mb-12 w-full max-w-md mx-auto bg-white rounded-t-[2rem] md:rounded-[2rem] shadow-[0_-6px_18px_rgba(15,23,42,0.18)] md:shadow-[0_12px_32px_rgba(15,23,42,0.25)] px-6 sm:px-8 pt-8 pb-10">
         <h2 className="text-xl font-bold text-slate-800 mb-1">เข้าสู่ระบบ</h2>
@@ -863,7 +868,7 @@ function LoginView({ employees, onLogin }) {
           )}
         </form>
       </div>
-      {themeOpen && <ThemeModal theme={theme} onPick={t => { pickTheme(t); }} onClose={() => setThemeOpen(false)} />}
+      {themeOpen && <ThemeModal theme={theme} onPick={t => { pickTheme(t); }} head={headArt} onHead={pickHead} onClose={() => setThemeOpen(false)} />}
     </div>
   );
 }
