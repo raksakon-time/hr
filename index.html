@@ -75,7 +75,7 @@ const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '16/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '17/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -458,10 +458,49 @@ const swMovePlan = (schedules, a, dA, dB) => {
   const re = swRun(schedules, changes);
   return re ? { err: re, changes } : { changes, sa, sb };
 };
+// ยกเวรให้เพื่อน: ทั้งกะ หรือแยกจากกะควบ (ชบ -> ยก บ เหลือ ช) — กติกาเดียวกับ Code.gs
+const SHIFT_SPLIT = { 'ชบ': ['ช', 'บ'], 'ชบ7': ['ช7', 'บ15'] };
+const GIVE_MIN_HOURS = 2;
+const swMin = t => +t.slice(0, 2) * 60 + +t.slice(3, 5);
+const swSpan = (code, off) => { const t = SHIFT_TYPES[code]; if (!t) return null; const a = swMin(t.start); let b = swMin(t.end); if (b <= a) b += 1440; return [a + off * 1440, b + off * 1440]; };
+const swStartTs = (d, code) => new Date(d + 'T' + SHIFT_TYPES[code].start + ':00').getTime();
+const swGiveDates = (schedules, empId) => Array.from({ length: 46 }, (_, i) => swAddDays(fmtInput(new Date()), i)).filter(d => swWork(shiftsOf(schedules, d, empId)).length);
+// ตัวเลือกกะที่ยกได้ของวันนั้น: [{ part, w (กะเดิม), rest (ที่เหลือ) }]
+const swGiveParts = l => swWork(l).flatMap(w => [{ part: w, w, rest: [] }, ...(SHIFT_SPLIT[w] || []).map(x => ({ part: x, w, rest: SHIFT_SPLIT[w].filter(y => y !== x) }))]);
+const swGivePlan = (schedules, a, b, d, part, nameOf) => {
+  const g = (dd, e) => shiftsOf(schedules, dd, e), sa = g(d, a), sb = g(d, b), lv = l => l.filter(x => !SHIFT_TYPES[x] && x !== 'Off');
+  if (!SHIFT_TYPES[part]) return { err: 'เลือกกะที่จะยก' };
+  if (lv(sa).length) return { err: `คุณมีรายการลาในวันที่ ${swDm(d)}` };
+  if (lv(sb).length) return { err: `เพื่อนมีรายการลาในวันที่ ${swDm(d)}` };
+  const opt = swGiveParts(sa).find(o => o.part === part);
+  if (!opt) return { err: `ไม่พบกะ ${part} ในเวรวันที่ ${swDm(d)}` };
+  let aTo = []; sa.forEach(x => { if (x === opt.w) aTo.push(...opt.rest); else if (x !== 'Off') aTo.push(x); });
+  if (!aTo.length) aTo = ['Off'];
+  const p0 = swSpan(part, 0);
+  for (const off of [-1, 0, 1]) for (const x of swWork(off ? g(swAddDays(d, off), b) : sb)) {
+    const q = swSpan(x, off);
+    if (q && p0[0] < q[1] && q[0] < p0[1]) return { err: `เพื่อนมีเวร ${x}${off ? ` วันที่ ${swDm(swAddDays(d, off))}` : ''} ชนกับเวลากะ ${part}` };
+  }
+  const bTo = sb.filter(x => x !== 'Off').concat(part).sort((x, y) => (swSpan(x, 0) || [0])[0] - (swSpan(y, 0) || [0])[0]);
+  const changes = [{ emp: a, date: d, from: sa, to: aTo }, { emp: b, date: d, from: sb, to: bTo }];
+  const re = swRun(schedules, [changes[1]]);
+  return re ? { err: re, changes } : { changes, sa, sb, w: opt.w, rest: opt.rest };
+};
 const swOffDates = (schedules, empId) => Array.from({ length: 45 }, (_, i) => swAddDays(fmtInput(new Date()), i + 1)).filter(d => { const l = shiftsOf(schedules, d, empId); return l.length > 0 && l.every(s => s === 'Off'); });
 
 // ผลตรวจกติกา (ฝั่งหน้าจอ ใช้แนะนำก่อนส่ง/ก่อนอนุมัติ — เซิร์ฟเวอร์ตรวจซ้ำอีกครั้งเสมอ)
-const swChecks = (schedules, records, a, b, dA, dB, forApproval, type) => {
+const swChecks = (schedules, records, a, b, dA, dB, forApproval, type, part) => {
+  if (type === 'give') {
+    const plan = swGivePlan(schedules, a, b, dA, part), items = [], left = SHIFT_TYPES[part] ? swStartTs(dA, part) - Date.now() : -1;
+    if (forApproval) items.push(left > 0 ? { ok: true, t: 'ยังไม่ถึงเวลาเริ่มกะ' } : { ok: false, t: 'เลยเวลาเริ่มกะแล้ว' });
+    else items.push(left >= GIVE_MIN_HOURS * 36e5 ? { ok: true, t: `ก่อนเริ่มกะเกิน ${GIVE_MIN_HOURS} ชม.` } : { ok: false, t: `ต้องขอก่อนเริ่มกะอย่างน้อย ${GIVE_MIN_HOURS} ชม.` });
+    const done = records.some(r => r.date === dA && (r.empId === a || r.empId === b) && r.shiftId === part);
+    items.push(done ? { ok: false, t: `ลงเวลากะ ${part} ไปแล้ว` } : { ok: true, t: 'ยังไม่ได้ลงเวลากะนี้' });
+    if (plan.w && plan.w !== part && records.some(r => r.date === dA && r.empId === a && r.shiftId === plan.w)) items.push({ ok: null, t: `ลงเวลาเข้า ${plan.w} ไว้แล้ว อนุมัติแล้วระบบปรับเป็น ${plan.rest.join(',')}` });
+    items.push(plan.err ? { ok: false, t: plan.err } : { ok: true, t: 'ไม่มีลา เวลาไม่ชนกัน' });
+    if (SHIFT_TYPES[part] && !plan.err) items.push({ ok: null, t: `เครดิตผู้ยก -${SHIFT_TYPES[part].credit} / ผู้รับ +${SHIFT_TYPES[part].credit} วัน` });
+    return { plan, items, blocked: items.some(x => x.ok === false) };
+  }
   const mv = type === 'move', plan = mv ? swMovePlan(schedules, a, dA, dB) : swPlan(schedules, a, b, dA, dB), items = [], now = Date.now(), at8 = d => new Date(d + 'T08:00:00').getTime();
   if (forApproval) items.push(at8(dA) > now && at8(dB) > now ? { ok: true, t: 'ยังไม่ถึงวันที่ขอ' } : { ok: false, t: 'เลยวันที่ขอแล้ว' });
   else items.push(at8(dA) - now >= 24 * 36e5 && at8(dB) - now >= 24 * 36e5 ? { ok: true, t: 'ล่วงหน้าเกิน 24 ชม.' } : { ok: false, t: 'ต้องขอล่วงหน้าอย่างน้อย 24 ชม.' });
@@ -511,17 +550,20 @@ const SwCoverage = ({ lines }) => lines.length ? (
 ) : null;
 
 const SwapRequestModal = ({ user, employees, schedules, records, settings, onClose, onSent }) => {
-  const [mode, setMode] = useState('swap'), [dateA, setDateA] = useState(''), [friend, setFriend] = useState(''), [dateB, setDateB] = useState(''), [reason, setReason] = useState(''), [sending, setSending] = useState(false);
-  const mv = mode === 'move';
+  const [mode, setMode] = useState('swap'), [dateA, setDateA] = useState(''), [friend, setFriend] = useState(''), [dateB, setDateB] = useState(''), [reason, setReason] = useState(''), [sending, setSending] = useState(false), [part, setPart] = useState('');
+  const mv = mode === 'move', gv = mode === 'give';
   const nameOf = id => employees[id] ? `${employees[id].fname} ${employees[id].lname}` : id;
   const friends = Object.entries(employees).filter(([id, e]) => id !== user.id && e.dept === user.dept).sort((x, y) => (x[1].fname || '').localeCompare(y[1].fname || ''));
-  const datesA = swDates(schedules, user.id), datesB = mv ? swOffDates(schedules, user.id) : friend ? swDates(schedules, friend) : [];
-  const chk = dateA && dateB && (mv || friend) ? swChecks(schedules, records, user.id, mv ? '' : friend, dateA, dateB, false, mode) : null;
-  const pick = m => { setMode(m); setDateA(''); setDateB(''); setFriend(''); };
+  const datesA = gv ? swGiveDates(schedules, user.id) : swDates(schedules, user.id), datesB = mv ? swOffDates(schedules, user.id) : friend && !gv ? swDates(schedules, friend) : [];
+  const parts = gv && dateA ? swGiveParts(shiftsOf(schedules, dateA, user.id)) : [];
+  const chk = gv ? (dateA && part && friend ? swChecks(schedules, records, user.id, friend, dateA, dateA, false, 'give', part) : null)
+    : dateA && dateB && (mv || friend) ? swChecks(schedules, records, user.id, mv ? '' : friend, dateA, dateB, false, mode) : null;
+  const pick = m => { setMode(m); setDateA(''); setDateB(''); setFriend(''); setPart(''); };
+  const fmtPart = o => { const t = SHIFT_TYPES[o.part]; return `${o.part === o.w ? 'ทั้งกะ' : 'เฉพาะ'} ${o.part} (${t.start.replace(':', '.')}-${t.end.replace(':', '.')})${o.rest.length ? ` · คุณเหลือ ${o.rest.join(',')}` : ''}`; };
   const send = async () => {
     if (!reason.trim()) return Swal.fire({ title: 'กรุณาระบุเหตุผล', icon: 'info', confirmButtonColor: themeHex('p') });
     setSending(true);
-    const r = await sendToGoogleSheet('requestSwap', { type: mode, empId: user.id, friendId: mv ? '' : friend, dateA, dateB, reason: reason.trim() });
+    const r = await sendToGoogleSheet('requestSwap', { type: mode, empId: user.id, friendId: mv ? '' : friend, dateA, dateB: gv ? dateA : dateB, part: gv ? part : '', reason: reason.trim() });
     setSending(false);
     if (r?.status === 'success') { await Swal.fire({ title: 'ส่งคำขอแล้ว', text: 'รอหัวหน้าพิจารณา', icon: 'success', confirmButtonColor: themeHex('p') }); onSent(); }
   };
@@ -529,25 +571,32 @@ const SwapRequestModal = ({ user, employees, schedules, records, settings, onClo
     <div className="fixed inset-0 z-[250] bg-slate-900/50 flex items-end sm:items-center justify-center print-hide" onClick={onClose}>
       <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto p-5 space-y-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between"><h3 className="text-lg font-bold text-slate-800">ขอเปลี่ยนเวร</h3><button onClick={onClose} aria-label="ปิด" className="w-11 h-11 rounded-full text-slate-500 hover:bg-slate-100"><i className="fa-solid fa-xmark"></i></button></div>
-        <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
-          {[['swap', 'สลับกับเพื่อน'], ['move', 'ย้ายวันหยุดของฉัน']].map(([k, label]) => (
+        <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
+          {[['swap', 'สลับเวร'], ['move', 'ย้ายวันหยุด'], ['give', 'ยกเวรให้เพื่อน']].map(([k, label]) => (
             <button key={k} onClick={() => pick(k)} className={`h-11 rounded-lg text-sm font-bold transition-all ${mode === k ? 'bg-white text-primary shadow-sm' : 'text-slate-600'}`}>{label}</button>))}
         </div>
         <div>
-          <label className={LABEL}>{mv ? 'วันทำงานที่ขอหยุด' : 'วันของฉัน (เวรที่ให้เพื่อน)'}</label>
-          <select value={dateA} onChange={e => setDateA(e.target.value)} className={`${FIELD} focus:border-primary`}>
+          <label className={LABEL}>{mv ? 'วันทำงานที่ขอหยุด' : gv ? 'วันที่จะยกเวร (วันนี้ได้)' : 'วันของฉัน (เวรที่ให้เพื่อน)'}</label>
+          <select value={dateA} onChange={e => { setDateA(e.target.value); setPart(''); }} className={`${FIELD} focus:border-primary`}>
             <option value="">{datesA.length ? 'เลือกวัน' : 'ไม่มีเวรทำงานล่วงหน้าที่ขอได้'}</option>
-            {datesA.map(d => <option key={d} value={d}>{swLabel(d)} · {swShow(shiftsOf(schedules, d, user.id))}</option>)}
+            {datesA.map(d => <option key={d} value={d}>{swLabel(d)}{d === fmtInput(new Date()) ? ' (วันนี้)' : ''} · {swShow(shiftsOf(schedules, d, user.id))}</option>)}
           </select>
         </div>
-        {!mv && <div>
-          <label className={LABEL}>สลับกับเพื่อน (แผนกเดียวกัน)</label>
-          <select value={friend} onChange={e => { setFriend(e.target.value); setDateB(''); }} className={`${FIELD} focus:border-primary`}>
-            <option value="">เลือกเพื่อน</option>
-            {friends.map(([id, e]) => <option key={id} value={id}>{e.fname} {e.lname}</option>)}
+        {gv && dateA && <div>
+          <label className={LABEL}>กะที่จะยกให้เพื่อน</label>
+          <select value={part} onChange={e => setPart(e.target.value)} className={`${FIELD} focus:border-primary`}>
+            <option value="">เลือกกะ</option>
+            {parts.map(o => <option key={o.part} value={o.part}>{fmtPart(o)}</option>)}
           </select>
         </div>}
-        {(mv || friend) && <div>
+        {!mv && <div>
+          <label className={LABEL}>{gv ? 'ยกให้เพื่อน (แผนกเดียวกัน)' : 'สลับกับเพื่อน (แผนกเดียวกัน)'}</label>
+          <select value={friend} onChange={e => { setFriend(e.target.value); setDateB(''); }} className={`${FIELD} focus:border-primary`}>
+            <option value="">เลือกเพื่อน</option>
+            {friends.map(([id, e]) => <option key={id} value={id}>{e.fname} {e.lname}{gv && dateA ? ` · ${swShow(shiftsOf(schedules, dateA, id)) === '-' ? 'ไม่มีเวร' : swShow(shiftsOf(schedules, dateA, id))}` : ''}</option>)}
+          </select>
+        </div>}
+        {!gv && (mv || friend) && <div>
           <label className={LABEL}>{mv ? 'วันหยุดที่จะมาทำงานแทน (ทำเวรเดิม)' : 'วันของเพื่อนที่ฉันจะรับ (เลือกวันเดียวกันได้)'}</label>
           <select value={dateB} onChange={e => setDateB(e.target.value)} className={`${FIELD} focus:border-primary`}>
             <option value="">{datesB.length ? 'เลือกวัน' : mv ? 'ไม่มีวันหยุดล่วงหน้า' : 'เพื่อนไม่มีเวรทำงานล่วงหน้า'}</option>
@@ -556,12 +605,12 @@ const SwapRequestModal = ({ user, employees, schedules, records, settings, onClo
         </div>}
         {chk && <>
           {chk.plan.changes && !chk.plan.err && <SwChanges changes={chk.plan.changes} nameOf={nameOf} />}
-          {mv && chk.plan.changes && !chk.plan.err && <SwCoverage lines={swCoverage(schedules, employees, user.dept, settings?.frames, chk.plan.changes)} />}
+          {(mv || gv) && chk.plan.changes && !chk.plan.err && <SwCoverage lines={swCoverage(schedules, employees, user.dept, settings?.frames, chk.plan.changes)} />}
           <SwChecks items={chk.items} />
         </>}
         <div>
           <label className={LABEL}>เหตุผล</label>
-          <textarea value={reason} onChange={e => setReason(e.target.value)} rows={2} maxLength={200} placeholder="เช่น ธุระส่วนตัว" className={`${FIELD} focus:border-primary resize-none`}></textarea>
+          <textarea value={reason} onChange={e => setReason(e.target.value)} rows={2} maxLength={200} placeholder={gv ? 'เช่น ไม่สบาย ขอกลับก่อน เพื่อนรับเวรบ่ายแทน' : 'เช่น ธุระส่วนตัว'} className={`${FIELD} focus:border-primary resize-none`}></textarea>
         </div>
         <button onClick={send} disabled={!chk || chk.blocked || sending} className="w-full h-12 rounded-xl bg-primary hover:bg-pink-700 text-white font-bold disabled:opacity-40 transition-colors">{sending ? 'กำลังส่ง...' : 'ส่งคำขอถึงหัวหน้า'}</button>
       </div>
@@ -584,8 +633,8 @@ const MySwaps = ({ user, employees, schedules, records, settings, swaps, reload 
   return (
     <div className={`${CARD} p-3 space-y-2 shadow-soft`}>
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-[15px] font-bold text-slate-800">คำขอสลับเวร</h3>
-        <button onClick={() => setOpen(true)} className="h-11 px-4 rounded-full bg-primary hover:bg-pink-700 text-white text-sm font-bold transition-colors"><i className="fa-solid fa-plus mr-1.5"></i>ขอสลับเวร</button>
+        <h3 className="text-[15px] font-bold text-slate-800">คำขอเปลี่ยน / ยกเวร</h3>
+        <button onClick={() => setOpen(true)} className="h-11 px-4 rounded-full bg-primary hover:bg-pink-700 text-white text-sm font-bold transition-colors"><i className="fa-solid fa-plus mr-1.5"></i>ขอเปลี่ยนเวร</button>
       </div>
       {!mine.length && <p className="text-sm text-slate-500 py-1">ยังไม่มีคำขอ</p>}
       {mine.map(s => {
@@ -594,8 +643,8 @@ const MySwaps = ({ user, employees, schedules, records, settings, swaps, reload 
           <div key={s.id} className="border-t border-slate-200 pt-2 space-y-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-sm font-bold text-slate-800">{s.type === 'move' ? 'ย้ายวันหยุดของฉัน' : iAsk ? `สลับกับ ${nameOf(s.friendId)}` : `${nameOf(s.empId)} ขอสลับกับคุณ`}</p>
-                <p className="text-sm text-slate-700">{s.type === 'move' ? <>หยุด {swDm(s.dateA)} <span className="font-bold text-secondary">→</span> มาทำ {swDm(s.dateB)} ({s.shiftA})</> : <>{swDm(s.dateA)} {s.shiftA} <span className="font-bold text-secondary">⇄</span> {swDm(s.dateB)} {s.shiftB}</>}</p>
+                <p className="text-sm font-bold text-slate-800">{s.type === 'move' ? 'ย้ายวันหยุดของฉัน' : s.type === 'give' ? (iAsk ? `ยกเวรให้ ${nameOf(s.friendId)}` : `${nameOf(s.empId)} ยกเวรให้คุณ`) : iAsk ? `สลับกับ ${nameOf(s.friendId)}` : `${nameOf(s.empId)} ขอสลับกับคุณ`}</p>
+                <p className="text-sm text-slate-700">{s.type === 'give' ? <>{swLabel(s.dateA)} กะ <b>{s.part}</b>{s.part !== s.shiftA ? ` (จาก ${s.shiftA})` : ''}</> : s.type === 'move' ? <>หยุด {swDm(s.dateA)} <span className="font-bold text-secondary">→</span> มาทำ {swDm(s.dateB)} ({s.shiftA})</> : <>{swDm(s.dateA)} {s.shiftA} <span className="font-bold text-secondary">⇄</span> {swDm(s.dateB)} {s.shiftB}</>}</p>
               </div>
               <span className={`text-xs font-bold rounded-full px-2.5 py-1 whitespace-nowrap ${st[1]}`}>{st[0]}</span>
             </div>
@@ -614,7 +663,7 @@ const SwapCard = ({ sw, employees, schedules, records, settings, user, reload })
   const [note, setNote] = useState(''), [busy, setBusy] = useState(false);
   const nameOf = id => employees[id] ? `${employees[id].fname} ${employees[id].lname}` : id;
   const stale = shiftsOf(schedules, sw.dateA, sw.empId).join(',') !== sw.shiftA || shiftsOf(schedules, sw.dateB, sw.type === 'move' ? sw.empId : sw.friendId).join(',') !== sw.shiftB;
-  const chk = swChecks(schedules, records, sw.empId, sw.friendId, sw.dateA, sw.dateB, true, sw.type);
+  const chk = swChecks(schedules, records, sw.empId, sw.friendId, sw.dateA, sw.dateB, true, sw.type, sw.part);
   const items = stale ? [{ ok: false, t: 'ตารางเวรถูกแก้ไขหลังยื่นคำขอ' }, ...chk.items] : chk.items;
   const blocked = stale || chk.blocked;
   const decide = async approve => {
@@ -631,12 +680,12 @@ const SwapCard = ({ sw, employees, schedules, records, settings, user, reload })
   return (
     <div className={`${CARD} p-4 space-y-3`}>
       <div>
-        <p className="font-bold text-slate-800">{sw.type === 'move' ? <>{nameOf(sw.empId)} ขอย้ายวันหยุด</> : <>{nameOf(sw.empId)} <span className="text-secondary">⇄</span> {nameOf(sw.friendId)}</>}</p>
+        <p className="font-bold text-slate-800">{sw.type === 'move' ? <>{nameOf(sw.empId)} ขอย้ายวันหยุด</> : sw.type === 'give' ? <>{nameOf(sw.empId)} <span className="text-secondary">→</span> ยกกะ {sw.part} ให้ {nameOf(sw.friendId)}</> : <>{nameOf(sw.empId)} <span className="text-secondary">⇄</span> {nameOf(sw.friendId)}</>}</p>
         <p className="text-xs text-slate-500">ส่งเมื่อ {sw.createdAt.slice(8, 10)}/{sw.createdAt.slice(5, 7)} {sw.createdAt.slice(11, 16)} น. · แผนก{sw.dept}</p>
       </div>
       {chk.plan.changes && !chk.plan.err ? <SwChanges changes={chk.plan.changes} nameOf={nameOf} />
         : <p className="text-sm text-slate-600">เดิม: {nameOf(sw.empId)} {swDm(sw.dateA)} {sw.shiftA} ⇄ {nameOf(sw.friendId)} {swDm(sw.dateB)} {sw.shiftB}</p>}
-      {sw.type === 'move' && chk.plan.changes && !chk.plan.err && <SwCoverage lines={swCoverage(schedules, employees, sw.dept, settings?.frames, chk.plan.changes)} />}
+      {sw.type !== 'swap' && chk.plan.changes && !chk.plan.err && <SwCoverage lines={swCoverage(schedules, employees, sw.dept, settings?.frames, chk.plan.changes)} />}
       <SwChecks items={items} />
       <p className="text-sm text-slate-700"><b>เหตุผล:</b> {sw.reason}</p>
       {user.id === sw.empId || user.id === sw.friendId
@@ -660,12 +709,12 @@ const SwapApprovals = ({ role, user, employees, schedules, records, settings, sw
   return (
     <div className="space-y-3 max-w-2xl">
       {pend.length ? pend.map(s => <SwapCard key={s.id} sw={s} employees={employees} schedules={schedules} records={records} settings={settings} user={user} reload={reload} />)
-        : <div className={`${CARD} p-8 text-center text-slate-500 text-sm font-medium`}>ไม่มีคำขอสลับเวรที่รอพิจารณา</div>}
+        : <div className={`${CARD} p-8 text-center text-slate-500 text-sm font-medium`}>ไม่มีคำขอเปลี่ยน / ยกเวรที่รอพิจารณา</div>}
       {done.length > 0 && <div className={`${CARD} p-4`}>
         <p className="text-sm font-bold text-slate-800 mb-1">ที่ดำเนินการแล้ว (ล่าสุด)</p>
         {done.map(s => { const st = SW_STATUS[s.status] || [s.status, 'bg-slate-100 text-slate-700']; return (
           <div key={s.id} className="flex items-center justify-between gap-2 py-2 border-t border-slate-200 first:border-0">
-            <div className="min-w-0"><p className="text-sm font-semibold text-slate-800 truncate">{s.type === 'move' ? `${nameOf(s.empId)} ย้ายวันหยุด` : `${nameOf(s.empId)} ⇄ ${nameOf(s.friendId)}`}</p><p className="text-xs text-slate-500">{s.type === 'move' ? `หยุด ${swDm(s.dateA)} → มาทำ ${swDm(s.dateB)}` : `${swDm(s.dateA)} ${s.shiftA} ⇄ ${swDm(s.dateB)} ${s.shiftB}`}{s.note ? ` · ${s.note}` : ''}</p></div>
+            <div className="min-w-0"><p className="text-sm font-semibold text-slate-800 truncate">{s.type === 'move' ? `${nameOf(s.empId)} ย้ายวันหยุด` : s.type === 'give' ? `${nameOf(s.empId)} → ${nameOf(s.friendId)} (ยกเวร)` : `${nameOf(s.empId)} ⇄ ${nameOf(s.friendId)}`}</p><p className="text-xs text-slate-500">{s.type === 'move' ? `หยุด ${swDm(s.dateA)} → มาทำ ${swDm(s.dateB)}` : s.type === 'give' ? `${swDm(s.dateA)} กะ ${s.part}` : `${swDm(s.dateA)} ${s.shiftA} ⇄ ${swDm(s.dateB)} ${s.shiftB}`}{s.note ? ` · ${s.note}` : ''}</p></div>
             <span className={`text-xs font-bold rounded-full px-2.5 py-1 whitespace-nowrap ${st[1]}`}>{st[0]}</span>
           </div>); })}
       </div>}
