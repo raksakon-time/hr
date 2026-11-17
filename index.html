@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://unpkg.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 const twRgb = n => `rgb(var(--${n}) / <alpha-value>)`;
@@ -32,6 +32,10 @@ tailwind.config = { theme: { extend: {
 html[data-theme="navy"]{--primary:42 60 118;--secondary:214 57 63;--hex-p:#2A3C76;--hex-s:#D6393F;
 --p50:243 245 251;--p100:232 236 247;--p200:211 218 238;--p300:182 195 230;--p400:137 160 207;--p500:91 115 179;--p600:42 60 118;--p700:36 52 104;--p800:31 44 88;--p900:24 35 74;
 --r50:255 241 241;--r100:255 227 228;--r200:255 201 203;--r300:255 163 166;--r400:254 105 110;--r500:240 73 79;--r600:214 57 63;--r700:184 45 51;--r800:165 38 43;--r900:143 29 33}
+/* หัวข้อ เมนู ปุ่มหลัก = Prompt / เนื้อหา = Sarabun */
+:is(h1,h2,h3,h4), .font-head, .swal2-title, .swal2-confirm, .swal2-cancel { font-family: 'Prompt', 'Sarabun', sans-serif; letter-spacing: .1px; }
+:is(h1,h2,h3,h4,.font-head):is(.font-bold,.font-extrabold) { font-weight: 600; }
+:is(h1,h2,h3,h4,.font-head).font-semibold { font-weight: 500; }
 body { font-family: 'Sarabun', sans-serif; background: #f8fafc; -webkit-font-smoothing: antialiased; color: #1e293b; font-size: 15px; margin: 0; }
 input, select { transition: all .2s ease; }
 input[type=date], input[type=month], input[type=time] { min-width: 0; max-width: 100%; box-sizing: border-box; }
@@ -75,7 +79,7 @@ const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '17/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '18/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -573,7 +577,7 @@ const SwapRequestModal = ({ user, employees, schedules, records, settings, onClo
         <div className="flex items-center justify-between"><h3 className="text-lg font-bold text-slate-800">ขอเปลี่ยนเวร</h3><button onClick={onClose} aria-label="ปิด" className="w-11 h-11 rounded-full text-slate-500 hover:bg-slate-100"><i className="fa-solid fa-xmark"></i></button></div>
         <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
           {[['swap', 'สลับเวร'], ['move', 'ย้ายวันหยุด'], ['give', 'ยกเวรให้เพื่อน']].map(([k, label]) => (
-            <button key={k} onClick={() => pick(k)} className={`h-11 rounded-lg text-sm font-bold transition-all ${mode === k ? 'bg-white text-primary shadow-sm' : 'text-slate-600'}`}>{label}</button>))}
+            <button key={k} onClick={() => pick(k)} className={`font-head h-11 rounded-lg text-sm font-bold transition-all ${mode === k ? 'bg-white text-primary shadow-sm' : 'text-slate-600'}`}>{label}</button>))}
         </div>
         <div>
           <label className={LABEL}>{mv ? 'วันทำงานที่ขอหยุด' : gv ? 'วันที่จะยกเวร (วันนี้ได้)' : 'วันของฉัน (เวรที่ให้เพื่อน)'}</label>
@@ -815,7 +819,7 @@ function App() {
       </div>
       <div className={`relative z-10 w-full ${tab === 'manager' ? 'max-w-7xl' : 'max-w-md'} mx-auto flex flex-col h-full`}>
         <header className={`flex justify-between items-center px-6 ${compact ? 'pt-3 pb-0' : 'pt-5 pb-2'} text-white print-hide`}>
-          <div className="flex flex-col">{tab !== 'home' ? <span className="font-semibold tracking-wider">รักษ์สกล Time</span> : fest && <div className="leading-tight"><p className="font-bold tracking-wide">{fest.emoji} {fest.greet}</p>{fest.sub && <p className="text-xs font-semibold text-yellow-200">{fest.sub}</p>}</div>}</div>
+          <div className="flex flex-col">{tab !== 'home' ? <span className="font-head font-semibold tracking-wider">รักษ์สกล Time</span> : fest && <div className="leading-tight"><p className="font-bold tracking-wide">{fest.emoji} {fest.greet}</p>{fest.sub && <p className="text-xs font-semibold text-yellow-200">{fest.sub}</p>}</div>}</div>
           <div className="flex items-center gap-1">
             <button onClick={() => setThemeOpen(true)} aria-label="เลือกสีของแอป" className="text-white/90 hover:text-white hover:bg-white/10 w-11 h-11 rounded-full transition-colors"><i className="fa-solid fa-palette text-lg"></i></button>
             <button onClick={logout} aria-label="ออกจากระบบ" className="text-white/90 hover:text-white hover:bg-white/10 w-11 h-11 rounded-full transition-colors"><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i></button>
@@ -835,7 +839,7 @@ function App() {
       </div>
 
       {!compact && <a href={LEAVE_SYSTEM_URL} target="_blank" className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 bg-white text-primary border border-primary/20 px-4 py-3 rounded-full shadow-soft hover:shadow-md transition-all z-[100] flex items-center gap-2 print-hide" style={{ textDecoration: 'none' }}>
-        <i className="fa-solid fa-notes-medical"></i><span className="text-sm font-medium">ลางาน</span>
+        <i className="fa-solid fa-notes-medical"></i><span className="font-head text-sm font-medium">ลางาน</span>
       </a>}
 
       {themeOpen && <ThemeModal theme={theme} onPick={applyTheme} head={headArt} onHead={applyHead} onClose={() => setThemeOpen(false)} />}
@@ -845,7 +849,7 @@ function App() {
           {tabs.map(([k, ico, label]) => (
             <button key={k} onClick={() => setTab(k)} className={`relative flex flex-col items-center justify-center w-full py-3 gap-1 transition-colors ${tab === k ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}>
               <i className={`${ico} text-lg ${tab === k ? 'scale-110 transition-transform' : ''}`}></i>
-              <span className="text-xs font-semibold">{label}</span>
+              <span className="font-head text-xs font-semibold">{label}</span>
               {k === 'manager' && swapBadge > 0 && <span className="absolute top-1.5 left-1/2 ml-2 min-w-[20px] h-5 px-1 rounded-full bg-secondary text-white text-xs font-bold flex items-center justify-center" aria-label={`มีคำขอสลับเวรรอพิจารณา ${swapBadge} รายการ`}>{swapBadge}</span>}
             </button>
           ))}
@@ -950,8 +954,8 @@ function ActionPanelView({ user, now, records, setRecords, schedules, avatar, se
       <p className="text-sm font-semibold text-slate-500 mb-3">{formatFullThaiDate(now)}</p>
       <div className={`text-sm font-bold px-4 py-1.5 rounded-full mb-7 text-center ${CHIP_CLS[chip[0]]}`}>{chip[1]}</div>
       <div className="flex gap-4 w-full mb-4">
-        <button onClick={() => setType('in')} className="flex-1 bg-primary text-white py-4 rounded-2xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all text-sm tracking-wide">ลงเวลาเข้า</button>
-        <button onClick={() => setType('out')} className="flex-1 bg-secondary text-white py-4 rounded-2xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all text-sm tracking-wide">ลงเวลาออก</button>
+        <button onClick={() => setType('in')} className="font-head flex-1 bg-primary text-white py-4 rounded-2xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all text-sm tracking-wide">ลงเวลาเข้า</button>
+        <button onClick={() => setType('out')} className="font-head flex-1 bg-secondary text-white py-4 rounded-2xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all text-sm tracking-wide">ลงเวลาออก</button>
       </div>
       <button onClick={() => setTab('history')} className="w-full bg-white border shadow-sm border-slate-200 text-slate-600 py-3.5 rounded-2xl font-semibold hover:bg-slate-50 transition-colors text-sm tracking-wide">ประวัติการลงเวลา</button>
       <p className="mt-4 text-xs text-slate-500">ข้อมูลอัปเดตล่าสุด {syncedAt ? formatTime24(syncedAt) + ' น.' : '-'} · เวอร์ชัน {APP_BUILD}</p>
@@ -1612,7 +1616,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   };
 
   // ---------- UI ----------
-  const tabBtn = (k, label) => <button key={k} onClick={() => setAdminTab(k)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{label}</button>;
+  const tabBtn = (k, label) => <button key={k} onClick={() => setAdminTab(k)} className={`font-head px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{label}</button>;
   const exportBtn = (fn, ico = 'fa-file-csv') => <button onClick={fn} className={BTN}><i className={`fa-solid ${ico} mr-1.5 text-emerald-600`}></i>ส่งออก</button>;
   const title = adminTab === 'logs' ? 'ประวัติลงเวลา' : adminTab === 'summary' ? 'สรุปภาพรวมแผนกและการเบิก OT' : adminTab === 'schedules' ? 'ตารางเวรปฏิบัติงาน' : (exFilter === 'late' ? 'รายงานพนักงานผู้มาสาย' : 'รายงานพนักงานลืมลงเวลาออก');
   const isMatrix = adminTab === 'summary' || adminTab === 'schedules';
@@ -1785,7 +1789,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
       {adminTab === 'exceptions' && (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-slate-50 border-b border-slate-200 flex gap-2 print-hide">
-            {[['late', 'พนักงานผู้มาสาย'], ['missing_out', 'ลืมลงเวลาออก']].map(([k, l]) => <button key={k} onClick={() => setExFilter(k)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${exFilter === k ? 'bg-primary text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}`}>{l}</button>)}
+            {[['late', 'พนักงานผู้มาสาย'], ['missing_out', 'ลืมลงเวลาออก']].map(([k, l]) => <button key={k} onClick={() => setExFilter(k)} className={`font-head px-4 py-2 rounded-lg text-sm font-bold transition-all ${exFilter === k ? 'bg-primary text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}`}>{l}</button>)}
           </div>
           <div className="overflow-auto max-h-[70dvh] scroll-frame print-table-wrapper"><table className="min-w-full text-sm text-left">
             <thead className={`${THEAD} sticky top-0 z-20`}><tr><th className={TH}>วันที่</th><th className={TH}>พนักงาน</th><th className={TH}>กะ</th><th className={`${TH} text-center`}>เข้า</th><th className={`${TH} text-center`}>ออก</th><th className={`${TH} text-center`}>สถานะ</th></tr></thead>
