@@ -79,7 +79,7 @@ const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '18/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '18/11/69-ข';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -103,6 +103,21 @@ const distM = (a, b, c, d) => {
 };
 
 // ช่วง 00:00-03:59 ให้นับเป็นกะของเมื่อวานถ้ามีเวรเมื่อวาน (shift ไม่ระบุ = มีเวรเมื่อวานก็ใช้)
+// นาทีที่สายของการลงเวลาเข้า (เผื่อ 5 นาที + กติกาลาชั่วโมง) ใช้ร่วมกันตอนสแกนเข้าและตอนแอดมินแก้ไขประวัติ
+const calcLate = (sch, empId, date, shiftId, timeIn) => {
+  const sd = SHIFT_TYPES[shiftId];
+  if (!sd || !/^\d{2}:\d{2}/.test(timeIn || '')) return 0;
+  const [h, m] = sd.start.split(':').map(Number), tm = t => +t.slice(0, 2) * 60 + +t.slice(3, 5);
+  const actual = tm(timeIn), deadline = h * 60 + m + 5, cell = sch?.[date]?.[empId] || {};
+  let dl = deadline;
+  if ((cell.shifts || []).includes('ลาชั่วโมง')) {
+    // ไม่ทราบเวลาลา หรือ ลาครอบเวลาเริ่มกะ = ไม่นับสาย / ลาช่วงอื่น (เช่น ท้ายกะ) = นับสายตามปกติ
+    const lt = cell.leaveTime || '';
+    const cover = lt.split(';').filter(Boolean).map(x => x.split('-').map(tm)).find(([a, b]) => a <= h * 60 + m && b > h * 60 + m);
+    dl = !lt || cover ? Infinity : deadline;
+  }
+  return actual > dl && actual < dl + 720 ? actual - dl : 0;
+};
 const resolveTarget = (now, sch, id, shift) => {
   if (now.getHours() <= 3) {
     const y = fmtInput(new Date(now.getTime() - 864e5)), ys = shiftsOf(sch, y, id);
@@ -1492,9 +1507,10 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const saveEdit = async () => {
     setSaving(true);
     const credit = SHIFT_TYPES[editData.shiftId]?.credit || 0;
-    const res = await sendToGoogleSheet('editRecord', { id: editData.id, timeIn: editData.timeIn || '', timeOut: editData.timeOut || '', shiftId: editData.shiftId, credit });
+    const lateMinutes = Math.max(0, Math.round(Number(editData.lateMinutes) || 0)), isLate = lateMinutes > 0;
+    const res = await sendToGoogleSheet('editRecord', { id: editData.id, timeIn: editData.timeIn || '', timeOut: editData.timeOut || '', shiftId: editData.shiftId, credit, isLate, lateMinutes });
     if (res?.status === 'success') {
-      setRecords(records.map(r => r.id === editData.id ? { ...r, timeIn: editData.timeIn, timeOut: editData.timeOut, shiftId: editData.shiftId, credit } : r));
+      setRecords(records.map(r => r.id === editData.id ? { ...r, timeIn: editData.timeIn, timeOut: editData.timeOut, shiftId: editData.shiftId, credit, isLate, lateMinutes } : r));
       setEditData(null); okToast('แก้ไขข้อมูลประวัติเรียบร้อยแล้ว');
     }
     setSaving(false);
@@ -1648,10 +1664,21 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
       {photoRec && <PhotoModal record={photoRec} employees={employees} onClose={() => setPhotoRec(null)} />}
 
       {editData && <Modal><div className="p-6"><h3 className="font-bold text-slate-800 mb-4">แก้ไขประวัติ</h3><div className="space-y-4 text-sm">
-        <ShiftSelect dept={employees[editData.empId]?.dept} leave={leaveOptions} value={editData.shiftId} onChange={v => setEditData({ ...editData, shiftId: v })} />
+        <ShiftSelect dept={employees[editData.empId]?.dept} leave={leaveOptions} value={editData.shiftId} onChange={v => setEditData({ ...editData, shiftId: v, lateMinutes: calcLate(schedules, editData.empId, editData.date, v, editData.timeIn) })} />
         <div className="flex gap-2">
-          <input type="time" value={editData.timeIn} onChange={e => setEditData({ ...editData, timeIn: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" />
-          <input type="time" value={editData.timeOut || ''} onChange={e => setEditData({ ...editData, timeOut: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" />
+          <label className="w-full"><span className="block text-xs font-bold text-slate-500 mb-1">เวลาเข้า</span>
+            <input type="time" value={editData.timeIn} onChange={e => setEditData({ ...editData, timeIn: e.target.value, lateMinutes: calcLate(schedules, editData.empId, editData.date, editData.shiftId, e.target.value) })} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" /></label>
+          <label className="w-full"><span className="block text-xs font-bold text-slate-500 mb-1">เวลาออก</span>
+            <input type="time" value={editData.timeOut || ''} onChange={e => setEditData({ ...editData, timeOut: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" /></label>
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="edit-late">มาสาย (นาที) · 0 = ไม่สาย</label>
+          <div className="flex gap-2 items-center">
+            <input id="edit-late" type="number" min="0" max="720" inputMode="numeric" value={editData.lateMinutes} onChange={e => setEditData({ ...editData, lateMinutes: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" />
+            <button type="button" onClick={() => setEditData({ ...editData, lateMinutes: 0 })} className="shrink-0 h-11 px-3 rounded-xl border border-slate-300 text-slate-600 font-bold hover:bg-slate-50">ไม่สาย</button>
+            <button type="button" onClick={() => setEditData({ ...editData, lateMinutes: calcLate(schedules, editData.empId, editData.date, editData.shiftId, editData.timeIn) })} className="shrink-0 h-11 px-3 rounded-xl border border-slate-300 text-slate-600 font-bold hover:bg-slate-50">คำนวณใหม่</button>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">แก้เวลาเข้าแล้วระบบคำนวณให้อัตโนมัติ (เผื่อ 5 นาทีหลังเริ่มกะ) แอดมินพิมพ์แก้เองได้</p>
         </div>
         <Actions onCancel={() => setEditData(null)} onOk={saveEdit} okText="บันทึก" disabled={saving} />
       </div></div></Modal>}
@@ -1781,7 +1808,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
               <EmpCell id={r.empId} emp={employees[r.empId]} /><ShiftCell r={r} /><TimeCells r={r} />
               <td className={`${TD} text-center`}>{r.isLate ? <span className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded text-xs font-bold">{r.lateMinutes} น.</span> : '-'}</td>
               <td className={`${TD} text-center print-hide`}>{(r.photoInUrl || r.photoOutUrl) ? <button onClick={() => setPhotoRec(r)} className="text-primary hover:text-pink-600 bg-pink-50 w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors"><i className="fa-solid fa-image"></i></button> : '-'}</td>
-              {role === 'admin' && <td className={`${TD} text-right print-hide`}><button onClick={() => setEditData({ ...r })} className="text-slate-400 hover:text-primary mr-3 transition-colors"><i className="fa-solid fa-pen"></i></button><button onClick={() => del(r.id)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fa-solid fa-trash"></i></button></td>}
+              {role === 'admin' && <td className={`${TD} text-right print-hide`}><button onClick={() => setEditData({ ...r, lateMinutes: r.isLate ? Number(r.lateMinutes) || 0 : 0 })} className="text-slate-400 hover:text-primary mr-3 transition-colors"><i className="fa-solid fa-pen"></i></button><button onClick={() => del(r.id)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fa-solid fa-trash"></i></button></td>}
             </tr>))}</tbody>
         </table></div></div>
       )}
