@@ -79,7 +79,7 @@ const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '19/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '19/11/69-ค';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -139,6 +139,10 @@ const postToSheet_ = async (action, payload = {}, retries = 3) => {
     try {
       const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, payload }) });
       const data = await res.json();
+      // คิวบันทึกเต็ม (มีคนอื่นกำลังบันทึก) -> รอแล้วส่งใหม่อัตโนมัติ ไม่ต้องให้ผู้ใช้กดซ้ำ
+      const busy = data.status === 'error' && /LOCK_BUSY|ล็อก|lock/i.test(String(data.message || ''));
+      if (busy && i < retries - 1) { await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000)); continue; }
+      if (busy) data.message = 'ระบบกำลังบันทึกรายการของผู้อื่นอยู่ กรุณารอสักครู่แล้วกดบันทึกอีกครั้ง';
       if (data.status === 'error') Swal.fire({ title: 'แจ้งเตือน', text: data.message, icon: 'warning', confirmButtonColor: themeHex('p') });
       return data;
     } catch (e) {
@@ -1540,6 +1544,20 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
     sch[date][empId] = { shifts, isEdited, editedBy: user.id };
   };
   const editor = { editorId: user.id, editorName: `${user.fname} ${user.lname}` };
+  const cellNow = (date, empId) => (schedules[date]?.[empId]?.shifts || []).filter(Boolean).join(',');   // ค่าที่เห็นตอนเปิดตาราง (ใช้กันบันทึกทับ)
+  // บันทึกตารางเวร: ถ้ามีคนอื่นแก้ช่องเดียวกันหลังเราเปิดตาราง ระบบถามก่อนบันทึกทับ
+  const saveSched = async (action, payload) => {
+    const res = await sendToGoogleSheet(action, payload);
+    if (res?.status !== 'conflict') return res;
+    const list = res.conflicts || [], esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const lines = list.slice(0, 6).map(c => `<li style="margin:4px 0"><b>${esc(c.empName)}</b> ${esc(formatDisplayDate(c.date))}: ตอนนี้เป็น <b>${esc(c.current || 'ว่าง')}</b> (เดิมที่คุณเห็น ${esc(c.expect || 'ว่าง')})<br><span style="color:#64748b;font-size:.9em">แก้โดย ${esc(c.byName)} ${esc(c.at)}</span></li>`).join('');
+    const more = list.length > 6 ? `<p style="color:#64748b">และอีก ${list.length - 6} ช่อง</p>` : '';
+    const r = await Swal.fire({ icon: 'warning', title: 'มีคนแก้ตารางเวรก่อนคุณ', html: `<ul style="text-align:left;padding-left:18px;font-size:.95em">${lines}</ul>${more}<p style="font-size:.9em">ต้องการบันทึกทับค่าของคุณ หรือยกเลิกแล้วโหลดตารางล่าสุด?</p>`,
+      showCancelButton: true, confirmButtonText: 'บันทึกทับ', cancelButtonText: 'ยกเลิก โหลดตารางล่าสุด', confirmButtonColor: themeHex('s'), reverseButtons: true });
+    if (r.isConfirmed) return sendToGoogleSheet(action, { ...payload, force: true });
+    await reload();
+    return { status: 'cancelled' };
+  };
 
   const runAuto = async () => {
     if (!autoEmps.length) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกพนักงานอย่างน้อย 1 คน' });
@@ -1553,11 +1571,11 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
       if (!(auto.dayPattern === 'all' || (auto.dayPattern === 'weekdays' && dow >= 1 && dow <= 5) || (auto.dayPattern === 'weekends' && (dow === 0 || dow === 6)))) return;
       let el = targets.filter(id => { const s = curOf(id, ds); return ((isWork ? s.every(keep) : s.length === 0) || auto.overwrite) && !(quota && s.includes(auto.shiftId)); });
       if (quota) el = el.sort((a, b) => cnt[a] - cnt[b] || Math.random() - .5).slice(0, req);
-      el.forEach(id => { const next = isWork ? [auto.shiftId, ...curOf(id, ds).filter(keep)] : [auto.shiftId]; withEdit(sch, ds, id, next); updates.push({ date: ds, empId: id, shifts: next }); if (quota) cnt[id]++; });
+      el.forEach(id => { const expect = curOf(id, ds).join(','), next = isWork ? [auto.shiftId, ...curOf(id, ds).filter(keep)] : [auto.shiftId]; withEdit(sch, ds, id, next); updates.push({ date: ds, empId: id, shifts: next, expect }); if (quota) cnt[id]++; });
     });
     if (updates.length) {
       setSchedules(sch); setAutoOpen(false);
-      const res = await sendToGoogleSheet('saveScheduleBulk', { updates, ...editor });
+      const res = await saveSched('saveScheduleBulk', { updates, ...editor });
       if (res?.status === 'success') info(`บันทึกสำเร็จ ${updates.length} ช่อง`);
     }
     setSaving(false);
@@ -1586,19 +1604,19 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const commitPlan = async updates => {
     if (!updates.length) return info('ไม่มีช่องที่ต้องจัดเพิ่ม', 'info');
     setSaving(true);
-    const sch = { ...schedules };
+    const sch = { ...schedules }, withExpect = updates.map(u => ({ ...u, expect: cellNow(u.date, u.empId) }));
     updates.forEach(u => withEdit(sch, u.date, u.empId, u.shifts));
     setSchedules(sch); setAutoOpen(false); setPlan(null);
-    const res = await sendToGoogleSheet('saveScheduleBulk', { updates, ...editor });
+    const res = await saveSched('saveScheduleBulk', { updates: withExpect, ...editor });
     if (res?.status === 'success') info(`บันทึกสำเร็จ ${updates.length} ช่อง`);
     setSaving(false);
   };
   const setRow = (k, i, patch) => setFrame(f => ({ ...f, [k]: f[k].map((x, j) => j === i ? { ...x, ...patch } : x) }));
 
   const saveCell = async () => {
-    const { empId, dateStr, shifts } = cellData, f = shifts.filter(s => s !== ''), sch = { ...schedules };
+    const { empId, dateStr, shifts } = cellData, f = shifts.filter(s => s !== ''), sch = { ...schedules }, expect = cellNow(dateStr, empId);
     withEdit(sch, dateStr, empId, f); setSchedules(sch); setCellData(null);
-    await sendToGoogleSheet('saveSchedule', { date: dateStr, empId, shifts: f, ...editor });
+    await saveSched('saveSchedule', { date: dateStr, empId, shifts: f, expect, ...editor });
   };
 
   // ---------- Export ----------
