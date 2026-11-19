@@ -79,7 +79,7 @@ const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '19/11/69-ค';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '19/11/69-ง';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -198,37 +198,81 @@ const Panel = ({ children }) => <div className="space-y-3 animate-fade-in">{chil
 
 const ErrorBox = ({ msg }) => msg ? <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-start gap-2 border border-red-100 font-medium"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{msg}</span></div> : null;
 
-// กล้องแบบวงกลม: วงแหวนสีเขียววิ่งรอบตามเวลาที่ใบหน้านิ่ง (prog 0-1) เต็มรอบเมื่อบันทึก
-const RING_C = 2 * Math.PI * 47.5;
+// กล้องแบบวงกลม: วงแหวนสีหลักของธีมวิ่งรอบตามเวลาที่ใบหน้านิ่ง (prog 0-1) เต็มรอบเมื่อบันทึก พร้อมป้าย %
+const RING_C = 2 * Math.PI * 43;
 const CameraBox = ({ active, vref, onOpen, disabled, label, found, ready, dbg, prog, saving }) => {
   const p = saving ? 1 : found ? Math.min(1, prog || 0) : 0, pct = Math.round(p * 100);
   const size = 'w-[min(16rem,64vw,34dvh)] h-[min(16rem,64vw,34dvh)]';
+  const ring = (
+    <svg aria-hidden="true" viewBox="0 0 100 100" className="absolute inset-0 w-full h-full pointer-events-none">
+      <circle cx="50" cy="50" r="49" fill="none" stroke="rgb(var(--p300))" strokeWidth="0.9" strokeLinecap="round" strokeDasharray="0.1 4.3" />
+      <circle cx="50" cy="50" r="43" fill="none" stroke="rgb(var(--p100))" strokeWidth="6" />
+      <circle cx="50" cy="50" r="43" fill="none" stroke="rgb(var(--primary))" strokeWidth="6" strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - p)} transform="rotate(-90 50 50)" style={{ transition: 'stroke-dashoffset 80ms linear' }} />
+    </svg>
+  );
   return (
-    <div className="flex flex-col items-center gap-2 py-1">
+    <div className="flex flex-col items-center gap-3 pt-2">
       {active ? <>
         <div className={`relative ${size}`}>
-          <video ref={vref} autoPlay playsInline muted className="absolute inset-[10px] w-[calc(100%-20px)] h-[calc(100%-20px)] rounded-full object-cover transform scale-x-[-1] bg-slate-900" />
-          <svg aria-hidden="true" viewBox="0 0 100 100" className="absolute inset-0 w-full h-full transform -rotate-90 pointer-events-none">
-            <circle cx="50" cy="50" r="47.5" fill="none" stroke="#475569" strokeWidth="4" />
-            <circle cx="50" cy="50" r="47.5" fill="none" stroke="#22c55e" strokeWidth="4" strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - p)} style={{ transition: 'stroke-dashoffset 80ms linear' }} />
-          </svg>
-          {saving && <div className="absolute inset-[10px] rounded-full bg-black/55 flex flex-col items-center justify-center gap-2 text-white"><div className="w-12 h-12 rounded-full border-4 border-white/30 border-t-white animate-spin"></div></div>}
+          <video ref={vref} autoPlay playsInline muted className="absolute left-[13%] top-[13%] w-[74%] h-[74%] rounded-full object-cover transform scale-x-[-1] bg-slate-900" />
+          {ring}
+          {saving && <div className="absolute left-[13%] top-[13%] w-[74%] h-[74%] rounded-full bg-black/55 flex items-center justify-center"><div className="w-12 h-12 rounded-full border-4 border-white/30 border-t-white animate-spin"></div></div>}
+          {(found || saving) && <span className="absolute left-1/2 -bottom-2 -translate-x-1/2 h-8 px-3.5 rounded-full bg-primary text-white text-base font-bold flex items-center shadow-md">{pct}%</span>}
         </div>
-        <p className={`text-sm font-bold text-center ${found ? 'text-green-600' : 'text-slate-600'}`}>{saving ? 'กำลังบันทึก...' : !ready ? 'กำลังเตรียมระบบสแกน...' : found ? `พบใบหน้า อยู่นิ่งสักครู่... ${pct}%` : 'จัดใบหน้าให้อยู่ในวงกลม'}</p>
+        <p className="font-head text-lg font-semibold text-secondary text-center mt-1">{saving ? 'กำลังบันทึก...' : !ready ? 'กำลังเตรียมระบบสแกน...' : found ? 'มองตรงที่กล้อง นิ่งไว้' : 'จัดใบหน้าให้อยู่ในวงกลม'}</p>
         {FACE_DEBUG && dbg && <p className="text-[10px] font-mono text-slate-500">{dbg}</p>}
-      </> : <button onClick={onOpen} disabled={disabled} className={`${size} rounded-full border-4 border-slate-300 bg-slate-100 flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-60`}>
-        <i className="fa-solid fa-camera text-4xl mb-3"></i><span className="text-sm font-semibold px-4 text-center">{label}</span>
+      </> : <button onClick={onOpen} disabled={disabled} className={`relative ${size} rounded-full flex flex-col items-center justify-center text-primary disabled:text-slate-400 transition-colors`}>
+        {ring}
+        <span className="absolute left-[13%] top-[13%] w-[74%] h-[74%] rounded-full bg-slate-100"></span>
+        <i className="relative fa-solid fa-camera text-4xl mb-3"></i><span className="relative text-sm font-semibold px-10 text-center text-slate-600">{label}</span>
       </button>}
     </div>
   );
 };
 
-const ScanHint = ({ scanning }) => (
-  <div className="space-y-1 text-center">
-    {!scanning && <p className="text-sm font-semibold text-slate-600">บันทึกอัตโนมัติเมื่อใบหน้านิ่งในวงกลม</p>}
-    <p className="text-sm text-slate-600 leading-relaxed">มองตรงที่กล้อง ถ้าสแกนไม่ติดนาน ปุ่ม "กดบันทึกเอง" จะปรากฏให้</p>
+const ScanHint = ({ scanning }) => scanning ? null : (
+  <p className="text-sm text-slate-500 text-center leading-relaxed -mt-1">วงเต็มแล้วระบบบันทึกให้อัตโนมัติ<br />ถ้าสแกนไม่ติดนาน ปุ่ม "กดบันทึกเอง" จะปรากฏให้</p>
+);
+
+// ---------- หน้าลงเวลาเข้า/ออก (แบบใหม่): ส่วนหัวสีเข้ม + แผ่นขาว ----------
+const StatusSwitch = ({ tone }) => (
+  <span aria-hidden="true" className={`relative inline-block w-10 h-[22px] rounded-full shrink-0 ${tone === 'ok' ? 'bg-emerald-400' : tone === 'bad' ? 'bg-red-400' : 'bg-white/30 animate-pulse'}`}>
+    <span className={`absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all ${tone === 'ok' ? 'right-[3px]' : 'left-[3px]'}`}></span>
+  </span>
+);
+const ClockHero = ({ title, onBack, avatar, now, status, tone, detail }) => (
+  <div className="text-white pt-4 pb-6 max-w-md mx-auto">
+    <div className="flex items-center gap-3">
+      <button onClick={onBack} aria-label="ย้อนกลับ" className="w-11 h-11 shrink-0 rounded-2xl bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"><i className="fa-solid fa-chevron-left"></i></button>
+      <h2 className="flex-1 min-w-0 text-xl font-bold leading-tight">{title}</h2>
+      {avatar && <img src={avatar} alt="" className="w-11 h-11 shrink-0 rounded-full object-cover border-2 border-white/70 bg-white transform scale-x-[-1]" />}
+    </div>
+    <div className="flex items-center justify-between gap-3 mt-5">
+      <div className="min-w-0 space-y-1.5">
+        <div className="flex items-center gap-2.5 text-sm font-bold">{status}<StatusSwitch tone={tone} /></div>
+        <p className="text-sm text-white/75 leading-snug">{detail}</p>
+        <p className="text-[44px] leading-none font-bold tracking-tight pt-1">{formatTime24(now)}</p>
+        <p className="text-sm text-white/75">{formatFullThaiDate(now)}</p>
+      </div>
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="w-20 h-20 shrink-0 opacity-90" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2" /><circle cx="9" cy="10" r="1" /><circle cx="15" cy="10" r="1" /><path d="M9 15c1.5 1.2 4.5 1.2 6 0" /></svg>
+    </div>
   </div>
 );
+const SheetHandle = () => <div aria-hidden="true" className="mx-auto w-12 h-1.5 rounded-full bg-slate-200 -mt-1"></div>;
+const ShiftPills = ({ code, note }) => {
+  const t = SHIFT_TYPES[code];
+  return (
+    <div className="space-y-2.5">
+      <h3 className="text-lg font-bold text-slate-800">กะ {code}{t ? ` · ${note || `เครดิต ${t.credit} วัน`}` : ''}</h3>
+      {t && <div className="flex items-center justify-between gap-2">
+        <span className="h-10 px-4 rounded-full bg-pink-100 text-pink-800 font-bold flex items-center">{t.start} น.</span>
+        <span className="text-sm font-bold text-slate-500">ถึง</span>
+        <span className="h-10 px-4 rounded-full bg-pink-100 text-pink-800 font-bold flex items-center">{t.end} น.</span>
+      </div>}
+    </div>
+  );
+};
+const ManualBtn = ({ onClick }) => <button onClick={onClick} className="mx-auto flex items-center h-12 px-7 rounded-full border-2 border-pink-300 bg-white text-pink-700 font-head font-semibold hover:bg-pink-50 transition-colors">กดบันทึกเอง</button>;
 
 const ResultModal = ({ tone, icon, title, time, shiftName, late, onDone }) => (
   <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
@@ -832,19 +876,19 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 pb-20 font-sans text-slate-900 relative">
-      <div className={`bg-primary ${compact ? 'h-44' : 'h-48'} w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm transition-all overflow-hidden`} style={{ background: fest ? fest.bg : `linear-gradient(180deg,${(HEAD_PAL[theme] || HEAD_PAL.pink).top},${(HEAD_PAL[theme] || HEAD_PAL.pink).bot})` }}>
-        {!fest && <HeaderArt kind={headArt} theme={theme} />}
-        {fest && fest.deco.map((e, i) => <span key={i} className="absolute select-none pointer-events-none festi-float" style={{ left: `${6 + i * 16}%`, top: `${10 + (i % 3) * 24}%`, fontSize: 20 + (i % 3) * 6, opacity: .4, animationDelay: `${i * .7}s` }}>{e}</span>)}
+      <div className={`bg-primary ${compact ? 'h-72' : 'h-48'} w-full absolute top-0 left-0 z-0 print-hide rounded-b-[2rem] shadow-sm transition-all overflow-hidden`} style={{ background: compact ? 'rgb(var(--p900))' : fest ? fest.bg : `linear-gradient(180deg,${(HEAD_PAL[theme] || HEAD_PAL.pink).top},${(HEAD_PAL[theme] || HEAD_PAL.pink).bot})` }}>
+        {!fest && !compact && <HeaderArt kind={headArt} theme={theme} />}
+        {fest && !compact && fest.deco.map((e, i) => <span key={i} className="absolute select-none pointer-events-none festi-float" style={{ left: `${6 + i * 16}%`, top: `${10 + (i % 3) * 24}%`, fontSize: 20 + (i % 3) * 6, opacity: .4, animationDelay: `${i * .7}s` }}>{e}</span>)}
       </div>
       <div className={`relative z-10 w-full ${tab === 'manager' ? 'max-w-7xl' : 'max-w-md'} mx-auto flex flex-col h-full`}>
-        <header className={`flex justify-between items-center px-6 ${compact ? 'pt-3 pb-0' : 'pt-5 pb-2'} text-white print-hide`}>
+        {!compact && <header className="flex justify-between items-center px-6 pt-5 pb-2 text-white print-hide">
           <div className="flex flex-col">{tab !== 'home' ? <span className="font-head font-semibold tracking-wider">รักษ์สกล Time</span> : fest && <div className="leading-tight"><p className="font-bold tracking-wide">{fest.emoji} {fest.greet}</p>{fest.sub && <p className="text-xs font-semibold text-yellow-200">{fest.sub}</p>}</div>}</div>
           <div className="flex items-center gap-1">
             <button onClick={() => setThemeOpen(true)} aria-label="เลือกสีของแอป" className="text-white/90 hover:text-white hover:bg-white/10 w-11 h-11 rounded-full transition-colors"><i className="fa-solid fa-palette text-lg"></i></button>
             <button onClick={logout} aria-label="ออกจากระบบ" className="text-white/90 hover:text-white hover:bg-white/10 w-11 h-11 rounded-full transition-colors"><i className="fa-solid fa-arrow-right-from-bracket text-lg"></i></button>
           </div>
-        </header>
-        <main className={`flex-grow px-4 sm:px-6 lg:px-8 ${compact ? 'mt-1' : 'mt-4'}`}>
+        </header>}
+        <main className={`flex-grow px-4 sm:px-6 lg:px-8 ${compact ? 'mt-0' : 'mt-4'}`}>
           {tab === 'home' && <ActionPanelView user={user} now={now} records={records} setRecords={setRecords} schedules={schedules} avatar={avatar} setTab={setTab} onForm={setFormOpen} syncedAt={syncedAt} />}
           {tab === 'calendar' && <MyCalendarView user={user} schedules={schedules} employees={employees} records={records} settings={settings} swaps={swaps} reload={reload} />}
           {tab === 'history' && <MyHistoryView user={user} records={records} schedules={schedules} settings={settings} now={now} />}
@@ -980,22 +1024,16 @@ function ActionPanelView({ user, now, records, setRecords, schedules, avatar, se
       <p className="mt-4 text-xs text-slate-500">ข้อมูลอัปเดตล่าสุด {syncedAt ? formatTime24(syncedAt) + ' น.' : '-'} · เวอร์ชัน {APP_BUILD}</p>
     </div>
   );
-  const props = { user, now, records, setRecords, onDone: () => setType(null) };
+  const props = { user, now, records, setRecords, avatar, onBack: () => setType(null), onDone: () => setType(null) };
   return (
-    <div className="max-w-md mx-auto mt-2">
-      <div className="flex items-center gap-3 mb-3 text-white">
-        <button onClick={() => setType(null)} aria-label="ย้อนกลับ" className="w-11 h-11 shrink-0 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"><i className="fa-solid fa-chevron-left"></i></button>
-        <div><p className="text-xs font-semibold">{formatFullThaiDate(now)}</p><h2 className="text-xl font-bold leading-tight">{type === 'in' ? 'ลงเวลาเข้างาน' : 'ลงเวลาออกงาน'}</h2></div>
-      </div>
-      <Sheet tight>
-        {type === 'in' ? <ClockInModule {...props} schedules={schedules} /> : <ClockOutModule {...props} />}
-      </Sheet>
+    <div className="max-w-md mx-auto">
+      {type === 'in' ? <ClockInModule {...props} schedules={schedules} /> : <ClockOutModule {...props} />}
     </div>
   );
 }
 
-function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
-  const [shift, setShift] = useState(''), [valid, setValid] = useState([]), [loc, setLoc] = useState('checking'), [pos, setPos] = useState(null);
+function ClockInModule({ user, now, records, setRecords, schedules, onDone, onBack, avatar }) {
+  const [shift, setShift] = useState(''), [valid, setValid] = useState([]), [loc, setLoc] = useState('checking'), [pos, setPos] = useState(null), [gps, setGps] = useState(null);
   const [cam, setCam] = useState(false), [scanning, setScanning] = useState(false), [result, setResult] = useState(null), [err, setErr] = useState('');
   const vref = useCamera(cam && !result && loc === 'ok', () => { setErr('ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาต'); setCam(false); });
   const already = shift && records.some(r => r.empId === user.id && r.date === resolveTarget(now, schedules, user.id, shift).date && r.shiftId === shift);
@@ -1021,9 +1059,10 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
     if (!navigator.geolocation) { setErr('เบราว์เซอร์ไม่รองรับ GPS'); setLoc('error'); return; }
     const t = setTimeout(() => { setErr('GPS ไม่ตอบสนอง ลองสลับเน็ตหรือรีเฟรชหน้าเว็บ'); setLoc('error'); }, 15000);
     navigator.geolocation.getCurrentPosition(
-      ({ coords: { latitude: lat, longitude: lon } }) => {
+      ({ coords: { latitude: lat, longitude: lon, accuracy } }) => {
         clearTimeout(t); setPos({ lat, lon });
         const d = distM(lat, lon, HOSPITAL_LAT, HOSPITAL_LON);
+        setGps({ d: Math.round(d), acc: Math.round(accuracy || 0) });
         if (d <= ALLOWED_RADIUS) { setLoc('ok'); setErr(''); } else { setErr(`อยู่นอกพื้นที่ (${Math.round(d)}ม.)`); setLoc('error'); }
       },
       e => { clearTimeout(t); setErr({ 1: 'กรุณาอนุญาตการเข้าถึงตำแหน่ง (Location)', 2: 'สัญญาณ GPS ขัดข้อง', 3: 'หมดเวลาการค้นหาพิกัด' }[e.code] || 'ไม่สามารถระบุตำแหน่งได้'); setLoc('error'); },
@@ -1058,37 +1097,29 @@ function ClockInModule({ user, now, records, setRecords, schedules, onDone }) {
 
   if (result) return <ResultModal tone="primary" icon="fa-check" title="บันทึกเข้างานสำเร็จ" time={result.timeIn} shiftName={result.shiftName} late={result.isLate ? result.lateMinutes : 0} onDone={onDone} />;
 
-  const locCls = loc === 'ok' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : loc === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-slate-50 border-slate-200 text-slate-600';
+  const status = loc === 'ok' ? 'อยู่ในพื้นที่ รพ.' : loc === 'checking' ? 'กำลังตรวจพิกัด' : gps && gps.d > ALLOWED_RADIUS ? 'อยู่นอกพื้นที่ รพ.' : 'ลงเวลาไม่ได้';
+  const detail = loc === 'ok' ? `ห่างจุดลงเวลา ${gps?.d ?? '-'} ม.${gps?.acc ? ` · GPS ±${gps.acc} ม.` : ''}` : loc === 'checking' ? 'รอสัญญาณ GPS...' : err;
   return (
-    <Panel>
-      <ErrorBox msg={err} />
-      <div className="bg-white rounded-xl border border-slate-200 shadow-soft p-3 space-y-2.5">
-        {valid.length === 1 ? (
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 shrink-0 rounded-lg bg-pink-100 text-pink-900 text-xl font-bold flex items-center justify-center">{valid[0]}</div>
-            <div className="flex-1 min-w-0"><p className="text-xs text-slate-500">กะการทำงาน</p><p className="text-lg font-bold text-slate-800 leading-tight">{SHIFT_TYPES[valid[0]] ? `${SHIFT_TYPES[valid[0]].start.replace(':', '.')} - ${SHIFT_TYPES[valid[0]].end.replace(':', '.')} น.` : valid[0]}</p></div>
-            {SHIFT_TYPES[valid[0]] && <p className="text-xs font-bold text-slate-500">เครดิต {SHIFT_TYPES[valid[0]].credit}</p>}
-          </div>
-        ) : (
-          <div>
-            <label className={LABEL}>กะการทำงาน</label>
-            {valid.length > 0
-              ? <select value={shift} onChange={e => setShift(e.target.value)} className={`${FIELD} focus:border-primary`}>{valid.map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}</select>
-              : <div className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 text-sm font-medium">ไม่พบตารางเวรที่ลงได้</div>}
-          </div>
-        )}
-        <div className={`p-2.5 rounded-lg flex items-center gap-2 text-sm border font-semibold ${locCls}`}>
-          {loc === 'ok' ? <><i className="fa-solid fa-location-dot"></i> พิกัดถูกต้อง · อยู่ในพื้นที่โรงพยาบาล</> : loc === 'error' ? <><i className="fa-solid fa-location-xmark"></i> {err || 'พิกัดอยู่นอกพื้นที่'}</> : <><i className="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบพิกัด...</>}
-        </div>
-      </div>
-      <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} saving={scanning} />
-      <ScanHint cam={cam} prog={prog} scanning={scanning} color="bg-primary" />
-      {manual && canGo && !scanning && <button onClick={handleClockIn} className="w-full p-3 rounded-xl font-bold text-sm text-white bg-primary hover:bg-pink-700 shadow-md">สแกนไม่ติด? กดบันทึกเข้างานเอง</button>}
-    </Panel>
+    <>
+      <ClockHero title="ลงเวลาเข้า" onBack={onBack} avatar={avatar} now={now} status={status} tone={loc === 'ok' ? 'ok' : loc === 'checking' ? 'wait' : 'bad'} detail={detail} />
+      <Sheet tight>
+        <SheetHandle />
+        {loc !== 'error' && <ErrorBox msg={err} />}
+        {valid.length > 1 && <div>
+          <label className={LABEL}>เลือกกะที่จะลงเวลา</label>
+          <select value={shift} onChange={e => setShift(e.target.value)} className={`${FIELD} focus:border-primary`}>{valid.map(k => <option key={k} value={k}>{SHIFT_TYPES[k]?.label || k}</option>)}</select>
+        </div>}
+        {shift ? <ShiftPills code={shift} /> : <div className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 text-sm font-medium text-center">ไม่พบตารางเวรที่ลงได้</div>}
+        <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} disabled={loc !== 'ok' || !valid.length || already} label="เปิดกล้องสแกนใบหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} saving={scanning} />
+        {cam && <ScanHint scanning={scanning} />}
+        {loc === 'error' && gps && <button onClick={checkLocation} className="mx-auto flex items-center gap-2 h-11 px-5 rounded-full border border-slate-300 text-slate-600 text-sm font-bold"><i className="fa-solid fa-location-crosshairs"></i>ตรวจพิกัดอีกครั้ง</button>}
+        {manual && canGo && !scanning && <ManualBtn onClick={handleClockIn} />}
+      </Sheet>
+    </>
   );
 }
 
-function ClockOutModule({ user, now, records, setRecords, onDone }) {
+function ClockOutModule({ user, now, records, setRecords, onDone, onBack, avatar }) {
   const [outDate, setOutDate] = useState(fmtInput(now)), [found, setFound] = useState(null), [err, setErr] = useState('');
   const [cam, setCam] = useState(false), [scanning, setScanning] = useState(false), [warn, setWarn] = useState(false), [ok, setOk] = useState(null);
   const vref = useCamera(cam && !ok, () => { setErr('ไม่สามารถเข้าถึงกล้องได้'); setCam(false); });
@@ -1130,25 +1161,19 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
   if (ok) return <ResultModal tone="secondary" icon="fa-arrow-right-from-bracket" title="บันทึกออกงานสำเร็จ" time={ok.timeOut} shiftName={ok.shiftName} onDone={onDone} />;
 
   return (
-    <Panel>
-      <ErrorBox msg={err} />
-      <div className="bg-white rounded-xl border border-slate-200 shadow-soft p-3 space-y-2.5">
+    <>
+      <ClockHero title="ลงเวลาออก" onBack={onBack} avatar={avatar} now={now} status={found ? 'พบประวัติเข้างาน' : 'ยังไม่พบประวัติเข้างาน'} tone={found ? 'ok' : 'bad'}
+        detail={found ? `เข้างานเมื่อ ${displaySafeTime(found.timeIn)} · ${formatDisplayDate(found.date)}` : (err || 'เลือกวันที่เข้างานด้านล่าง')} />
+      <Sheet tight>
+        <SheetHandle />
         <div>
-          <label className={LABEL}>วันที่เข้างาน</label>
-          <input type="date" value={outDate} onChange={e => { setOutDate(e.target.value); search(e.target.value); }} className={`${FIELD} min-w-0 max-w-full block appearance-none focus:border-secondary`} />
+          <label className={LABEL} htmlFor="out-date">วันที่เข้างาน</label>
+          <input id="out-date" type="date" value={outDate} onChange={e => { setOutDate(e.target.value); search(e.target.value); }} className={`${FIELD} min-w-0 max-w-full block appearance-none focus:border-secondary`} />
         </div>
-        {found && (
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 shrink-0 rounded-lg bg-pink-100 text-pink-900 text-xl font-bold flex items-center justify-center">{found.shiftId}</div>
-            <div className="flex-1 min-w-0"><p className="text-xs text-slate-500">กะที่บันทึก</p><p className="text-lg font-bold text-slate-800 leading-tight">{SHIFT_TYPES[found.shiftId] ? `${SHIFT_TYPES[found.shiftId].start.replace(':', '.')} - ${SHIFT_TYPES[found.shiftId].end.replace(':', '.')} น.` : found.shiftId}</p></div>
-            <div className="text-right"><p className="text-xs text-slate-500">เข้าเมื่อ</p><p className="text-base font-bold text-slate-800">{displaySafeTime(found.timeIn)}</p></div>
-          </div>
-        )}
-      </div>
-      {!found ? <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 text-sm font-medium">ไม่พบประวัติเข้างานของวันที่เลือก</div> : (
-        <div className="space-y-3">
+        {!found ? <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 text-sm font-medium">ไม่พบประวัติเข้างานของวันที่เลือก</div> : (<>
+          <ShiftPills code={found.shiftId} note={`เข้า ${displaySafeTime(found.timeIn)}`} />
           <CameraBox active={cam} vref={vref} onOpen={() => setCam(true)} label="เปิดกล้องสแกนหน้า" found={faceOk} ready={ready} dbg={dbg} prog={prog} saving={scanning} />
-          <ScanHint cam={cam} prog={prog} scanning={scanning} color="bg-secondary" />
+          {cam && <ScanHint scanning={scanning} />}
           {warn ? (
             <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-sm">
               <p className="text-amber-800 mb-4 text-sm font-bold">ออกก่อนเวลาเลิกกะ ยืนยันหรือไม่?</p>
@@ -1157,14 +1182,10 @@ function ClockOutModule({ user, now, records, setRecords, onDone }) {
                 <button onClick={() => setWarn(false)} className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg py-2.5 text-sm font-bold transition-colors">ยกเลิก</button>
               </div>
             </div>
-          ) : (
-            <>
-              {manual && cam && !scanning && <button onClick={attempt} className="w-full p-3 rounded-xl font-bold text-sm text-white bg-secondary hover:bg-pink-900 shadow-md">สแกนไม่ติด? กดบันทึกออกงานเอง</button>}
-            </>
-          )}
-        </div>
-      )}
-    </Panel>
+          ) : manual && cam && !scanning && <ManualBtn onClick={attempt} />}
+        </>)}
+      </Sheet>
+    </>
   );
 }
 
