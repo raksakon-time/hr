@@ -79,7 +79,7 @@ const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '20/11/69-ข';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '20/11/69-ค';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -1790,7 +1790,9 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const wkAgo = fmtInput(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7));
   const forgotOut = records.filter(r => r.date < todayStr && r.date >= wkAgo && !r.timeOut && inDept(r.empId)).length;
   const swapCells = new Set();
-  swaps.filter(s => s.status === 'pending').forEach(s => [[s.empId, s.dateA], [s.empId, s.dateB], ...(s.friendId ? [[s.friendId, s.dateA], [s.friendId, s.dateB]] : [])].forEach(([e, d]) => swapCells.add(d + '_' + e)));
+  const swapDone = new Set();   // ช่องที่เปลี่ยนจากคำขอที่อนุมัติแล้ว (จุดเขียว)
+  const cellsOf = s => [[s.empId, s.dateA], [s.empId, s.dateB], ...(s.friendId ? [[s.friendId, s.dateA], [s.friendId, s.dateB]] : [])];
+  swaps.forEach(s => { if (s.status === 'pending') cellsOf(s).forEach(([e, d]) => swapCells.add(d + '_' + e)); else if (s.status === 'approved') cellsOf(s).forEach(([e, d]) => swapDone.add(d + '_' + e)); });
   if (adminTab === 'swaps') return (
     <div className="space-y-4">
       <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 print-hide">
@@ -1987,6 +1989,13 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
         </div>
       )}
 
+      {isMatrix && filterDept && adminTab === 'schedules' && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2 px-1 text-xs font-semibold text-slate-500 print-hide">
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-sky-500"></span>มีคำขอเปลี่ยนเวรรออนุมัติ</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>เปลี่ยนจากคำขอที่อนุมัติแล้ว</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-400"></span>แก้ไขจากค่าเดิม</span>
+        </div>
+      )}
       {isMatrix && filterDept && (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print-table-wrapper"><div className="overflow-auto max-h-[70dvh] scroll-frame">
           <table className="min-w-full text-left" style={{ tableLayout: 'fixed' }}>
@@ -2011,7 +2020,8 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
                     if (adminTab === 'schedules') {
                       const ds = dayStr(d), o = schedules[ds]?.[row.empId];
                       return <td key={d} onClick={() => setCellData({ empId: row.empId, dateStr: ds, shifts: [...(o?.shifts || [])] })} className={`day-col px-0.5 py-2 text-center cursor-pointer border-r border-slate-50 hover:bg-slate-100 transition-colors relative ${wk ? 'bg-rose-50/30' : ''}`}>
-                        {o?.isEdited && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-400 rounded-full print-hide"></div>}
+                        {swapDone.has(ds + '_' + row.empId) ? <div className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full print-hide" title="เปลี่ยนเวรจากคำขอที่อนุมัติแล้ว"></div>
+                          : o?.isEdited && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-400 rounded-full print-hide" title="แก้ไขจากค่าเดิม"></div>}
                         {swapCells.has(ds + '_' + row.empId) && <div className="absolute top-1 left-1 w-2 h-2 bg-sky-500 rounded-full print-hide" title="มีคำขอสลับเวรรออยู่"></div>}
                         <div className="flex flex-col gap-0.5 items-center">{(o?.shifts || []).map((s, i) => <span key={i} className="shift-chip bg-white text-slate-800 border border-slate-300 px-1 py-0.5 rounded shadow-sm text-[10px] font-bold">{s}</span>)}</div></td>;
                     }
