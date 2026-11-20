@@ -79,7 +79,7 @@ const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '19/11/69-ง';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '20/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -190,7 +190,7 @@ const TONE = {
   primary: { soft: 'bg-pink-50 text-primary border-pink-100', ico: 'bg-pink-100 text-primary', text: 'text-primary', btn: 'bg-primary hover:bg-pink-700', main: 'bg-primary hover:bg-pink-700' },
   secondary: { soft: 'bg-rose-50 text-secondary border-rose-100', ico: 'bg-rose-100 text-secondary', text: 'text-secondary', btn: 'bg-secondary hover:bg-pink-900', main: 'bg-secondary hover:bg-pink-900' }
 };
-const CARD = 'bg-white rounded-2xl shadow-sm border border-slate-200';
+const CARD = 'bg-white rounded-3xl shadow-sm border border-slate-100';
 const FIELD = 'w-full min-w-0 max-w-full p-3 sm:p-3.5 border border-slate-300 rounded-xl bg-white outline-none font-semibold text-slate-800';
 const LABEL = 'block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider';
 
@@ -1200,9 +1200,41 @@ const PageTitle = ({ sub, title, right }) => (
   </div>
 );
 
+// เครดิตของแต่ละวันในเดือน: วันที่ผ่านมาใช้เครดิตจากการลงเวลาจริง (+ลาที่ได้เครดิต) / วันนี้-อนาคตใช้เวรในตาราง
+const monthCredits = (y, m, empId, records, schedules, today) => {
+  const out = [];
+  for (let d = 1, n = new Date(y, m, 0).getDate(); d <= n; d++) {
+    const ds = ymd(y, m, d), recs = records.filter(r => r.empId === empId && r.date === ds), sched = shiftsOf(schedules, ds, empId), worked = recs.map(r => r.shiftId);
+    let c = recs.reduce((a, r) => a + (Number(r.credit) || 0), 0);
+    sched.filter(s => !worked.includes(s)).forEach(s => { c += ds >= today ? creditOf(s) : (PAID.includes(s) ? 1 : 0); });
+    out.push({ ds, d, c, recs, sched });
+  }
+  return out;
+};
+const SoftPanel = ({ children, className = '' }) => <div className={`bg-pink-50 rounded-[26px] p-4 ${className}`}>{children}</div>;
+const StatCard = ({ icon, tone = 'text-primary', title, value, sub }) => (
+  <div className="bg-white rounded-[22px] p-3.5 flex flex-col gap-1 shadow-soft min-w-0">
+    <i className={`fa-solid ${icon} text-2xl ${tone}`} aria-hidden="true"></i>
+    <p className="font-head text-[15px] font-semibold text-slate-800">{title}</p>
+    <p className="text-[22px] font-bold leading-tight text-slate-900">{value}</p>
+    {sub && <p className="text-[13px] text-slate-500">{sub}</p>}
+  </div>
+);
+
 function MyCalendarView({ user, schedules, employees = {}, records = [], settings, swaps = [], reload = async () => {} }) {
-  const [cur, setCur] = useState(new Date()), [sel, setSel] = useState(fmtInput(new Date()));
+  const [cur, setCur] = useState(new Date()), [sel, setSel] = useState(fmtInput(new Date())), [mode, setMode] = useState('week');
   const y = cur.getFullYear(), m = cur.getMonth(), todayStr = fmtInput(new Date());
+  // แถบสัปดาห์ (จันทร์-อาทิตย์): สัปดาห์นี้ / สัปดาห์หน้า
+  const t0 = new Date(), mon = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() - ((t0.getDay() + 6) % 7) + (mode === 'next' ? 7 : 0));
+  const week = Array.from({ length: 7 }, (_, i) => new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i));
+  // กราฟเครดิตสะสมของเดือนที่ดู
+  const workDays = parseInt(settings?.standardWorkDays?.[`${y}-${pad(m + 1)}`]) || 22;
+  const mc = monthCredits(y, m + 1, user.id, records, schedules, todayStr);
+  let acc = 0; const cum = mc.map(x => (acc += x.c));
+  const isThisMonth = todayStr.startsWith(`${y}-${pad(m + 1)}`), tIdx = isThisMonth ? new Date().getDate() - 1 : (todayStr > ymd(y, m + 1, 1) ? cum.length - 1 : -1);
+  const toDate = tIdx >= 0 ? cum[tIdx] : 0, endVal = cum[cum.length - 1] || 0, top = Math.max(workDays, endVal, 1) * 1.08;
+  const W = 300, H = 120, px = i => (i / Math.max(1, cum.length - 1)) * W, py = v => H - 6 - (v / top) * (H - 16);
+  const linePts = cum.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' '), f3 = n => +(+n).toFixed(3);
   const blanks = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
   const isLeave = s => NON_WORK.includes(s);
   const selShifts = shiftsOf(schedules, sel, user.id), selLeaveTime = schedules[sel]?.[user.id]?.leaveTime || '';
@@ -1211,6 +1243,25 @@ function MyCalendarView({ user, schedules, employees = {}, records = [], setting
     <div className="max-w-md mx-auto space-y-3">
       <PageTitle sub={`แผนก${user.dept}`} title="ตารางเวรของฉัน" />
       <Sheet>
+      <div className="flex gap-2 overflow-x-auto" role="group" aria-label="มุมมอง">
+        {[['week', 'สัปดาห์นี้'], ['next', 'สัปดาห์หน้า'], ['month', 'ทั้งเดือน']].map(([k, l]) => (
+          <button key={k} aria-pressed={mode === k} onClick={() => { setMode(k); if (k !== 'month') setCur(new Date()); }} className={`font-head h-10 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${mode === k ? 'bg-primary text-white' : 'bg-pink-50 text-pink-800 hover:bg-pink-100'}`}>{l}</button>
+        ))}
+      </div>
+      {mode !== 'month' && <div className="grid grid-cols-7 gap-1.5">
+        {week.map(dt => {
+          const ds = fmtInput(dt), sh = shiftsOf(schedules, ds, user.id), isT = ds === todayStr, isSel = ds === sel, wk = [0, 6].includes(dt.getDay());
+          const main = sh.find(s => SHIFT_TYPES[s]) || sh[0] || '-';
+          return (
+            <button key={ds} onClick={() => setSel(ds)} aria-label={`${formatFullThaiDate(dt)} ${sh.join(', ') || 'ไม่มีเวร'}`} className={`rounded-2xl py-2 flex flex-col items-center gap-1 transition-all ${isT ? 'bg-primary text-white shadow-md' : isSel ? 'bg-pink-100 ring-2 ring-pink-300' : wk ? 'bg-slate-50' : 'bg-pink-50'}`}>
+              <span className={`text-xs ${isT ? 'text-white/80' : wk ? 'text-rose-700' : 'text-slate-500'}`}>{['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'][dt.getDay()]}</span>
+              <span className="text-base font-bold leading-none">{dt.getDate()}</span>
+              <span className={`text-[11px] font-bold rounded-lg px-1.5 py-0.5 max-w-full truncate ${main === 'Off' || main === '-' ? 'bg-white text-slate-500' : NON_WORK.includes(main) ? 'bg-amber-100 text-amber-800' : 'bg-white text-pink-800'}`}>{main}</span>
+            </button>
+          );
+        })}
+      </div>}
+      {mode === 'month' && <>
       <div className={`${CARD} px-3 py-2 flex items-center justify-between shadow-soft`}>
         <button aria-label="เดือนก่อนหน้า" onClick={() => setCur(new Date(y, m - 1, 1))} className={arrow}><i className="fa-solid fa-chevron-left"></i></button>
         <h3 className="text-lg font-bold text-slate-800">{THAI_MONTHS[m]} {y + 543}</h3>
@@ -1234,6 +1285,7 @@ function MyCalendarView({ user, schedules, employees = {}, records = [], setting
           })}
         </div>
       </div>
+      </>}
       <div className={`${CARD} p-3 space-y-2 shadow-soft`}>
         <p className="text-xs text-slate-500 font-semibold">{sel === todayStr ? 'วันนี้ · ' : ''}{formatFullThaiDate(new Date(sel + 'T00:00:00'))}</p>
         {selShifts.length ? selShifts.map((s, i) => (
@@ -1247,6 +1299,30 @@ function MyCalendarView({ user, schedules, employees = {}, records = [], setting
           </div>
         )) : <p className="text-sm font-semibold text-slate-500 py-2">ไม่มีเวรในวันนี้</p>}
       </div>
+      <SoftPanel>
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-head font-semibold text-slate-800">เครดิตเวรสะสม {THAI_MONTHS[m].slice(0, 3)}.{mode !== 'month' ? '' : ` ${y + 543}`}</p>
+          <span className="text-xs text-slate-500">เป้า {workDays} วัน</span>
+        </div>
+        <div className="relative h-[140px] mt-2" role="img" aria-label={`เครดิตสะสม ${f3(toDate)} วัน คาดว่าสิ้นเดือน ${f3(endVal)} วัน`}>
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 w-full h-full" aria-hidden="true">
+            <path d={`M0 ${py(workDays)}H${W}`} stroke="rgb(var(--p300))" strokeDasharray="4 5" vectorEffect="non-scaling-stroke" />
+            {tIdx < cum.length - 1 && <polyline fill="none" stroke="rgb(var(--p300))" strokeWidth="2.5" strokeDasharray="5 5" vectorEffect="non-scaling-stroke" points={tIdx < 0 ? linePts : cum.slice(tIdx).map((v, i) => `${px(i + tIdx).toFixed(1)},${py(v).toFixed(1)}`).join(' ')} />}
+            {tIdx >= 0 && <polyline fill="none" stroke="rgb(var(--primary))" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" points={cum.slice(0, tIdx + 1).map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ')} />}
+          </svg>
+          {tIdx >= 0 && <>
+            <span className="absolute w-3 h-3 rounded-full bg-secondary -translate-x-1/2 -translate-y-1/2" style={{ left: `${px(tIdx) / W * 100}%`, top: `${py(toDate) / H * 100}%` }}></span>
+            <span className="absolute -translate-x-1/2 text-xs font-bold text-white bg-secondary rounded-lg px-2 py-0.5" style={{ left: `${Math.min(85, Math.max(12, px(tIdx) / W * 100))}%`, top: `${Math.max(0, py(toDate) / H * 100 - 24)}%` }}>{f3(toDate)}</span>
+          </>}
+          <span className="absolute right-0 text-[11px] font-semibold text-pink-800" style={{ top: `${Math.max(0, py(workDays) / H * 100 - 14)}%` }}>เป้า {workDays}</span>
+        </div>
+        <div className="flex justify-between text-[11px] text-slate-500 px-0.5"><span>1</span><span>10</span><span>20</span><span>{cum.length}</span></div>
+        <div className="flex items-end justify-between mt-3">
+          <div><p className="text-[13px] text-slate-500">สะสมถึงวันนี้</p><p className="text-2xl font-bold text-slate-900">{f3(toDate)} วัน</p></div>
+          <div className="text-right"><p className="text-[13px] text-slate-500">คาดว่าสิ้นเดือน</p><p className="text-2xl font-bold text-pink-700">{f3(endVal)} วัน</p></div>
+        </div>
+        <p className="text-[11px] text-slate-500 mt-1">วันที่ผ่านมาใช้เครดิตจากการลงเวลาจริง ส่วนที่เหลือคิดจากเวรในตาราง · เส้นประ = ที่คาดไว้</p>
+      </SoftPanel>
       <MySwaps user={user} employees={employees} schedules={schedules} records={records} settings={settings} swaps={swaps} reload={reload} />
       <p className="text-xs text-slate-500 pb-2">ช เวรปกติ · Off วันหยุด · <span className="text-amber-800 font-bold">พักร้อน/ลา</span> · แตะวันเพื่อดูรายละเอียด</p>
       </Sheet>
@@ -1271,22 +1347,43 @@ function MyHistoryView({ user, records, schedules, settings, now }) {
     sched.filter(s => !worked.includes(s)).forEach(s => { credit += ds >= today ? creditOf(s) : (PAID.includes(s) ? 1 : 0); });
   }
   const f = n => +n.toFixed(3), ot = credit - workDays;
-  const stats = [['วันทำงาน', new Set(mine.map(r => r.date)).size, ''], ['Vac', vac, ''], ['ลา', leave, hourly ? `+ลาชม. ${hourly} ครั้ง` : ''], ['OT', (ot > 0 ? '+' : '') + f(ot), ''], ['สาย (ครั้ง)', late, ''], ['สายรวม (นาที)', lateMin, '']];
+  const daysWorked = new Set(mine.map(r => r.date)).size, onTimeDays = new Set(mine.filter(r => !r.isLate).map(r => r.date)).size;
+  // กราฟแท่ง: ชั่วโมงทำงานรายวัน (เครดิต × 8) ของเดือนที่เลือก
+  const nDays = new Date(y, m, 0).getDate(), hrs = Array.from({ length: nDays }, (_, i) => mine.filter(r => r.date === ymd(y, m, i + 1)).reduce((a, r) => a + (Number(r.credit) || 0) * 8, 0));
+  const totalH = hrs.reduce((a, b) => a + b, 0), maxH = Math.max(16, ...hrs), todayD = today.startsWith(month) ? now.getDate() : 0;
 
   return (
     <div className="max-w-md mx-auto space-y-3">
       <PageTitle sub={`แผนก${user.dept}`} title="ประวัติของฉัน" right={<input type="month" aria-label="เลือกเดือน" value={month} onChange={e => setMonth(e.target.value)} className="h-11 rounded-full bg-white/20 text-white text-sm font-bold px-3 outline-none" />} />
       <Sheet>
-      <div className="bg-pink-700 text-white rounded-xl p-3.5 shadow-soft">
-        <div className="flex items-end justify-between">
-          <div><p className="text-xs font-bold">เครดิตเวร</p><p className="text-[40px] font-bold leading-none">{f(credit)}</p></div>
-          <p className="text-xs text-right">รวมเวรล่วงหน้าและลา<br />วันทำการ {workDays}</p>
+      <SoftPanel>
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-head font-semibold text-slate-800 flex items-center gap-2"><span className="w-8 h-8 rounded-[10px] bg-white text-primary flex items-center justify-center" aria-hidden="true"><i className="fa-regular fa-clock"></i></span>ชั่วโมงทำงาน {THAI_MONTHS[m - 1].slice(0, 3)}.</p>
+          <p className="text-xl font-bold text-slate-900">{f(totalH)} ชม.</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 mt-3">{stats.map(([l, v, sub]) => (
-          <div key={l} className="bg-white/15 rounded-lg px-2.5 py-1.5"><p className="text-xs font-semibold">{l}</p><p className="text-lg font-bold leading-tight">{v}</p>{sub && <p className="text-[11px]">{sub}</p>}</div>))}
+        <div className="mt-4 h-[130px] flex items-end gap-[3px]" role="img" aria-label={`ชั่วโมงทำงานรวม ${f(totalH)} ชั่วโมง`}>
+          {hrs.map((h, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0" title={`${i + 1}: ${f(h)} ชม.`}>
+              <span className={`block w-full max-w-[12px] rounded-[4px] ${!h ? 'bg-slate-200' : i + 1 === todayD ? 'bg-secondary' : h >= 16 ? 'bg-primary' : 'bg-pink-200'}`} style={{ height: h ? Math.max(6, h / maxH * 108) : 5 }}></span>
+              <span className={`text-[9px] leading-none ${i + 1 === todayD ? 'font-bold text-pink-800' : 'text-slate-500'}`}>{(i + 1) % 5 === 0 || i === 0 ? i + 1 : ''}</span>
+            </div>
+          ))}
         </div>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+          <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-pink-200"></i>8 ชม.</span>
+          <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-primary"></i>16 ชม.ขึ้นไป</span>
+          <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-secondary"></i>วันนี้</span>
+          <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-slate-200"></i>ไม่มีบันทึก</span>
+        </div>
+      </SoftPanel>
+      <h3 className="font-head text-[17px] font-semibold text-slate-800 pt-1">สรุปเดือนนี้</h3>
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard icon="fa-circle-check" tone="text-emerald-700" title="มาตรงเวลา" value={`${onTimeDays} วัน`} sub={`จาก ${daysWorked} วันที่ลงเวลา`} />
+        <StatCard icon="fa-clock" tone="text-amber-700" title="มาสาย" value={`${late} ครั้ง`} sub={`รวม ${lateMin} นาที`} />
+        <StatCard icon="fa-bolt" title="เครดิตเวร" value={f(credit)} sub={`วันทำการ ${workDays} · รวมเวรล่วงหน้า`} />
+        <StatCard icon="fa-chart-line" tone={ot > 0 ? 'text-secondary' : 'text-slate-500'} title="OT" value={`${ot > 0 ? '+' : ''}${f(ot)} วัน`} sub={`Vac ${vac} · ลา ${leave}${hourly ? ` · ลาชม. ${hourly}` : ''}`} />
       </div>
-      <div className={`${CARD} px-3.5`}>
+      <div className="space-y-2">
         {mine.map((r, i) => {
           const cur = shiftsOf(schedules, r.date, user.id), extra = cur.filter(s => s !== r.shiftId && NON_WORK.includes(s) && s !== 'Off');
           // เวรในตารางไม่ตรงกับที่ลงเวลาไว้ (เช่น สแกน ชบ แล้วถูกเปลี่ยนเป็น ช)
@@ -1295,7 +1392,7 @@ function MyHistoryView({ user, records, schedules, settings, now }) {
             : !r.timeOut ? (r.date < today ? ['bg-rose-100 text-rose-800', 'ลืมออก'] : ['bg-slate-100 text-slate-700', 'ยังไม่ออก'])
             : ['bg-emerald-100 text-emerald-800', 'ตรงเวลา'];
           return (
-            <div key={r.id} className={`py-2.5 ${i ? 'border-t border-slate-200' : ''}`}>
+            <div key={r.id} className="py-2.5 px-3.5 rounded-2xl border-[1.5px] border-pink-100 bg-white">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-[15px] font-semibold text-slate-800">{formatDisplayDate(r.date).slice(0, 5)} · {r.shiftId}{extra.length ? ', ' + extra.join(', ') : ''}</p>
@@ -1365,8 +1462,8 @@ const downloadCSV = (rows, name) => {
   a.download = name; a.click();
 };
 
-const BTN = 'px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-sm';
-const IN = 'p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 focus:border-primary';
+const BTN = 'h-10 px-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-full text-xs font-bold transition-colors shadow-sm';
+const IN = 'h-11 px-3 border border-slate-200 bg-white rounded-2xl font-semibold text-slate-700 focus:border-primary';
 const TH = 'px-4 py-4', TD = 'px-4 py-3';
 const THEAD = 'bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-xs tracking-wider';
 const CHIP = 'bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold text-xs';
@@ -1671,7 +1768,12 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   };
 
   // ---------- UI ----------
-  const tabBtn = (k, label) => <button key={k} onClick={() => setAdminTab(k)} className={`font-head px-4 py-2 rounded-lg text-sm font-bold transition-all ${adminTab === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{label}</button>;
+  const TAB_ICON = { logs: 'fa-clock-rotate-left', summary: 'fa-bolt', schedules: 'fa-calendar-days', exceptions: 'fa-triangle-exclamation', swaps: 'fa-right-left' };
+  const tabBtn = (k, label) => <button key={k} onClick={() => setAdminTab(k)} aria-pressed={adminTab === k} className="flex flex-col items-center gap-1.5 min-w-[64px] shrink-0">
+    <span className={`relative w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-lg transition-all ${adminTab === k ? 'bg-primary text-white shadow-md' : 'bg-white text-pink-700 border-[1.5px] border-pink-100 hover:bg-pink-50'}`}><i className={`fa-solid ${TAB_ICON[k]}`} aria-hidden="true"></i>
+      {k === 'swaps' && pendingSw > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-secondary text-white text-[11px] font-bold flex items-center justify-center">{pendingSw}</span>}</span>
+    <span className={`font-head text-xs whitespace-nowrap ${adminTab === k ? 'font-semibold text-primary' : 'text-slate-600'}`}>{label}</span>
+  </button>;
   const exportBtn = (fn, ico = 'fa-file-csv') => <button onClick={fn} className={BTN}><i className={`fa-solid ${ico} mr-1.5 text-emerald-600`}></i>ส่งออก</button>;
   const title = adminTab === 'logs' ? 'ประวัติลงเวลา' : adminTab === 'summary' ? 'สรุปภาพรวมแผนกและการเบิก OT' : adminTab === 'schedules' ? 'ตารางเวรปฏิบัติงาน' : (exFilter === 'late' ? 'รายงานพนักงานผู้มาสาย' : 'รายงานพนักงานลืมลงเวลาออก');
   const isMatrix = adminTab === 'summary' || adminTab === 'schedules';
@@ -1680,7 +1782,12 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const dayName = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 
   // ---- ขอสลับเวร ----
-  const pendingSw = swPendingCount(swaps, employees, role, user), swTabLabel = 'สลับเวร' + (pendingSw ? ` (${pendingSw})` : '');
+  const pendingSw = swPendingCount(swaps, employees, role, user), swTabLabel = 'สลับเวร';
+  // การ์ดสรุปวันนี้ (ตามแผนกที่เลือก)
+  const inDept = id => !filterDept || employees[id]?.dept === filterDept;
+  const todayRecs = records.filter(r => r.date === todayStr && inDept(r.empId));
+  const wkAgo = fmtInput(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7));
+  const forgotOut = records.filter(r => r.date < todayStr && r.date >= wkAgo && !r.timeOut && inDept(r.empId)).length;
   const swapCells = new Set();
   swaps.filter(s => s.status === 'pending').forEach(s => [[s.empId, s.dateA], [s.empId, s.dateB], ...(s.friendId ? [[s.friendId, s.dateA], [s.friendId, s.dateB]] : [])].forEach(([e, d]) => swapCells.add(d + '_' + e)));
   if (adminTab === 'swaps') return (
@@ -1789,12 +1896,19 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
         </>}
       </div></div></Modal>}
 
-      <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-4 print-hide">
-        <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between mb-4 border-b border-slate-100 pb-4">
-          <div className="flex bg-slate-100 p-1.5 rounded-xl w-fit">{tabBtn('logs', 'ประวัติ')}{tabBtn('summary', 'สรุป OT')}{tabBtn('schedules', 'ตารางเวร')}{tabBtn('exceptions', 'รายงานผิดปกติ')}{tabBtn('swaps', swTabLabel)}</div>
+      <div className="bg-pink-50 rounded-[28px] p-3 sm:p-4 mb-4 grid grid-cols-2 lg:grid-cols-4 gap-3 print-hide">
+        <StatCard icon="fa-right-to-bracket" title="ลงเวลาเข้าวันนี้" value={`${new Set(todayRecs.map(r => r.empId)).size} คน`} sub={filterDept || 'ทุกแผนก'} />
+        <StatCard icon="fa-clock" tone="text-amber-700" title="มาสายวันนี้" value={`${todayRecs.filter(r => r.isLate).length} คน`} sub={`รวม ${todayRecs.reduce((a, r) => a + (r.isLate ? Number(r.lateMinutes) || 0 : 0), 0)} นาที`} />
+        <StatCard icon="fa-user-clock" tone="text-rose-700" title="ลืมลงเวลาออก" value={`${forgotOut} รายการ`} sub="7 วันที่ผ่านมา" />
+        <StatCard icon="fa-right-left" tone="text-secondary" title="คำขอเปลี่ยนเวร" value={`${pendingSw} รายการ`} sub="รออนุมัติ" />
+      </div>
+
+      <div className="bg-white p-4 sm:p-5 rounded-[28px] shadow-sm border border-slate-100 mb-4 print-hide">
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-center justify-between mb-4 border-b border-slate-100 pb-4">
+          <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="เมนูจัดการ">{tabBtn('logs', 'ประวัติ')}{tabBtn('summary', 'สรุป OT')}{tabBtn('schedules', 'ตารางเวร')}{tabBtn('exceptions', 'รายงานผิดปกติ')}{tabBtn('swaps', swTabLabel)}</div>
           <div className="flex flex-wrap gap-2">
-            {adminTab === 'logs' && role === 'admin' && <button onClick={() => setAddData({ empId: '', date: '', shiftId: '', timeIn: '', timeOut: '' })} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-plus mr-1.5"></i>เพิ่มย้อนหลัง</button>}
-            {adminTab === 'schedules' && <button onClick={openAuto} disabled={!filterDept} className="px-4 py-2 bg-pink-50 hover:bg-pink-100 text-primary border border-pink-200 rounded-lg text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"><i className="fa-solid fa-wand-magic-sparkles mr-1.5"></i>จัดเวรออโต้</button>}
+            {adminTab === 'logs' && role === 'admin' && <button onClick={() => setAddData({ empId: '', date: '', shiftId: '', timeIn: '', timeOut: '' })} className="h-10 px-4 bg-primary hover:opacity-90 text-white rounded-full text-xs font-bold transition-colors shadow-sm"><i className="fa-solid fa-plus mr-1.5"></i>เพิ่มย้อนหลัง</button>}
+            {adminTab === 'schedules' && <button onClick={openAuto} disabled={!filterDept} className="h-10 px-4 bg-pink-50 hover:bg-pink-100 text-primary border border-pink-200 rounded-full text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"><i className="fa-solid fa-wand-magic-sparkles mr-1.5"></i>จัดเวรออโต้</button>}
             {exportBtn({ logs: exportLogs, exceptions: exportEx, summary: exportSummary, schedules: exportSchedule }[adminTab], adminTab === 'schedules' ? 'fa-file-excel' : 'fa-file-csv')}
             <button onClick={() => window.print()} className={BTN}><i className="fa-solid fa-print mr-1.5 text-slate-400"></i>พิมพ์</button>
           </div>
@@ -1807,7 +1921,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
           <input type="text" placeholder="ค้นหาชื่อ..." value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={IN} />
           {isMatrix && (
             <div className="relative col-span-2 md:col-span-1">
-              <button onClick={() => setShowDrop(!showDrop)} className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-700 bg-white text-left flex justify-between items-center outline-none shadow-sm hover:bg-slate-50">
+              <button onClick={() => setShowDrop(!showDrop)} className="w-full h-11 px-3 border border-slate-200 rounded-2xl font-semibold text-slate-700 bg-white text-left flex justify-between items-center outline-none shadow-sm hover:bg-slate-50">
                 <span className="truncate">พนักงาน ({dropdownEmps.filter(id => !excluded.includes(id)).length}/{dropdownEmps.length})</span><i className="fa-solid fa-chevron-down text-slate-400 ml-2"></i>
               </button>
               {showDrop && <>
@@ -1855,7 +1969,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
       {adminTab === 'exceptions' && (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-slate-50 border-b border-slate-200 flex gap-2 print-hide">
-            {[['late', 'พนักงานผู้มาสาย'], ['missing_out', 'ลืมลงเวลาออก']].map(([k, l]) => <button key={k} onClick={() => setExFilter(k)} className={`font-head px-4 py-2 rounded-lg text-sm font-bold transition-all ${exFilter === k ? 'bg-primary text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}`}>{l}</button>)}
+            {[['late', 'พนักงานผู้มาสาย'], ['missing_out', 'ลืมลงเวลาออก']].map(([k, l]) => <button key={k} onClick={() => setExFilter(k)} className={`font-head h-10 px-4 rounded-full text-sm font-medium transition-all ${exFilter === k ? 'bg-primary text-white shadow-sm' : 'bg-pink-50 text-pink-800 hover:bg-pink-100'}`}>{l}</button>)}
           </div>
           <div className="overflow-auto max-h-[70dvh] scroll-frame print-table-wrapper"><table className="min-w-full text-sm text-left">
             <thead className={`${THEAD} sticky top-0 z-20`}><tr><th className={TH}>วันที่</th><th className={TH}>พนักงาน</th><th className={TH}>กะ</th><th className={`${TH} text-center`}>เข้า</th><th className={`${TH} text-center`}>ออก</th><th className={`${TH} text-center`}>สถานะ</th></tr></thead>
