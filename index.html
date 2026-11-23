@@ -14,7 +14,7 @@
 const twRgb = n => `rgb(var(--${n}) / <alpha-value>)`;
 const twScale = p => Object.fromEntries([50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map(k => [k, twRgb(p + k)]));
 tailwind.config = { theme: { extend: {
-  fontFamily: { sans: ['Sarabun', 'sans-serif'] },
+  fontFamily: { sans: ['Prompt', 'Sarabun', 'sans-serif'] },
   boxShadow: { soft: '0 4px 20px -2px rgba(0,0,0,0.04)', subtle: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)' },
   colors: { primary: twRgb('primary'), secondary: twRgb('secondary'), pink: twScale('p'), rose: twScale('r'), dark: '#1e293b' }
 } } }
@@ -32,11 +32,13 @@ tailwind.config = { theme: { extend: {
 html[data-theme="navy"]{--primary:42 60 118;--secondary:214 57 63;--hex-p:#2A3C76;--hex-s:#D6393F;
 --p50:243 245 251;--p100:232 236 247;--p200:211 218 238;--p300:182 195 230;--p400:137 160 207;--p500:91 115 179;--p600:42 60 118;--p700:36 52 104;--p800:31 44 88;--p900:24 35 74;
 --r50:255 241 241;--r100:255 227 228;--r200:255 201 203;--r300:255 163 166;--r400:254 105 110;--r500:240 73 79;--r600:214 57 63;--r700:184 45 51;--r800:165 38 43;--r900:143 29 33}
-/* หัวข้อ เมนู ปุ่มหลัก = Prompt / เนื้อหา = Sarabun */
+/* ทั้งแอปใช้ Prompt (หน้าพิมพ์ตารางเวรยังใช้ Sarabun) · Prompt ตัวหนาหนักกว่า Sarabun จึงลดน้ำหนักลงหนึ่งขั้น */
 :is(h1,h2,h3,h4), .font-head, .swal2-title, .swal2-confirm, .swal2-cancel { font-family: 'Prompt', 'Sarabun', sans-serif; letter-spacing: .1px; }
 :is(h1,h2,h3,h4,.font-head):is(.font-bold,.font-extrabold) { font-weight: 600; }
 :is(h1,h2,h3,h4,.font-head).font-semibold { font-weight: 500; }
-body { font-family: 'Sarabun', sans-serif; background: #f8fafc; -webkit-font-smoothing: antialiased; color: #1e293b; font-size: 15px; margin: 0; }
+html body .font-extrabold { font-weight: 700; } html body .font-bold { font-weight: 600; } html body .font-semibold { font-weight: 500; }
+.swal2-popup, .swal2-html-container, .swal2-input, .swal2-textarea { font-family: 'Prompt', 'Sarabun', sans-serif !important; }
+body { font-family: 'Prompt', 'Sarabun', sans-serif; background: #f8fafc; -webkit-font-smoothing: antialiased; color: #1e293b; font-size: 15px; margin: 0; }
 input, select { transition: all .2s ease; }
 input[type=date], input[type=month], input[type=time] { min-width: 0; max-width: 100%; box-sizing: border-box; }
 input:focus, select:focus { outline: none; border-color: rgb(var(--primary)) !important; box-shadow: 0 0 0 3px rgb(var(--primary) / .2); }
@@ -79,7 +81,7 @@ const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '23/11/69-ข';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '23/11/69-ง';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -220,7 +222,7 @@ const CameraBox = ({ active, vref, onOpen, disabled, label, found, ready, dbg, p
           {(found || saving) && <span className="absolute left-1/2 -bottom-2 -translate-x-1/2 h-8 px-3.5 rounded-full bg-primary text-white text-base font-bold flex items-center shadow-md">{pct}%</span>}
         </div>
         <p className="font-head text-lg font-semibold text-secondary text-center mt-1">{saving ? 'กำลังบันทึก...' : !ready ? 'กำลังเตรียมระบบสแกน...' : found ? 'มองตรงที่กล้อง นิ่งไว้' : 'จัดใบหน้าให้อยู่ในวงกลม'}</p>
-        {FACE_DEBUG && dbg && <p className="text-[10px] font-mono text-slate-500">{dbg}</p>}
+        {FACE_DEBUG && dbg && <p className="text-xs font-mono text-slate-500">{dbg}</p>}
       </> : <button onClick={onOpen} disabled={disabled} className={`relative ${size} rounded-full flex flex-col items-center justify-center text-primary disabled:text-slate-400 transition-colors`}>
         {ring}
         <span className="absolute left-[13%] top-[13%] w-[74%] h-[74%] rounded-full bg-slate-100"></span>
@@ -733,7 +735,7 @@ const swChecks = (schedules, records, a, b, dA, dB, forApproval, type, part) => 
 const SwChecks = ({ items }) => (
   <div className="flex flex-wrap gap-1.5">{items.map((x, i) => (
     <span key={i} className={`inline-flex items-center gap-1 text-xs font-bold rounded-full px-2.5 py-1 ${x.ok === true ? 'bg-emerald-100 text-emerald-800' : x.ok === false ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}>
-      <i className={`fa-solid ${x.ok === true ? 'fa-check' : x.ok === false ? 'fa-xmark' : 'fa-triangle-exclamation'} text-[10px]`}></i>{x.t}
+      <i className={`fa-solid ${x.ok === true ? 'fa-check' : x.ok === false ? 'fa-xmark' : 'fa-triangle-exclamation'} text-xs`}></i>{x.t}
     </span>))}
   </div>
 );
@@ -1086,65 +1088,65 @@ function App() {
 
 // ================= Login =================
 function LoginView({ employees, onLogin }) {
-  const [empId, setEmpId] = useState(''), [password, setPassword] = useState(''), [needsPw, setNeedsPw] = useState(false), [err, setErr] = useState(''), [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'pink'), [themeOpen, setThemeOpen] = useState(false), [showPw, setShowPw] = useState(false);
+  // หน้าเข้าสู่ระบบแบบใหม่ (ฟอนต์ Prompt ทั้งหน้า)
+  const [empId, setEmpId] = useState(() => { try { return localStorage.getItem('rt_emp') || ''; } catch (e) { return ''; } });
+  const [remember, setRemember] = useState(() => { try { return !!localStorage.getItem('rt_emp'); } catch (e) { return false; } });
+  const [password, setPassword] = useState(''), [err, setErr] = useState(''), [showPw, setShowPw] = useState(false), [themeOpen, setThemeOpen] = useState(false);
+  const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'pink');
   const [headArt, setHeadArt] = useState(() => { try { return localStorage.getItem('rt_head') || 'city'; } catch (e) { return 'city'; } });
   const pickHead = k => { try { localStorage.setItem('rt_head', k); } catch (e) {} setHeadArt(k); };
-  const pal = HEAD_PAL[theme] || HEAD_PAL.pink;
   const pickTheme = t => { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('rt_theme', t); } catch (e) {} setTheme(t); setThemeOpen(false); };
-  const inputCls = 'w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-2xl bg-slate-50 outline-none text-slate-800 font-bold focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all';
-  const grad = 'bg-primary hover:bg-pink-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2';
+  const emp = employees[empId.trim().toUpperCase()], hasPw = !!(emp && emp.password);
+  const fieldCls = 'w-full h-[52px] border-[1.5px] border-slate-200 rounded-2xl px-4 text-base text-slate-800 bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all';
 
-  const next = e => {
+  const submit = e => {
     e?.preventDefault(); setErr('');
     const id = empId.trim().toUpperCase();
     if (!id) return setErr('กรุณากรอกรหัสพนักงาน');
-    const emp = employees[id];
-    if (!emp) return setErr('ไม่พบรหัสพนักงานนี้ในระบบ');
-    const pw = emp.password || '';
-    if (pw !== '' && !needsPw) return setNeedsPw(true);
-    if (needsPw && password !== pw) return setErr('รหัสผ่านไม่ถูกต้อง');
-    onLogin({ id, ...emp });
+    const em = employees[id];
+    if (!em) return setErr('ไม่พบรหัสพนักงานนี้ในระบบ');
+    const pw = em.password || '';
+    if (pw !== '' && !password) return setErr('กรุณากรอกรหัสผ่าน');
+    if (pw !== '' && password !== pw) return setErr('รหัสผ่านไม่ถูกต้อง');
+    try { remember ? localStorage.setItem('rt_emp', id) : localStorage.removeItem('rt_emp'); } catch (er) {}
+    onLogin({ id, ...em });
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-primary relative overflow-hidden" style={{ background: `linear-gradient(180deg,${pal.top},${pal.bot})` }}>
-      <button onClick={() => setThemeOpen(true)} aria-label="เลือกสีและภาพหัวของแอป" className="absolute top-4 right-4 z-20 w-11 h-11 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-colors"><i className="fa-solid fa-palette text-lg"></i></button>
-      <div className="relative z-10 flex flex-col items-center text-white text-center pt-14 md:pt-20 pb-40 px-6">
-        {/* ภาพหัว (ตึก รพ. / พนักงาน) วางชิดขอบล่าง ให้ตึกตั้งอยู่บนแผ่นสีขาว เลือกได้ที่ปุ่มจานสี */}
-        <div className="absolute left-0 right-0 bottom-0 h-[192px] pointer-events-none"><HeaderArt kind={headArt} theme={theme} /></div>
-        <div className="relative w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-4 shadow-lg"><i className="fa-solid fa-fingerprint text-4xl text-primary"></i></div>
-        <h1 className="relative text-3xl font-extrabold tracking-tight drop-shadow-sm">รักษ์สกล Time</h1>
-        <p className="relative text-sm font-semibold text-white/90 mt-1 drop-shadow-sm">เข้าสู่ระบบเพื่อปฏิบัติงาน</p>
-      </div>
-      <div className="relative z-10 flex-1 md:flex-none md:mb-12 w-full max-w-md mx-auto bg-white rounded-t-[2rem] md:rounded-[2rem] shadow-[0_-6px_18px_rgba(15,23,42,0.18)] md:shadow-[0_12px_32px_rgba(15,23,42,0.25)] px-6 sm:px-8 pt-8 pb-10">
-        <h2 className="text-xl font-bold text-slate-800 mb-1">เข้าสู่ระบบ</h2>
-        <p className="text-slate-500 text-sm font-medium mb-6">{needsPw ? 'กรอกรหัสผ่านของคุณ' : 'กรอกรหัสพนักงานของคุณ'}</p>
-        {err && <div className="mb-5 p-4 bg-red-50 text-red-600 rounded-2xl text-sm border border-red-100 flex items-center justify-center gap-2 font-bold"><i className="fa-solid fa-circle-exclamation text-lg"></i>{err}</div>}
-        <form onSubmit={next} className="space-y-5 text-left">
-          {!needsPw ? (
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider ml-1">รหัสพนักงาน</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i className="fa-regular fa-id-badge text-slate-400 text-lg"></i></div>
-                <input type="text" placeholder="เช่น EMP01" autoComplete="username" value={empId} onChange={e => setEmpId(e.target.value.toUpperCase())} className={inputCls} />
-              </div>
-              <button type="submit" className={`w-full mt-8 py-4 text-base ${grad}`}>ดำเนินการต่อ <i className="fa-solid fa-arrow-right"></i></button>
+    <div className="min-h-screen bg-white relative overflow-hidden flex justify-center" style={{ fontFamily: "'Prompt', 'Sarabun', sans-serif" }}>
+      <div className="absolute -top-[90px] -right-[70px] w-60 h-60 rounded-full bg-pink-100" aria-hidden="true"></div>
+      <div className="relative w-full max-w-md px-7 flex flex-col min-h-screen">
+        <div className="absolute top-10 right-[34px] w-16 h-16 rounded-[22px] bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30" aria-hidden="true">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2" /><circle cx="9" cy="10" r="1" /><circle cx="15" cy="10" r="1" /><path d="M9 15c1.5 1.3 4.5 1.3 6 0" /></svg>
+        </div>
+        <div className="mt-[150px]">
+          <h1 className="text-[34px] leading-tight font-semibold text-slate-800">รักษ์สกล Time</h1>
+          <p className="text-base text-slate-500 mt-1.5">เข้าสู่ระบบเพื่อปฏิบัติงาน</p>
+        </div>
+        {err && <div role="alert" className="mt-6 p-3.5 bg-red-50 text-red-700 rounded-2xl text-sm border border-red-100 flex items-center gap-2 font-medium"><i className="fa-solid fa-circle-exclamation text-base"></i>{err}</div>}
+        <form onSubmit={submit} className={`${err ? 'mt-5' : 'mt-11'} flex flex-col gap-[18px]`}>
+          <div>
+            <label htmlFor="login-emp" className="block text-[13px] font-semibold text-slate-700 mb-1.5">รหัสพนักงาน</label>
+            <input id="login-emp" type="text" placeholder="เช่น 1101" autoComplete="username" value={empId} onChange={e => { setEmpId(e.target.value.toUpperCase()); setErr(''); }} className={fieldCls} />
+          </div>
+          <div>
+            <label htmlFor="login-pw" className="block text-[13px] font-semibold text-slate-700 mb-1.5">รหัสผ่าน {emp && !hasPw && <span className="font-normal text-slate-400">(บัญชีนี้ไม่ต้องใช้รหัสผ่าน)</span>}</label>
+            <div className="relative">
+              <input id="login-pw" type={showPw ? 'text' : 'password'} placeholder={emp && !hasPw ? 'เว้นว่างได้' : '••••••••'} autoComplete="current-password" value={password} onChange={e => { setPassword(e.target.value); setErr(''); }} className={`${fieldCls} pr-14`} />
+              <button type="button" onClick={() => setShowPw(v => !v)} aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={showPw} className="absolute right-1 top-1 w-11 h-11 rounded-xl text-slate-500 hover:text-primary flex items-center justify-center"><i className={`fa-solid ${showPw ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
             </div>
-          ) : (
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider ml-1">รหัสผ่านสำหรับ <span className="text-primary">{employees[empId.toUpperCase()]?.fname}</span></label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i className="fa-solid fa-lock text-slate-400 text-lg"></i></div>
-                <input type={showPw ? 'text' : 'password'} placeholder="••••••••" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className={`${inputCls.replace('pr-4', 'pr-14')} ${showPw ? '' : 'tracking-widest'}`} autoFocus />
-                <button type="button" onClick={() => setShowPw(v => !v)} aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={showPw} className="absolute inset-y-0 right-0 w-14 flex items-center justify-center text-slate-500 hover:text-slate-800 rounded-r-2xl"><i className={`fa-solid ${showPw ? 'fa-eye-slash' : 'fa-eye'} text-lg`}></i></button>
-              </div>
-              <div className="flex gap-3 mt-8">
-                <button type="button" onClick={() => { setNeedsPw(false); setPassword(''); setShowPw(false); }} className="w-1/3 py-4 bg-white border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-600 rounded-2xl font-bold transition-all">กลับ</button>
-                <button type="submit" className={`w-2/3 py-4 ${grad}`}>เข้าสู่ระบบ <i className="fa-solid fa-arrow-right-to-bracket"></i></button>
-              </div>
-            </div>
-          )}
+          </div>
+          <label className="flex items-center gap-2.5 text-sm text-slate-700 min-h-[44px] cursor-pointer">
+            <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className="w-5 h-5 accent-primary" style={{ accentColor: 'rgb(var(--primary))' }} />จดจำรหัสพนักงานในเครื่องนี้
+          </label>
+          <button type="submit" className="mt-1 h-14 rounded-full text-white text-lg font-semibold shadow-lg shadow-primary/30 hover:-translate-y-0.5 transition-transform" style={{ background: 'linear-gradient(90deg, rgb(var(--primary)), rgb(var(--p400)))' }}>เข้าสู่ระบบ</button>
         </form>
+        <div className="flex items-center gap-3 mt-7 text-slate-400 text-[13px]"><div className="flex-1 h-px bg-slate-200"></div>หรือ<div className="flex-1 h-px bg-slate-200"></div></div>
+        <div className="grid grid-cols-2 gap-3 mt-[18px]">
+          <a href={LEAVE_SYSTEM_URL} target="_blank" rel="noopener" className="h-[52px] border-[1.5px] border-slate-200 rounded-2xl bg-white text-slate-700 text-sm font-semibold flex items-center justify-center gap-2 hover:border-primary transition-colors"><i className="fa-solid fa-suitcase-rolling text-primary"></i>ระบบลา</a>
+          <button type="button" onClick={() => setThemeOpen(true)} className="h-[52px] border-[1.5px] border-slate-200 rounded-2xl bg-white text-slate-700 text-sm font-semibold flex items-center justify-center gap-2 hover:border-primary transition-colors"><i className="fa-solid fa-palette text-primary"></i>ธีมสี / ภาพหัว</button>
+        </div>
+        <p className="mt-auto pt-8 mb-8 text-center text-sm text-slate-500">ลืมรหัสผ่าน? <span className="text-pink-700 font-semibold">ติดต่อแอดมิน</span></p>
       </div>
       {themeOpen && <ThemeModal theme={theme} onPick={t => { pickTheme(t); }} head={headArt} onHead={pickHead} onClose={() => setThemeOpen(false)} />}
     </div>
@@ -1418,7 +1420,7 @@ function MyCalendarView({ user, schedules, employees = {}, records = [], setting
             <button key={ds} onClick={() => setSel(ds)} aria-label={`${formatFullThaiDate(dt)} ${sh.join(', ') || 'ไม่มีเวร'}`} className={`rounded-2xl py-2 flex flex-col items-center gap-1 transition-all ${isT ? 'bg-primary text-white shadow-md' : isSel ? 'bg-pink-100 ring-2 ring-pink-300' : wk ? 'bg-slate-50' : 'bg-pink-50'}`}>
               <span className={`text-xs ${isT ? 'text-white/80' : wk ? 'text-rose-700' : 'text-slate-500'}`}>{['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'][dt.getDay()]}</span>
               <span className="text-base font-bold leading-none">{dt.getDate()}</span>
-              <span className={`text-[11px] font-bold rounded-lg px-1.5 py-0.5 max-w-full truncate ${main === 'Off' || main === '-' ? 'bg-white text-slate-500' : NON_WORK.includes(main) ? 'bg-amber-100 text-amber-800' : 'bg-white text-pink-800'}`}>{main}</span>
+              <span className={`text-xs font-bold rounded-lg px-1.5 py-0.5 max-w-full truncate ${main === 'Off' || main === '-' ? 'bg-white text-slate-500' : NON_WORK.includes(main) ? 'bg-amber-100 text-amber-800' : 'bg-white text-pink-800'}`}>{main}</span>
             </button>
           );
         })}
@@ -1476,14 +1478,14 @@ function MyCalendarView({ user, schedules, employees = {}, records = [], setting
             <span className="absolute w-3 h-3 rounded-full bg-secondary -translate-x-1/2 -translate-y-1/2" style={{ left: `${px(tIdx) / W * 100}%`, top: `${py(toDate) / H * 100}%` }}></span>
             <span className="absolute -translate-x-1/2 text-xs font-bold text-white bg-secondary rounded-lg px-2 py-0.5" style={{ left: `${Math.min(85, Math.max(12, px(tIdx) / W * 100))}%`, top: `${Math.max(0, py(toDate) / H * 100 - 24)}%` }}>{f3(toDate)}</span>
           </>}
-          <span className="absolute right-0 text-[11px] font-semibold text-pink-800" style={{ top: `${Math.max(0, py(workDays) / H * 100 - 14)}%` }}>เป้า {workDays}</span>
+          <span className="absolute right-0 text-xs font-semibold text-pink-800" style={{ top: `${Math.max(0, py(workDays) / H * 100 - 14)}%` }}>เป้า {workDays}</span>
         </div>
-        <div className="flex justify-between text-[11px] text-slate-500 px-0.5"><span>1</span><span>10</span><span>20</span><span>{cum.length}</span></div>
+        <div className="flex justify-between text-xs text-slate-500 px-0.5"><span>1</span><span>10</span><span>20</span><span>{cum.length}</span></div>
         <div className="flex items-end justify-between mt-3">
           <div><p className="text-[13px] text-slate-500">สะสมถึงวันนี้</p><p className="text-2xl font-bold text-slate-900">{f3(toDate)} วัน</p></div>
           <div className="text-right"><p className="text-[13px] text-slate-500">คาดว่าสิ้นเดือน</p><p className="text-2xl font-bold text-pink-700">{f3(endVal)} วัน</p></div>
         </div>
-        <p className="text-[11px] text-slate-500 mt-1">วันที่ผ่านมาใช้เครดิตจากการลงเวลาจริง ส่วนที่เหลือคิดจากเวรในตาราง · เส้นประ = ที่คาดไว้</p>
+        <p className="text-xs text-slate-500 mt-1">วันที่ผ่านมาใช้เครดิตจากการลงเวลาจริง ส่วนที่เหลือคิดจากเวรในตาราง · เส้นประ = ที่คาดไว้</p>
       </SoftPanel>
       <MySwaps user={user} employees={employees} schedules={schedules} records={records} settings={settings} swaps={swaps} reload={reload} />
       <p className="text-xs text-slate-500 pb-2">ช เวรปกติ · Off วันหยุด · <span className="text-amber-800 font-bold">พักร้อน/ลา</span> · แตะวันเพื่อดูรายละเอียด</p>
@@ -1527,7 +1529,7 @@ function MyHistoryView({ user, records, schedules, settings, now }) {
           {hrs.map((h, i) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0" title={`${i + 1}: ${f(h)} ชม.`}>
               <span className={`block w-full max-w-[12px] rounded-[4px] ${!h ? 'bg-slate-200' : i + 1 === todayD ? 'bg-secondary' : h >= 16 ? 'bg-primary' : 'bg-pink-200'}`} style={{ height: h ? Math.max(6, h / maxH * 108) : 5 }}></span>
-              <span className={`text-[9px] leading-none ${i + 1 === todayD ? 'font-bold text-pink-800' : 'text-slate-500'}`}>{(i + 1) % 5 === 0 || i === 0 ? i + 1 : ''}</span>
+              <span className={`text-xs leading-none ${i + 1 === todayD ? 'font-bold text-pink-800' : 'text-slate-500'}`}>{(i + 1) % 5 === 0 || i === 0 ? i + 1 : ''}</span>
             </div>
           ))}
         </div>
@@ -1658,7 +1660,7 @@ const ShiftSelect = ({ dept, leave, value, onChange, empty, cls = 'w-full p-2.5 
     <optgroup label="วันหยุด/อื่นๆ">{leave.map(k => <option key={k} value={k}>{k}</option>)}</optgroup>
   </select>
 );
-const EmpCell = ({ id, emp }) => <td className={TD}><span className="font-bold text-slate-800">{emp?.fname} {emp?.lname}</span><span className="block text-[10px] text-slate-400 mt-0.5">{id}</span></td>;
+const EmpCell = ({ id, emp }) => <td className={TD}><span className="font-bold text-slate-800">{emp?.fname} {emp?.lname}</span><span className="block text-xs text-slate-400 mt-0.5">{id}</span></td>;
 const ShiftCell = ({ r }) => <td className={TD}><span className={CHIP}>{r.shiftId} {SHIFT_TYPES[r.shiftId] ? `${SHIFT_TYPES[r.shiftId].start}-${SHIFT_TYPES[r.shiftId].end}` : ''}</span></td>;
 const TimeCells = ({ r }) => <><td className={`${TD} text-center font-semibold text-slate-700`}>{displaySafeTime(r.timeIn)}</td><td className={`${TD} text-center font-semibold text-slate-700`}>{displaySafeTime(r.timeOut)}</td></>;
 
@@ -1982,6 +1984,22 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   };
   const setRow = (k, i, patch) => setFrame(f => ({ ...f, [k]: f[k].map((x, j) => j === i ? { ...x, ...patch } : x) }));
 
+  // ---------- ส่งออก PDF: ใช้หน้าพิมพ์แบบใหม่ แล้วให้เบราว์เซอร์บันทึกเป็น PDF (ชื่อไฟล์ตั้งจากชื่อเอกสาร) ----------
+  const exportPdf = async () => {
+    if (!filterDept) return Swal.fire({ icon: 'info', title: 'เลือกแผนกก่อน', text: 'ส่งออก PDF ได้ทีละแผนก', confirmButtonColor: themeHex('p') });
+    let seen = false; try { seen = !!localStorage.getItem('rt_pdf_tip'); } catch (e) {}
+    if (!seen) {
+      const c = await Swal.fire({ icon: 'info', title: 'ส่งออกเป็น PDF', html: 'หน้าต่างพิมพ์จะเปิดขึ้น<br>ที่ <b>ปลายทาง / เครื่องพิมพ์</b> เลือก <b>"บันทึกเป็น PDF"</b><br>ตั้งกระดาษ A4 แนวนอน และเปิดกราฟิกพื้นหลัง', showCancelButton: true, confirmButtonText: 'ตกลง', cancelButtonText: 'ยกเลิก', confirmButtonColor: themeHex('p'), reverseButtons: true });
+      if (!c.isConfirmed) return;
+      try { localStorage.setItem('rt_pdf_tip', '1'); } catch (e) {}
+    }
+    const old = document.title;
+    document.title = `${adminTab === 'summary' ? 'สรุปOT' : 'ตารางเวร'}_${filterDept}_${ymTh(matrixMonth).replace(' ', '')}`;
+    const back = () => { document.title = old; window.removeEventListener('afterprint', back); };
+    window.addEventListener('afterprint', back);
+    setTimeout(() => { window.print(); setTimeout(back, 60000); }, 300);
+  };
+
   // ---------- ส่งตารางเวร / ปลดล็อก ----------
   const pub = pubInfo(settings, filterDept, matrixMonth), locked = pub.st === 'published';
   const canPub = role === 'admin' || (role === 'supervisor' && filterDept === user.dept);
@@ -2044,7 +2062,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const TAB_ICON = { logs: 'fa-clock-rotate-left', summary: 'fa-bolt', schedules: 'fa-calendar-days', exceptions: 'fa-triangle-exclamation', swaps: 'fa-right-left' };
   const tabBtn = (k, label) => <button key={k} onClick={() => setAdminTab(k)} aria-pressed={adminTab === k} className="flex flex-col items-center gap-1.5 min-w-[64px] shrink-0">
     <span className={`relative w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-lg transition-all ${adminTab === k ? 'bg-primary text-white shadow-md' : 'bg-white text-pink-700 border-[1.5px] border-pink-100 hover:bg-pink-50'}`}><i className={`fa-solid ${TAB_ICON[k]}`} aria-hidden="true"></i>
-      {k === 'swaps' && pendingSw > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-secondary text-white text-[11px] font-bold flex items-center justify-center">{pendingSw}</span>}</span>
+      {k === 'swaps' && pendingSw > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-secondary text-white text-xs font-bold flex items-center justify-center">{pendingSw}</span>}</span>
     <span className={`font-head text-xs whitespace-nowrap ${adminTab === k ? 'font-semibold text-primary' : 'text-slate-600'}`}>{label}</span>
   </button>;
   const exportBtn = (fn, ico = 'fa-file-csv') => <button onClick={fn} className={BTN}><i className={`fa-solid ${ico} mr-1.5 text-emerald-600`}></i>ส่งออก</button>;
@@ -2188,6 +2206,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
             {adminTab === 'schedules' && <button onClick={openAuto} disabled={!filterDept || locked} title={locked ? 'ตารางเวรส่งแล้ว' : ''} className="h-10 px-4 bg-pink-50 hover:bg-pink-100 text-primary border border-pink-200 rounded-full text-xs font-bold disabled:opacity-50 transition-colors shadow-sm"><i className="fa-solid fa-wand-magic-sparkles mr-1.5"></i>จัดเวรออโต้</button>}
             {exportBtn({ logs: exportLogs, exceptions: exportEx, summary: exportSummary, schedules: exportSchedule }[adminTab], adminTab === 'schedules' ? 'fa-file-excel' : 'fa-file-csv')}
             <button onClick={() => window.print()} className={BTN}><i className="fa-solid fa-print mr-1.5 text-slate-400"></i>พิมพ์</button>
+            {isMatrix && <button onClick={exportPdf} className={BTN}><i className="fa-solid fa-file-pdf mr-1.5 text-red-500"></i>PDF</button>}
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -2288,19 +2307,19 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
             <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-30">
               <tr>
                 <th rowSpan="2" className="px-2 py-3 font-extrabold text-slate-800 text-sm sticky left-0 bg-slate-50 z-20 border-r border-slate-200" style={{ width: '13%' }}>พนักงาน</th>
-                {daysArray.map(d => { const di = new Date(my, mm - 1, d).getDay(), wk = di === 0 || di === 6; return <th key={d} rowSpan="2" className={`day-col px-1 py-1.5 text-center text-xs font-extrabold ${wk ? 'text-rose-600 bg-rose-50/50' : 'text-slate-500'}`}><span className="block text-[9px] font-semibold opacity-75">{dayName[di]}</span>{d}</th>; })}
-                <th colSpan={types.length} className="px-1 py-1.5 font-extrabold text-primary text-center bg-pink-50/50 border-l border-b border-pink-100 border-r border-slate-200 text-[10px] uppercase tracking-widest" style={{ width: `${types.length * 2.5}%` }}>สรุปกะเวร</th>
+                {daysArray.map(d => { const di = new Date(my, mm - 1, d).getDay(), wk = di === 0 || di === 6; return <th key={d} rowSpan="2" className={`day-col px-1 py-1.5 text-center text-xs font-extrabold ${wk ? 'text-rose-600 bg-rose-50/50' : 'text-slate-500'}`}><span className="block text-xs font-semibold opacity-75">{dayName[di]}</span>{d}</th>; })}
+                <th colSpan={types.length} className="px-1 py-1.5 font-extrabold text-primary text-center bg-pink-50/50 border-l border-b border-pink-100 border-r border-slate-200 text-xs uppercase tracking-widest" style={{ width: `${types.length * 2.5}%` }}>สรุปกะเวร</th>
                 <th rowSpan="2" className="px-1 py-3 text-center text-xs font-extrabold text-slate-700 bg-slate-100/50 border-l border-slate-200" style={{ width: '4%' }}>รวม</th>
                 <th rowSpan="2" className="px-1 py-3 text-center text-xs font-extrabold text-slate-800 bg-slate-100/50 border-l border-slate-200" style={{ width: '4%' }}>ทำงาน</th>
-                <th rowSpan="2" className="px-1 py-3 text-center text-[10px] font-extrabold text-white bg-primary border-l border-pink-600" style={{ width: '4%' }}>OT</th>
-                {showLate && <th rowSpan="2" className="px-1 py-3 text-center text-[10px] font-extrabold text-red-700 bg-red-50 border-l border-red-200" style={{ width: '4%' }}>สาย<br />(นาที)</th>}
+                <th rowSpan="2" className="px-1 py-3 text-center text-xs font-extrabold text-white bg-primary border-l border-pink-600" style={{ width: '4%' }}>OT</th>
+                {showLate && <th rowSpan="2" className="px-1 py-3 text-center text-xs font-extrabold text-red-700 bg-red-50 border-l border-red-200" style={{ width: '4%' }}>สาย<br />(นาที)</th>}
               </tr>
-              <tr>{types.map(t => <th key={t} className="px-1 py-1 font-extrabold text-primary text-center bg-pink-50/50 border-x border-white text-[10px]">{t}</th>)}</tr>
+              <tr>{types.map(t => <th key={t} className="px-1 py-1 font-extrabold text-primary text-center bg-pink-50/50 border-x border-white text-xs">{t}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
               {summaryMatrix.map(row => (
                 <tr key={row.empId} className="hover:bg-pink-50/30 transition-colors">
-                  <td className="px-2 py-2 sticky left-0 bg-white z-10 border-r border-slate-200"><p className="font-bold text-slate-800 leading-tight truncate">{row.fname}</p><p className="text-[9px] font-semibold text-slate-400 truncate mt-0.5">{row.empId} • {row.level}</p></td>
+                  <td className="px-2 py-2 sticky left-0 bg-white z-10 border-r border-slate-200"><p className="font-bold text-slate-800 leading-tight truncate">{row.fname}</p><p className="text-xs font-semibold text-slate-400 truncate mt-0.5">{row.empId} • {row.level}</p></td>
                   {daysArray.map(d => {
                     const wk = [0, 6].includes(new Date(my, mm - 1, d).getDay());
                     if (adminTab === 'schedules') {
@@ -2309,13 +2328,13 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
                         {swapDone.has(ds + '_' + row.empId) ? <div className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full print-hide" title="เปลี่ยนเวรจากคำขอที่อนุมัติแล้ว"></div>
                           : o?.isEdited && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-400 rounded-full print-hide" title="แก้ไขจากค่าเดิม"></div>}
                         {swapCells.has(ds + '_' + row.empId) && <div className="absolute top-1 left-1 w-2 h-2 bg-sky-500 rounded-full print-hide" title="มีคำขอสลับเวรรออยู่"></div>}
-                        <div className="flex flex-col gap-0.5 items-center">{(o?.shifts || []).map((s, i) => <span key={i} className="shift-chip bg-white text-slate-800 border border-slate-300 px-1 py-0.5 rounded shadow-sm text-[10px] font-bold">{s}</span>)}</div></td>;
+                        <div className="flex flex-col gap-0.5 items-center">{(o?.shifts || []).map((s, i) => <span key={i} className="shift-chip bg-white text-slate-800 border border-slate-300 px-1 py-0.5 rounded shadow-sm text-xs font-bold">{s}</span>)}</div></td>;
                     }
                     const { ui, absent } = row.shiftsByDay[d];
                     return <td key={d} className={`day-col px-0.5 py-1.5 text-center text-xs font-bold border-r border-slate-50 align-middle ${absent ? 'bg-red-50 ring-1 ring-inset ring-red-200' : (ui.length ? 'bg-slate-50/40' : '')} ${wk && !ui.length ? 'bg-rose-50/30' : ''}`}>
-                      {ui.length ? <div className="flex flex-col gap-0.5 items-center justify-center my-0.5">{ui.map((e, i) => <span key={i} className={`shift-chip text-[10px] font-bold px-1 py-0.5 rounded border ${chipCls[e.type]}`} title={e.type === 'pending' ? 'กะล่วงหน้า/รอสแกน' : ''}>{e.shift}</span>)}</div> : <span className="text-slate-300">-</span>}</td>;
+                      {ui.length ? <div className="flex flex-col gap-0.5 items-center justify-center my-0.5">{ui.map((e, i) => <span key={i} className={`shift-chip text-xs font-bold px-1 py-0.5 rounded border ${chipCls[e.type]}`} title={e.type === 'pending' ? 'กะล่วงหน้า/รอสแกน' : ''}>{e.shift}</span>)}</div> : <span className="text-slate-300">-</span>}</td>;
                   })}
-                  {types.map(t => <td key={t} className="px-1 py-2 text-center font-bold text-primary bg-pink-50/30 border-x border-slate-50 text-[10px]">{row.shiftCounts[t] || 0}</td>)}
+                  {types.map(t => <td key={t} className="px-1 py-2 text-center font-bold text-primary bg-pink-50/30 border-x border-slate-50 text-xs">{row.shiftCounts[t] || 0}</td>)}
                   <td className="px-1 py-2 text-center font-extrabold text-slate-800 bg-slate-50/50 border-l border-slate-200">{row.credit}</td>
                   <td className="px-1 py-2 text-center font-bold text-slate-500 bg-slate-50/50 border-l border-slate-200 text-xs">{localWorkDays}</td>
                   <td className="px-1 py-2 text-center font-extrabold text-primary bg-pink-50 border-l border-pink-100">{row.ot > 0 ? `+${row.ot}` : row.ot}</td>
@@ -2328,7 +2347,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
                   {daysArray.map(d => {
                     const counts = getDaily(d), wk = [0, 6].includes(new Date(my, mm - 1, d).getDay());
                     return <td key={d} className={`day-col px-0.5 py-1 text-center border-r border-slate-200 align-top ${wk ? 'bg-rose-50/50' : ''}`}>
-                      {Object.keys(counts).length ? <div className="flex flex-col gap-0.5 mt-1 pb-1">{Object.entries(counts).sort((a, b) => byCat(a[0], b[0])).map(([s, c]) => <div key={s} className="text-[9px] font-extrabold text-slate-700 leading-tight">{s}: <strong className="text-primary">{c}</strong></div>)}</div> : <span className="text-slate-300">-</span>}</td>;
+                      {Object.keys(counts).length ? <div className="flex flex-col gap-0.5 mt-1 pb-1">{Object.entries(counts).sort((a, b) => byCat(a[0], b[0])).map(([s, c]) => <div key={s} className="text-xs font-extrabold text-slate-700 leading-tight">{s}: <strong className="text-primary">{c}</strong></div>)}</div> : <span className="text-slate-300">-</span>}</td>;
                   })}
                   <td colSpan={types.length + (showLate ? 4 : 3)} className="bg-amber-50 border-l border-slate-200"></td>
                 </tr>
