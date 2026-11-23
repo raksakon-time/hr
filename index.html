@@ -79,9 +79,10 @@ const SHIFT_TYPES = Object.fromEntries(Object.entries(SHIFT_DEF).map(([k, [start
   [k, { start, end, credit, label: `${start.replace(':', '.')} - ${end.replace(':', '.')} (${k})` }]));
 const NON_WORK = ['Off', 'Vac', 'พักร้อน', 'ลา', 'ป่วย', 'ลาชั่วโมง', 'ขาด'];
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const TH_MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '23/11/69-ง';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '23/11/69-จ';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -604,11 +605,18 @@ const PubAlert = ({ user, role, settings, employees, onGo }) => {
 
 // ---------- เพิ่มเวร (OT / เสริมเวร) และ แก้ไข / ลบเวร — กติกาเดียวกับ Code.gs ----------
 const ADD_KINDS = ['OT', 'เสริมเวร'];
+// OT เป็นช่วงเวลานอกเหนือกะ เช่น "16:00-17:00" (เก็บในคำขอ ไม่เปลี่ยนช่องในตารางเวร) — กติกาเดียวกับ Code.gs
+const OT_RE = /^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-4]):([0-5]\d)$/;
+const otSpan = (part, off = 0) => { const m = OT_RE.exec(part || ''); if (!m) return null; const st = +m[1] * 60 + +m[2]; let en = +m[3] * 60 + +m[4]; if (en <= st) en += 1440; return [st + off * 1440, en + off * 1440]; };
+const otHours = part => { const sp = otSpan(part) || swSpan(part, 0); return sp ? (sp[1] - sp[0]) / 60 : 0; };   // ชั่วโมงของช่วง OT หรือของกะ
+const otLabel = part => OT_RE.test(part || '') ? part.replace(/:/g, '.').replace('-', ' - ') : part;
 const swAdjPlan = (schedules, e, d, type, val) => {
   const g = dd => shiftsOf(schedules, dd, e), cur = g(d);
   if (cur.some(x => !SHIFT_TYPES[x] && x !== 'Off')) return { err: `มีรายการลาในวันที่ ${swDm(d)} (แก้ไขผ่านระบบลา)` };
   let to;
-  if (type === 'add') {
+  const custom = type === 'add' && OT_RE.test(val || '');
+  if (custom) { const sp = otSpan(val), dur = sp[1] - sp[0]; if (dur < 15 || dur > 480) return { err: 'ช่วงเวลา OT ต้องอยู่ระหว่าง 15 นาที ถึง 8 ชั่วโมง' }; to = [...cur]; }
+  else if (type === 'add') {
     if (!SHIFT_TYPES[val]) return { err: 'เลือกกะที่จะเพิ่ม' };
     if (swWork(cur).includes(val)) return { err: `มีกะ ${val} ในวันนั้นอยู่แล้ว` };
     to = [...swWork(cur), val].sort((x, y) => (swSpan(x, 0) || [0])[0] - (swSpan(y, 0) || [0])[0]);
@@ -618,29 +626,35 @@ const swAdjPlan = (schedules, e, d, type, val) => {
     if (to.join() === cur.join()) return { err: 'เวรใหม่เหมือนเวรเดิม' };
     if (val === 'Off' && !swWork(cur).length) return { err: 'วันนั้นไม่มีเวรทำงานให้ลบ' };
   }
-  const p0 = swSpan(val, 0);
+  const p0 = custom ? otSpan(val) : swSpan(val, 0);
   if (p0) for (const off of [-1, 0, 1]) for (const x of (off ? swWork(g(swAddDays(d, off))) : type === 'add' ? swWork(cur) : [])) {
     const q = swSpan(x, off);
-    if (q && p0[0] < q[1] && q[0] < p0[1]) return { err: `มีเวร ${x}${off ? ` วันที่ ${swDm(swAddDays(d, off))}` : ''} ชนกับเวลากะ ${val}` };
+    if (q && p0[0] < q[1] && q[0] < p0[1]) return { err: `มีเวร ${x}${off ? ` วันที่ ${swDm(swAddDays(d, off))}` : ''} ชนกับเวลา${custom ? ' OT ' : 'กะ '}${otLabel(val)}` };
   }
-  return { sa: cur, to, changes: [{ emp: e, date: d, from: cur, to }] };
+  return { sa: cur, to, custom, changes: custom ? [] : [{ emp: e, date: d, from: cur, to }] };
 };
 const swAdjChecks = (schedules, records, e, d, type, val, forApproval, onBehalf) => {
-  const plan = swAdjPlan(schedules, e, d, type, val), items = [], now = Date.now();
-  if (forApproval) items.push(type === 'add' && SHIFT_TYPES[val] ? (swStartTs(d, val) > now ? { ok: true, t: 'ยังไม่ถึงเวลาเริ่มกะ' } : { ok: false, t: 'เลยเวลาเริ่มกะแล้ว' }) : new Date(d + 'T08:00:00').getTime() > now ? { ok: true, t: 'ยังไม่ถึงวันที่ขอ' } : { ok: false, t: 'เลยวันที่ขอแล้ว' });
+  const plan = swAdjPlan(schedules, e, d, type, val), items = [], now = Date.now(), cst = type === 'add' && OT_RE.test(val || '');
+  const atTs = hm => new Date(`${d}T${hm}:00`).getTime();
+  if (cst) { if (!forApproval && !onBehalf) items.push(atTs(val.slice(0, 5)) > now ? { ok: true, t: 'ก่อนเวลาเริ่ม OT' } : { ok: false, t: 'ต้องขอก่อนเวลาเริ่ม OT' }); }
+  else if (forApproval) items.push(type === 'add' && SHIFT_TYPES[val] ? (swStartTs(d, val) > now ? { ok: true, t: 'ยังไม่ถึงเวลาเริ่มกะ' } : { ok: false, t: 'เลยเวลาเริ่มกะแล้ว' }) : new Date(d + 'T08:00:00').getTime() > now ? { ok: true, t: 'ยังไม่ถึงวันที่ขอ' } : { ok: false, t: 'เลยวันที่ขอแล้ว' });
   else if (!onBehalf) items.push(type === 'add' ? (SHIFT_TYPES[val] && swStartTs(d, val) > now ? { ok: true, t: 'ก่อนเวลาเริ่มกะ' } : { ok: false, t: 'ต้องขอก่อนเวลาเริ่มกะ' }) : new Date(d + 'T08:00:00').getTime() - now >= 24 * 36e5 ? { ok: true, t: 'ล่วงหน้าเกิน 24 ชม.' } : { ok: false, t: 'ต้องขอล่วงหน้าอย่างน้อย 24 ชม.' });
   if (plan.to) { const lost = records.filter(r => r.empId === e && r.date === d && !plan.to.includes(r.shiftId)).map(r => r.shiftId); items.push(lost.length ? { ok: false, t: `ลงเวลากะ ${lost.join(',')} ไปแล้ว` } : { ok: true, t: 'ไม่กระทบเวลาที่ลงไว้' }); }
   items.push(plan.err ? { ok: false, t: plan.err } : { ok: true, t: 'ไม่มีลา เวลาไม่ชนกัน' });
-  if (plan.to) { const diff = swCredit(plan.to) - swCredit(plan.sa); if (Math.abs(diff) > 0.001) items.push({ ok: null, t: `เครดิต ${diff > 0 ? '+' : ''}${+diff.toFixed(3)} วัน` }); }
+  if (cst && plan.to) items.push({ ok: null, t: `OT ${+otHours(val).toFixed(2)} ชม. (ไม่เปลี่ยนช่องในตารางเวร)` });
+  else if (plan.to) { const diff = swCredit(plan.to) - swCredit(plan.sa); if (Math.abs(diff) > 0.001) items.push({ ok: null, t: `เครดิต ${diff > 0 ? '+' : ''}${+diff.toFixed(3)} วัน` }); }
   return { plan, items, blocked: items.some(x => x.ok === false) };
 };
 const swKind = sw => (/^\[(.+?)\]/.exec(sw.reason || '') || [])[1] || 'OT';
 const swAdjTitle = (sw, nameOf) => sw.type === 'add' ? `${nameOf(sw.empId)} · เพิ่มเวร ${swKind(sw)}` : `${nameOf(sw.empId)} · ${sw.part === 'Off' ? 'ลบเวร' : 'แก้ไขเวร'}`;
-const swAdjDetail = sw => sw.type === 'add' ? `${swLabel(sw.dateA)} เพิ่มกะ ${sw.part}${sw.shiftA ? ` (เดิม ${sw.shiftA})` : ''}` : `${swLabel(sw.dateA)} ${sw.shiftA || '-'} → ${sw.part}`;
+const swAdjDetail = sw => sw.type === 'add' && OT_RE.test(sw.part || '') ? `${swLabel(sw.dateA)} เวลา ${otLabel(sw.part)} น. (${+otHours(sw.part).toFixed(2)} ชม.)${sw.shiftA ? ` · เวรวันนั้น ${sw.shiftA}` : ''}`
+  : sw.type === 'add' ? `${swLabel(sw.dateA)} เพิ่มกะ ${sw.part}${sw.shiftA ? ` (เดิม ${sw.shiftA})` : ''}` : `${swLabel(sw.dateA)} ${sw.shiftA || '-'} → ${sw.part}`;
 const swByHead = sw => sw.requestedBy && sw.requestedBy !== sw.empId;
 // ฟอร์มเพิ่มเวร / แก้-ลบเวร (พนักงานยื่นเอง หรือหัวหน้ายื่นแทน = มีผลทันที)
 const AdjustForm = ({ user, employees, schedules, records, settings, mode, targetId, targets, fixedDate, onSent }) => {
-  const [target, setTarget] = useState(targetId || ''), [date, setDate] = useState(fixedDate || ''), [val, setVal] = useState(''), [kind, setKind] = useState('OT'), [reason, setReason] = useState(''), [sending, setSending] = useState(false);
+  const [target, setTarget] = useState(targetId || ''), [date, setDate] = useState(fixedDate || ''), [shiftVal, setVal] = useState(''), [kind, setKind] = useState('OT'), [reason, setReason] = useState(''), [sending, setSending] = useState(false);
+  const [byTime, setByTime] = useState(false), [tFrom, setTFrom] = useState(''), [tTo, setTTo] = useState('');   // OT แบบระบุช่วงเวลา
+  const val = mode === 'add' && byTime ? (tFrom && tTo ? `${tFrom}-${tTo}` : '') : shiftVal;
   const add = mode === 'add', e = targetId || target, onBehalf = !!e && e !== user.id;
   const nameOf = id => employees[id] ? `${employees[id].fname} ${employees[id].lname}` : id;
   const dates = Array.from({ length: 46 }, (_, i) => swAddDays(fmtInput(new Date()), i)).filter(d => schedVisible(settings, employees[e]?.dept, d.slice(0, 7)) && pubInfo(settings, employees[e]?.dept, d.slice(0, 7)).st !== 'reopened' && (add || swWork(shiftsOf(schedules, d, e)).length));
@@ -650,7 +664,7 @@ const AdjustForm = ({ user, employees, schedules, records, settings, mode, targe
     setSending(true);
     const r = await sendToGoogleSheet('requestSwap', { type: mode, empId: e, requesterId: user.id, dateA: date, dateB: date, part: val, kind: add ? kind : '', reason: reason.trim() });
     setSending(false);
-    if (r?.status === 'success') { await Swal.fire({ title: onBehalf ? 'บันทึกแล้ว' : 'ส่งคำขอแล้ว', text: onBehalf ? 'เวรเปลี่ยนในตารางทันที และเก็บประวัติไว้' : 'รอหัวหน้าพิจารณา', icon: 'success', confirmButtonColor: themeHex('p') }); onSent(); }
+    if (r?.status === 'success') { await Swal.fire({ title: onBehalf ? 'บันทึกแล้ว' : 'ส่งคำขอแล้ว', text: onBehalf ? (byTime ? 'บันทึก OT และเก็บประวัติไว้แล้ว' : 'เวรเปลี่ยนในตารางทันที และเก็บประวัติไว้') : 'รอหัวหน้าพิจารณา', icon: 'success', confirmButtonColor: themeHex('p') }); onSent(); }
   };
   return (<>
     {targets && <div>
@@ -673,13 +687,21 @@ const AdjustForm = ({ user, employees, schedules, records, settings, mode, targe
       <label className={LABEL}>ประเภท</label>
       <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">{ADD_KINDS.map(k => <button key={k} type="button" onClick={() => setKind(k)} className={`h-10 rounded-lg text-sm font-bold ${kind === k ? 'bg-white text-primary shadow-sm' : 'text-slate-600'}`}>{k === 'OT' ? 'ขึ้น OT' : 'เสริมเวร'}</button>)}</div>
     </div>}
-    {e && date && <div>
+    {add && e && date && <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">{[[false, 'เพิ่มทั้งกะ'], [true, 'ระบุช่วงเวลา']].map(([k, l]) => <button key={l} type="button" onClick={() => setByTime(k)} className={`h-10 rounded-lg text-sm font-bold ${byTime === k ? 'bg-white text-primary shadow-sm' : 'text-slate-600'}`}>{l}</button>)}</div>}
+    {add && e && date && byTime && <div>
+      <label className={LABEL}>ช่วงเวลา OT <span className="font-normal text-slate-400">(นอกเหนือกะ เช่น 16.00 - 17.00)</span></label>
+      <div className="grid grid-cols-2 gap-3">
+        <div><span className="block text-xs text-slate-500 mb-1">ตั้งแต่</span><input type="time" value={tFrom} onChange={ev => setTFrom(ev.target.value)} className={`${FIELD} focus:border-primary`} /></div>
+        <div><span className="block text-xs text-slate-500 mb-1">ถึง</span><input type="time" value={tTo} onChange={ev => setTTo(ev.target.value)} className={`${FIELD} focus:border-primary`} /></div>
+      </div>
+    </div>}
+    {e && date && !(add && byTime) && <div>
       <label className={LABEL}>{add ? 'กะที่จะเพิ่ม' : 'เวรใหม่ของวันนี้'}</label>
-      <ShiftSelect dept={add ? undefined : employees[e]?.dept} leave={add ? [] : ['Off']} value={val} onChange={setVal} empty={add ? 'เลือกกะ' : 'เลือกเวรใหม่ หรือ Off = ลบเวร'} cls={`${FIELD} focus:border-primary`} />
+      <ShiftSelect dept={add ? undefined : employees[e]?.dept} leave={add ? [] : ['Off']} value={shiftVal} onChange={setVal} empty={add ? 'เลือกกะ' : 'เลือกเวรใหม่ หรือ Off = ลบเวร'} cls={`${FIELD} focus:border-primary`} />
     </div>}
     {chk && <>
-      {chk.plan.changes && !chk.plan.err && <SwChanges changes={chk.plan.changes} nameOf={nameOf} />}
-      {chk.plan.changes && !chk.plan.err && <SwCoverage lines={swCoverage(schedules, employees, employees[e]?.dept, settings?.frames, chk.plan.changes)} />}
+      {chk.plan.changes?.length > 0 && !chk.plan.err && <SwChanges changes={chk.plan.changes} nameOf={nameOf} />}
+      {chk.plan.changes?.length > 0 && !chk.plan.err && <SwCoverage lines={swCoverage(schedules, employees, employees[e]?.dept, settings?.frames, chk.plan.changes)} />}
       <SwChecks items={chk.items} />
     </>}
     <div>
@@ -905,10 +927,10 @@ const SwapCard = ({ sw, employees, schedules, records, settings, user, reload })
         <p className="font-bold text-slate-800">{isAdj ? swAdjTitle(sw, nameOf) : sw.type === 'move' ? <>{nameOf(sw.empId)} ขอย้ายวันหยุด</> : sw.type === 'give' ? <>{nameOf(sw.empId)} <span className="text-secondary">→</span> ยกกะ {sw.part} ให้ {nameOf(sw.friendId)}</> : <>{nameOf(sw.empId)} <span className="text-secondary">⇄</span> {nameOf(sw.friendId)}</>}</p>
         <p className="text-xs text-slate-500">ส่งเมื่อ {sw.createdAt.slice(8, 10)}/{sw.createdAt.slice(5, 7)} {sw.createdAt.slice(11, 16)} น. · แผนก{sw.dept}</p>
       </div>
-      {chk.plan.changes && !chk.plan.err ? <SwChanges changes={chk.plan.changes} nameOf={nameOf} />
+      {chk.plan.changes?.length > 0 && !chk.plan.err ? <SwChanges changes={chk.plan.changes} nameOf={nameOf} />
         : isAdj ? <p className="text-sm text-slate-600">{swAdjDetail(sw)}</p>
         : <p className="text-sm text-slate-600">เดิม: {nameOf(sw.empId)} {swDm(sw.dateA)} {sw.shiftA} ⇄ {nameOf(sw.friendId)} {swDm(sw.dateB)} {sw.shiftB}</p>}
-      {sw.type !== 'swap' && chk.plan.changes && !chk.plan.err && <SwCoverage lines={swCoverage(schedules, employees, sw.dept, settings?.frames, chk.plan.changes)} />}
+      {sw.type !== 'swap' && chk.plan.changes?.length > 0 && !chk.plan.err && <SwCoverage lines={swCoverage(schedules, employees, sw.dept, settings?.frames, chk.plan.changes)} />}
       <SwChecks items={items} />
       <p className="text-sm text-slate-700"><b>เหตุผล:</b> {sw.reason}</p>
       {user.id === sw.empId || user.id === sw.friendId
@@ -918,7 +940,7 @@ const SwapCard = ({ sw, employees, schedules, records, settings, user, reload })
           {blocked && <p className="text-xs font-semibold text-rose-700">มีข้อที่ไม่ผ่าน อนุมัติไม่ได้ กด "ไม่อนุมัติ" เพื่อปิดคำขอ ให้ผู้ขอยื่นใหม่</p>}
           <div className="flex gap-2">
             <button onClick={() => decide(false)} disabled={busy} className="flex-1 h-12 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 disabled:opacity-40">ไม่อนุมัติ</button>
-            <button onClick={() => decide(true)} disabled={busy || blocked} className="flex-[1.4] h-12 rounded-xl bg-primary hover:bg-pink-700 text-white font-bold disabled:opacity-40 transition-colors">อนุมัติ และเปลี่ยนเวร</button>
+            <button onClick={() => decide(true)} disabled={busy || blocked} className="flex-[1.4] h-12 rounded-xl bg-primary hover:bg-pink-700 text-white font-bold disabled:opacity-40 transition-colors">{isAdj && OT_RE.test(sw.part || '') ? 'อนุมัติ OT' : 'อนุมัติ และเปลี่ยนเวร'}</button>
           </div>
         </>}
     </div>
@@ -1598,8 +1620,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .sched-sheet { display: block !important; }
   .sched-sheet thead { display: table-header-group; }
+  body.print-ot #root { display: none !important; }
+  body.print-ot .ot-print { display: block !important; page: otp; }
+  .ot-print thead { display: table-header-group; }
 }
-.sched-sheet { display: none; }
+@page otp { size: A4 portrait; margin: 8mm; }
+.sched-sheet, .ot-print { display: none; }
 </style>
 <script type="text/babel" data-presets="react">
 // ================= โมดูลจัดการ (ReportView) =================
@@ -1734,7 +1760,7 @@ const SchedPrintSheet = ({ mode = 'schedules', showLate = false, rows, types, da
   const badge = sum ? null : pub.st === 'published' ? ['ส่งยืนยันแล้ว · ฉบับจริง', '#065F46', '#D1FAE5'] : pub.st === 'legacy' ? null : ['ฉบับร่าง · ยังไม่ส่ง', '#92400E', '#FEF3C7'];
   const info = [['แผนก', dept], ['เดือน', `${ymTh(matrixMonth)} (${daysArray.length} วัน)`], ['จำนวนพนักงาน', `${rows.length} คน`], ['วันทำการมาตรฐาน', `${workDays} วัน`],
     !sum && pub.st === 'published' ? ['ส่งตารางโดย', `${pub.name || pub.by} · ${dt(pub.at)}`] : ['ผู้พิมพ์', `${user.fname} ${user.lname}`],
-    ['วันเวลาที่พิมพ์', `${now.getDate()} ${THAI_MONTHS[now.getMonth()].slice(0, 3)}. ${now.getFullYear() + 543} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} น.`]];
+    ['วันเวลาที่พิมพ์', `${now.getDate()} ${TH_MON_S[now.getMonth()]} ${now.getFullYear() + 543} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} น.`]];
   const shiftCell = (s, i) => {
     if (s === 'Off') return <div key={i} style={{ color: '#94A3B8', fontSize: '7.5pt' }}>Off</div>;
     if (!SHIFT_TYPES[s]) return <div key={i} style={{ display: 'inline-block', fontSize: '7pt', fontWeight: 700, color: '#92400E', background: '#FEF3C7', borderRadius: 3, padding: '0 1px', lineHeight: 1.15 }}>{s}</div>;
@@ -1804,12 +1830,146 @@ const SchedPrintSheet = ({ mode = 'schedules', showLate = false, rows, types, da
   );
 };
 
+// ---------- แบบขออนุมัติ OT / เสริมเวร (A4 แนวตั้ง) — เลือกช่วงวันตามรอบตัดเงินเดือน ----------
+const thDate = (ds, short = true) => { const [y, m, d] = ds.split('-').map(Number); return `${d} ${short ? TH_MON_S[m - 1] : THAI_MONTHS[m - 1]} ${y + 543}`; };
+const otItems = (swaps, employees, records, dept, from, to) => swaps
+  .filter(s => s.type === 'add' && s.status === 'approved' && s.dateA >= from && s.dateA <= to && (employees[s.empId]?.dept || s.dept) === dept)
+  .sort((a, b) => a.dateA.localeCompare(b.dateA) || (employees[a.empId]?.fname || '').localeCompare(employees[b.empId]?.fname || ''))
+  .map(s => {
+    const custom = OT_RE.test(s.part || ''), h = otHours(s.part), credit = custom ? h / 8 : (SHIFT_TYPES[s.part]?.credit || 0);
+    const recs = records.filter(r => r.empId === s.empId && r.date === s.dateA), mine = custom ? recs : recs.filter(r => r.shiftId === s.part);
+    const act = s.dateA > fmtInput(new Date()) ? { t: 'ยังไม่ถึงวัน', c: '#94A3B8' }
+      : mine.length ? { t: `${(mine[0].timeIn || '').slice(0, 5) || '-'} – ${(mine[mine.length - 1].timeOut || '').slice(0, 5) || 'ยังไม่ออก'}`, c: '#0F172A' } : { t: 'ไม่พบการลงเวลา', c: '#DC2626' };
+    const byHead = s.requestedBy && s.requestedBy !== s.empId, dd = (s.decidedAt || '').slice(0, 10);
+    return { ...s, custom, h, credit, act, kind: swKind(s), reasonText: (s.reason || '').replace(/^\[.+?\]\s*/, ''), headText: `${byHead ? 'บันทึกเอง' : 'อนุมัติ'} ${dd ? thDate(dd).replace(/ \d{4}$/, '') : ''}` };
+  });
+const OtApprovalSheet = ({ items, employees, dept, from, to }) => {
+  const B = '1px solid #E2E8F0', td = { border: B, padding: '3px 6px', fontSize: '9pt', verticalAlign: 'top' }, th = { border: B, padding: '3px 6px', fontSize: '8.5pt', fontWeight: 600, color: '#475569', background: '#F8FAFC' };
+  const now = new Date(), num = n => Math.round(n * 100) / 100;
+  const per = {}; items.forEach(x => { const p = per[x.empId] = per[x.empId] || { OT: [0, 0], 'เสริมเวร': [0, 0], cr: 0 }; const k = x.kind === 'เสริมเวร' ? 'เสริมเวร' : 'OT'; p[k][0]++; p[k][1] += x.h; p.cr += x.credit; });
+  const tot = k => items.filter(x => (x.kind === 'เสริมเวร') === (k === 'เสริมเวร')), hOf = a => num(a.reduce((t, x) => t + x.h, 0));
+  const otL = tot('OT'), exL = tot('เสริมเวร');
+  const nm = id => employees[id] ? `${employees[id].fname} ${employees[id].lname}` : id;
+  const sign = (t, sub) => <div style={{ textAlign: 'center', fontSize: '9pt' }}><div style={{ borderBottom: '1.5px dotted #64748B', height: 22 }}></div><div style={{ marginTop: 3, fontWeight: 700 }}>{t}</div><div style={{ color: '#475569' }}>(..............................................)</div><div style={{ color: '#475569' }}>{sub}</div><div style={{ color: '#475569' }}>วันที่ ......../......../........</div></div>;
+  return (
+    <div style={{ fontFamily: "'Sarabun', sans-serif", color: '#0F172A', background: '#fff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '2px solid #FBCFE8' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <img src={RSK_LOGO} alt="โลโก้โรงพยาบาลรักษ์สกล" style={{ height: 38, width: 'auto' }} />
+          <div style={{ width: 1.5, height: 32, background: '#FBCFE8' }}></div>
+          <div><div className="font-head" style={{ fontSize: '14pt', fontWeight: 600, lineHeight: 1.2 }}>โรงพยาบาลรักษ์สกล</div><div style={{ fontSize: '8.5pt', color: '#64748B' }}>ระบบลงเวลา · แบบขออนุมัติการปฏิบัติงานล่วงเวลา</div></div>
+        </div>
+        <div style={{ border: '1.5px solid #E2E8F0', borderRadius: 8, padding: '3px 10px', textAlign: 'right', lineHeight: 1.3 }}><div style={{ fontSize: '7.5pt', color: '#64748B' }}>เลขที่เอกสาร</div><div style={{ fontSize: '9pt', fontWeight: 700 }}>OT-{dept}-{from.replace(/-/g, '')}</div></div>
+      </div>
+      <div className="font-head" style={{ marginTop: 10, fontSize: '15pt', fontWeight: 600 }}>แบบขออนุมัติการปฏิบัติงานล่วงเวลา (OT) และเสริมเวร</div>
+      <div style={{ fontSize: '10pt', color: '#475569' }}>ช่วงวันที่ {thDate(from, false)} – {thDate(to, false)} · เรียน ผู้อำนวยการบริหาร</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', marginTop: 8, border: '1.5px solid #E2E8F0', borderRadius: 8, background: '#F8FAFC' }}>
+        {[['แผนก', dept], ['จำนวนรายการ / คน', `${items.length} รายการ · ${Object.keys(per).length} คน`], ['OT / เสริมเวร', `${hOf(otL)} ชม. / ${hOf(exL)} ชม.`], ['วันเวลาที่พิมพ์', `${now.getDate()} ${TH_MON_S[now.getMonth()]} ${now.getFullYear() + 543} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} น.`]]
+          .map(([k, v], i) => <div key={k} style={{ padding: '4px 8px', borderLeft: i ? '1px solid #E2E8F0' : 'none' }}><div style={{ fontSize: '7.5pt', color: '#64748B' }}>{k}</div><div style={{ fontSize: '10pt', fontWeight: 700 }}>{v}</div></div>)}
+      </div>
+      <div className="font-head" style={{ marginTop: 10, fontSize: '11pt', fontWeight: 600, color: '#9D174D' }}>1. รายการที่ขออนุมัติ</div>
+      <table style={{ marginTop: 4, width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+        <colgroup><col style={{ width: '4%' }} /><col style={{ width: '10%' }} /><col style={{ width: '20%' }} /><col style={{ width: '9%' }} /><col style={{ width: '10%' }} /><col style={{ width: '5%' }} /><col /><col style={{ width: '11%' }} /><col style={{ width: '11%' }} /></colgroup>
+        <thead><tr><th style={th}>ที่</th><th style={th}>วันที่</th><th style={{ ...th, textAlign: 'left' }}>ชื่อ-สกุล</th><th style={th}>ประเภท</th><th style={th}>กะ / เวลา</th><th style={th}>ชม.</th><th style={{ ...th, textAlign: 'left' }}>เหตุผลความจำเป็น</th><th style={th}>ลงเวลาจริง</th><th style={th}>หัวหน้าแผนก</th></tr></thead>
+        <tbody>
+          {items.map((x, i) => (
+            <tr key={x.id} style={{ pageBreakInside: 'avoid', background: i % 2 ? '#FCFCFD' : '#fff' }}>
+              <td style={{ ...td, textAlign: 'center', color: '#64748B' }}>{i + 1}</td>
+              <td style={{ ...td, whiteSpace: 'nowrap' }}>{swDm(x.dateA)}</td>
+              <td style={td}><b>{nm(x.empId)}</b><div style={{ fontSize: '7.5pt', color: '#94A3B8' }}>{x.empId} · {employees[x.empId]?.level || ''}</div></td>
+              <td style={{ ...td, textAlign: 'center' }}><span style={{ whiteSpace: 'nowrap', fontSize: '8pt', fontWeight: 700, borderRadius: 99, padding: '0 6px', color: x.kind === 'เสริมเวร' ? '#1E40AF' : '#9D174D', background: x.kind === 'เสริมเวร' ? '#DBEAFE' : '#FCE7F3' }}>{x.kind}</span></td>
+              <td style={{ ...td, textAlign: 'center', whiteSpace: 'nowrap' }}>{x.custom ? <b>{otLabel(x.part)}</b> : <><b>{x.part}</b><div style={{ fontSize: '7.5pt', color: '#64748B' }}>{SHIFT_TYPES[x.part] ? `${SHIFT_TYPES[x.part].start.replace(':', '.')}–${SHIFT_TYPES[x.part].end.replace(':', '.')}` : ''}</div></>}</td>
+              <td style={{ ...td, textAlign: 'center', fontWeight: 700 }}>{num(x.h)}</td>
+              <td style={td}>{x.reasonText}</td>
+              <td style={{ ...td, fontSize: '8pt', color: x.act.c }}>{x.act.t}</td>
+              <td style={{ ...td, fontSize: '8pt', color: '#065F46' }}>{x.headText}</td>
+            </tr>))}
+          {!items.length && <tr><td colSpan="9" style={{ ...td, textAlign: 'center', color: '#94A3B8', padding: 14 }}>ไม่มีรายการ OT / เสริมเวรที่อนุมัติในช่วงวันที่นี้</td></tr>}
+          <tr style={{ background: '#FFFBEB', pageBreakInside: 'avoid' }}><td colSpan="5" style={{ ...td, textAlign: 'right', fontWeight: 700 }}>รวม</td><td style={{ ...td, textAlign: 'center', fontWeight: 700 }}>{num(hOf(otL) + hOf(exL))}</td><td colSpan="3" style={{ ...td, fontSize: '8.5pt' }}>OT {otL.length} ครั้ง {hOf(otL)} ชม. · เสริมเวร {exL.length} ครั้ง {hOf(exL)} ชม.</td></tr>
+        </tbody>
+      </table>
+      {items.length > 0 && <>
+        <div className="font-head" style={{ marginTop: 10, fontSize: '11pt', fontWeight: 600, color: '#9D174D', pageBreakAfter: 'avoid' }}>2. สรุปรายบุคคล</div>
+        <table style={{ marginTop: 4, width: '100%', borderCollapse: 'collapse', pageBreakInside: 'avoid' }}>
+          <thead><tr><th rowSpan="2" style={{ ...th, textAlign: 'left' }}>ชื่อ-สกุล</th><th colSpan="2" style={th}>OT</th><th colSpan="2" style={th}>เสริมเวร</th><th rowSpan="2" style={th}>รวม ชม.</th><th rowSpan="2" style={th}>เครดิต (วัน)</th></tr>
+            <tr><th style={th}>ครั้ง</th><th style={th}>ชม.</th><th style={th}>ครั้ง</th><th style={th}>ชม.</th></tr></thead>
+          <tbody>{Object.entries(per).map(([id, p]) => <tr key={id}>
+            <td style={td}>{nm(id)}</td>
+            {[p.OT[0], num(p.OT[1]), p['เสริมเวร'][0], num(p['เสริมเวร'][1])].map((v, i) => <td key={i} style={{ ...td, textAlign: 'center' }}>{v || '-'}</td>)}
+            <td style={{ ...td, textAlign: 'center', fontWeight: 700 }}>{num(p.OT[1] + p['เสริมเวร'][1])}</td>
+            <td style={{ ...td, textAlign: 'center', fontWeight: 700, color: '#9D174D' }}>{num(p.cr)}</td></tr>)}</tbody>
+        </table>
+      </>}
+      <div style={{ marginTop: 6, fontSize: '8pt', color: '#475569' }}>หมายเหตุ: จากคำขอ "เพิ่มเวร OT / เสริมเวร" ที่หัวหน้าอนุมัติแล้ว · ชั่วโมงคิดจากเวลาของกะ หรือช่วงเวลาที่ขอนอกเหนือกะ · "ลงเวลาจริง" จากการสแกนใบหน้า</div>
+      <div style={{ pageBreakInside: 'avoid' }}>
+        <div style={{ marginTop: 14, border: '1.5px solid #E2E8F0', borderRadius: 8, padding: '6px 10px', fontSize: '9.5pt', lineHeight: 1.9 }}>
+          <b>ความเห็นผู้บริหาร:</b>&nbsp;&nbsp; ☐ อนุมัติทั้งหมด &nbsp;&nbsp; ☐ อนุมัติบางรายการ (ลำดับที่ ..................) &nbsp;&nbsp; ☐ ไม่อนุมัติ<br />
+          <span style={{ color: '#475569' }}>เหตุผล / ข้อสั่งการ ........................................................................................................................................</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginTop: 18 }}>
+          {sign('ผู้ขออนุมัติ', 'หัวหน้าแผนก')}{sign('ผู้ตรวจสอบ', 'ฝ่ายบุคคล')}{sign('ผู้อนุมัติ', 'ผู้อำนวยการบริหาร')}
+        </div>
+      </div>
+      <div style={{ marginTop: 12, paddingTop: 4, borderTop: '1px solid #E2E8F0', fontSize: '7pt', color: '#94A3B8' }}>พิมพ์จากระบบลงเวลา โรงพยาบาลรักษ์สกล · ประวัติคำขอทุกรายการตรวจสอบได้ในระบบ (คำขอเปลี่ยนเวร)</div>
+    </div>
+  );
+};
+// หน้าต่างเลือกแผนก + ช่วงวัน แล้วพิมพ์ / บันทึก PDF
+const OtReportModal = ({ role, user, employees, swaps, records, defMonth, defDept, onClose }) => {
+  const depts = [...new Set(Object.values(employees).map(e => e.dept).filter(d => d && d !== 'ADMIN'))].sort();
+  const [dept, setDept] = useState(role === 'supervisor' ? user.dept : (defDept || depts[0] || ''));
+  const [cut, setCut] = useState(() => { try { return +localStorage.getItem('rt_cutday') || 26; } catch (e) { return 26; } });
+  const [month, setMonth] = useState(defMonth);
+  const [my, mm] = month.split('-').map(Number), monthEnd = ym => `${ym}-${String(new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate()).padStart(2, '0')}`;
+  const [from, setFrom] = useState(`${defMonth}-01`), [to, setTo] = useState(monthEnd(defMonth));
+  const pickMonth = ym => { if (!ym) return; setMonth(ym); setFrom(`${ym}-01`); setTo(monthEnd(ym)); };
+  const [printing, setPrinting] = useState(false);
+  const cycle = () => { const c = Math.min(Math.max(+cut || 26, 1), 28); try { localStorage.setItem('rt_cutday', c); } catch (e) {} setFrom(fmtInput(new Date(my, mm - 2, c + 1))); setTo(fmtInput(new Date(my, mm - 1, c))); };
+  const items = dept && from && to && from <= to ? otItems(swaps, employees, records, dept, from, to) : [];
+  useEffect(() => {
+    if (!printing) return;
+    const old = document.title; document.title = `ขออนุมัติOT_${dept}_${from}_${to}`;
+    document.body.classList.add('print-ot');
+    const done = () => { document.body.classList.remove('print-ot'); document.title = old; setPrinting(false); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    const t = setTimeout(() => window.print(), 350);
+    return () => { clearTimeout(t); window.removeEventListener('afterprint', done); document.body.classList.remove('print-ot'); document.title = old; };
+  }, [printing]);
+  return (<>
+    <div className="fixed inset-0 z-[250] bg-slate-900/50 flex items-end sm:items-center justify-center print-hide" onClick={onClose}>
+      <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto p-5 space-y-3" onClick={ev => ev.stopPropagation()}>
+        <div className="flex items-center justify-between"><h3 className="text-lg font-bold text-slate-800">แบบขออนุมัติ OT / เสริมเวร</h3><button onClick={onClose} aria-label="ปิด" className="w-11 h-11 rounded-full text-slate-500 hover:bg-slate-100"><i className="fa-solid fa-xmark"></i></button></div>
+        <p className="text-sm text-slate-500">ดึงคำขอเพิ่มเวร OT / เสริมเวรที่หัวหน้าอนุมัติแล้ว ตามช่วงวันที่เลือก เพื่อพิมพ์เสนอผู้อำนวยการบริหาร</p>
+        <div><label className={LABEL}>แผนก</label>
+          {role === 'supervisor' ? <p className="font-semibold text-slate-800">{dept}</p>
+            : <select value={dept} onChange={e => setDept(e.target.value)} className={`${FIELD} focus:border-primary`}>{depts.map(d => <option key={d} value={d}>{d}</option>)}</select>}
+        </div>
+        <div><label className={LABEL}>เดือนเงินเดือน</label><input type="month" value={month} onChange={e => pickMonth(e.target.value)} className={`${FIELD} focus:border-primary`} /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className={LABEL}>ตั้งแต่วันที่</label><input type="date" value={from} onChange={e => setFrom(e.target.value)} className={`${FIELD} focus:border-primary`} /></div>
+          <div><label className={LABEL}>ถึงวันที่</label><input type="date" value={to} onChange={e => setTo(e.target.value)} className={`${FIELD} focus:border-primary`} /></div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap text-sm">
+          <span className="text-slate-600">รอบตัดเงินเดือน ตัดทุกวันที่</span>
+          <input type="number" min="1" max="28" value={cut} onChange={e => setCut(e.target.value)} aria-label="วันตัดรอบ" className="w-16 h-10 border border-slate-200 rounded-lg text-center" />
+          <button type="button" onClick={cycle} className="h-10 px-3 rounded-full bg-pink-50 text-pink-800 font-semibold">ใช้รอบ {thDate(fmtInput(new Date(my, mm - 2, Math.min(Math.max(+cut || 26, 1), 28) + 1)))} – {thDate(fmtInput(new Date(my, mm - 1, Math.min(Math.max(+cut || 26, 1), 28))))}</button>
+        </div>
+        <p className="text-sm font-semibold text-slate-700 bg-slate-50 rounded-xl p-3">{from > to ? 'วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด' : `พบ ${items.length} รายการ · รวม ${Math.round(items.reduce((t, x) => t + x.h, 0) * 100) / 100} ชม.`}</p>
+        <button onClick={() => setPrinting(true)} disabled={!dept || from > to} className="w-full h-12 rounded-xl bg-primary hover:bg-pink-700 text-white font-bold disabled:opacity-40"><i className="fa-solid fa-print mr-2"></i>พิมพ์ / บันทึก PDF</button>
+        <p className="text-xs text-slate-500">บันทึกเป็น PDF: ในหน้าต่างพิมพ์ เลือกปลายทาง "บันทึกเป็น PDF" · กระดาษ A4 แนวตั้ง</p>
+      </div>
+    </div>
+    {printing && ReactDOM.createPortal(<div className="ot-print"><OtApprovalSheet items={items} employees={employees} dept={dept} from={from} to={to} /></div>, document.body)}
+  </>);
+};
+
 function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings, swaps = [], reload = async () => {}, start = null }) {
   const now = new Date(), todayStr = fmtInput(now), defMonth = todayStr.slice(0, 7);
   const [adminTab, setAdminTab] = useState(start?.tab || (role === 'supervisor' ? 'summary' : 'logs'));
   const [startDate, setStartDate] = useState(''), [endDate, setEndDate] = useState(''), [matrixMonth, setMatrixMonth] = useState(start?.month || defMonth);
   const [filterDept, setFilterDept] = useState(role === 'supervisor' ? user.dept : (start?.dept || '')), [filterEmp, setFilterEmp] = useState('');
   const [adjCell, setAdjCell] = useState(null);   // ช่องในตารางที่ส่งแล้ว -> เปิดหน้าต่างเพิ่ม / แก้เวร
+  const [otOpen, setOtOpen] = useState(false);     // แบบขออนุมัติ OT
   const [exclByMonth, setExclByMonth] = useState(() => { try { return JSON.parse(localStorage.getItem('excludedEmpIdsByMonth_' + user.id)) || {}; } catch (e) { return {}; } });
   useEffect(() => { localStorage.setItem('excludedEmpIdsByMonth_' + user.id, JSON.stringify(exclByMonth)); }, [exclByMonth, user.id]);
   const excluded = exclByMonth[matrixMonth] || [];
@@ -2134,6 +2294,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
         <Actions onCancel={() => setAddData(null)} onOk={saveAdd} okText={saving ? 'บันทึก...' : 'เพิ่มข้อมูล'} disabled={saving} />
       </div></div></Modal>}
 
+      {otOpen && <OtReportModal role={role} user={user} employees={employees} swaps={swaps} records={records} defMonth={matrixMonth} defDept={filterDept} onClose={() => setOtOpen(false)} />}
       {adjCell && <AdjustModal user={user} employees={employees} schedules={schedules} records={records} settings={settings} targetId={adjCell.empId} fixedDate={adjCell.ds} onClose={() => setAdjCell(null)} onSent={async () => { setAdjCell(null); await reload(); }} />}
       {cellData && <Modal><div className="p-6">
         <h3 className="font-bold text-slate-800 mb-1">จัดการเวร <span className="text-slate-500 font-semibold text-sm ml-2">{formatDisplayDate(cellData.dateStr)}</span></h3>
@@ -2207,6 +2368,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
             {exportBtn({ logs: exportLogs, exceptions: exportEx, summary: exportSummary, schedules: exportSchedule }[adminTab], adminTab === 'schedules' ? 'fa-file-excel' : 'fa-file-csv')}
             <button onClick={() => window.print()} className={BTN}><i className="fa-solid fa-print mr-1.5 text-slate-400"></i>พิมพ์</button>
             {isMatrix && <button onClick={exportPdf} className={BTN}><i className="fa-solid fa-file-pdf mr-1.5 text-red-500"></i>PDF</button>}
+            <button onClick={() => setOtOpen(true)} className={BTN}><i className="fa-solid fa-file-signature mr-1.5 text-slate-400"></i>ขออนุมัติ OT</button>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
