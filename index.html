@@ -82,7 +82,7 @@ const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','ม�
 const TH_MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '24/11/69-ค';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '24/11/69-ง';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -1665,6 +1665,10 @@ const SHIFT_CATEGORY_MAP = { 'ด':{ด:1}, 'ช616':{ช:1,บ:.25}, 'ช618':{
 const PAID = ['Vac','พักร้อน','ป่วย','ลา'], LEAVE_LOCK = [...PAID, 'ลาชั่วโมง'], CAT_ORD = { 'ช':1, 'บ':2, 'ด':3 };
 const byCat = (a, b) => (CAT_ORD[a] || 99) - (CAT_ORD[b] || 99);
 const creditOf = s => SHIFT_TYPES[s] ? SHIFT_TYPES[s].credit : (PAID.includes(s) ? 1 : 0);
+// พนักงานรายวัน / Parttime (คอลัมน์ Level) — นับเฉพาะเวรที่ลงตารางเวร ไม่เทียบวันทำการ ไม่มี OT ไม่นับวันลา
+const TEMP_LEVELS = ['รายวัน', 'parttime', 'part-time', 'part time'];
+const isTempLevel = lv => TEMP_LEVELS.includes(String(lv || '').trim().toLowerCase());
+const workCredit = s => SHIFT_TYPES[s] ? SHIFT_TYPES[s].credit : 0;
 
 const getSortedShiftKeys = dept => {
   let keys = Object.keys(SHIFT_TYPES);
@@ -1832,8 +1836,8 @@ const SchedPrintSheet = ({ mode = 'schedules', showLate = false, rows, types, da
               {daysArray.map(d => { const sd = r.shiftsByDay[d] || { ui: [] }; return <td key={d} style={{ ...cell, background: sum && sd.absent ? '#FEF2F2' : isWk(d) ? pink : undefined }}>{sum ? (sd.ui.length ? sd.ui.map(sumCell) : <span style={{ color: '#CBD5E1' }}>-</span>) : (schedules[dayStr(d)]?.[r.empId]?.shifts || []).map(shiftCell)}</td>; })}
               {types.map(t => <td key={t} style={{ ...cell, color: '#9D174D', background: '#FFF7FB' }}>{r.shiftCounts[t] || 0}</td>)}
               <td style={{ ...cell, fontWeight: 700 }}>{num(r.credit)}</td>
-              <td style={{ ...cell, color: '#64748B' }}>{workDays}</td>
-              <td style={{ ...cell, fontWeight: 700, color: '#9D174D' }}>{r.ot > 0 ? `+${num(r.ot)}` : num(r.ot)}</td>
+              <td style={{ ...cell, color: '#64748B' }}>{r.temp ? '-' : workDays}</td>
+              <td style={{ ...cell, fontWeight: 700, color: '#9D174D' }}>{r.temp ? '-' : r.ot > 0 ? `+${num(r.ot)}` : num(r.ot)}</td>
               {showLate && <td style={{ ...cell, fontWeight: 700, color: '#DC2626' }}>{r.late > 0 ? r.late : '-'}</td>}
             </tr>))}
           {cats.map((c, i) => (
@@ -1938,8 +1942,84 @@ const OtApprovalSheet = ({ items, employees, dept, from, to }) => {
     </div>
   );
 };
+// ---------- สรุปเวรพนักงานรายวัน / Parttime (สำหรับทำค่าจ้าง) — นับตามเวรที่ลงตารางเวร ----------
+const tempItems = (schedules, swaps, employees, records, dept, from, to) => {
+  const ids = Object.keys(employees).filter(id => employees[id].dept === dept && isTempLevel(employees[id].level)), out = [], today = fmtInput(new Date());
+  const act = (id, d, shift) => {
+    const recs = records.filter(r => r.empId === id && r.date === d), mine = shift ? recs.filter(r => r.shiftId === shift) : recs;
+    if (!mine.length && d >= today) return { t: d > today ? 'ยังไม่ถึงวัน' : 'วันนี้ ยังไม่ลงเวลา', c: '#94A3B8', ok: true };   // นับตามตาราง เหมือนหน้าสรุป
+    return mine.length ? { t: `${(mine[0].timeIn || '').slice(0, 5) || '-'} – ${(mine[mine.length - 1].timeOut || '').slice(0, 5) || 'ยังไม่ออก'}`, c: '#0F172A', ok: true } : { t: 'ไม่พบการลงเวลา', c: '#DC2626', ok: false };
+  };
+  for (let d = from; d <= to; d = fmtInput(new Date(new Date(d + 'T00:00:00').getTime() + 864e5)))
+    ids.forEach(id => (schedules[d]?.[id]?.shifts || []).filter(s => SHIFT_TYPES[s]).forEach(s => out.push({ id: id + d + s, empId: id, date: d, part: s, custom: false, h: otHours(s), credit: workCredit(s), act: act(id, d, s) })));
+  swaps.filter(s => s.type === 'add' && s.status === 'approved' && OT_RE.test(s.part || '') && ids.includes(s.empId) && s.dateA >= from && s.dateA <= to)
+    .forEach(s => out.push({ id: s.id, empId: s.empId, date: s.dateA, part: s.part, custom: true, h: otHours(s.part), credit: 0, act: act(s.empId, s.dateA, null) }));
+  return out.sort((a, b) => (employees[a.empId]?.fname || '').localeCompare(employees[b.empId]?.fname || '') || a.empId.localeCompare(b.empId) || a.date.localeCompare(b.date));
+};
+const TempWorkSheet = ({ items, employees, dept, from, to }) => {
+  const B = '1px solid #E2E8F0', td = { border: B, padding: '3px 6px', fontSize: '9pt', verticalAlign: 'top' }, th = { border: B, padding: '3px 6px', fontSize: '8.5pt', fontWeight: 600, color: '#475569', background: '#F8FAFC' };
+  const now = new Date(), num = n => Math.round(n * 100) / 100, nm = id => employees[id] ? `${employees[id].fname} ${employees[id].lname}` : id;
+  const per = {}; items.forEach(x => { const p = per[x.empId] = per[x.empId] || { n: 0, cr: 0, h: 0, ot: 0, miss: 0 }; if (!x.act.ok) { p.miss++; return; } if (x.custom) p.ot += x.h; else { p.n++; p.cr += x.credit; p.h += x.h; } });
+  const T = Object.values(per).reduce((a, p) => ({ n: a.n + p.n, cr: a.cr + p.cr, h: a.h + p.h, ot: a.ot + p.ot }), { n: 0, cr: 0, h: 0, ot: 0 });
+  const sign = (t, sub) => <div style={{ textAlign: 'center', fontSize: '9pt' }}><div style={{ borderBottom: '1.5px dotted #64748B', height: 22 }}></div><div style={{ marginTop: 3, fontWeight: 700 }}>{t}</div><div style={{ color: '#475569' }}>(..............................................)</div><div style={{ color: '#475569' }}>{sub}</div><div style={{ color: '#475569' }}>วันที่ ......../......../........</div></div>;
+  return (
+    <div style={{ fontFamily: "'Sarabun', sans-serif", color: '#0F172A', background: '#fff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '2px solid #FBCFE8' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <img src={RSK_LOGO} alt="โลโก้โรงพยาบาลรักษ์สกล" style={{ height: 38, width: 'auto' }} />
+          <div style={{ width: 1.5, height: 32, background: '#FBCFE8' }}></div>
+          <div><div className="font-head" style={{ fontSize: '14pt', fontWeight: 600, lineHeight: 1.2 }}>โรงพยาบาลรักษ์สกล</div><div style={{ fontSize: '8.5pt', color: '#64748B' }}>ระบบลงเวลา · สรุปการปฏิบัติงานเพื่อคำนวณค่าจ้าง</div></div>
+        </div>
+        <div style={{ border: '1.5px solid #E2E8F0', borderRadius: 8, padding: '3px 10px', textAlign: 'right', lineHeight: 1.3 }}><div style={{ fontSize: '7.5pt', color: '#64748B' }}>เลขที่เอกสาร</div><div style={{ fontSize: '9pt', fontWeight: 700 }}>PT-{dept}-{from.replace(/-/g, '')}</div></div>
+      </div>
+      <div className="font-head" style={{ marginTop: 10, fontSize: '15pt', fontWeight: 600 }}>สรุปการปฏิบัติงานพนักงานรายวัน / Parttime</div>
+      <div style={{ fontSize: '10pt', color: '#475569' }}>ช่วงวันที่ {thDate(from, false)} – {thDate(to, false)} · นับตามเวรที่ลงตารางเวร</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', marginTop: 8, border: '1.5px solid #E2E8F0', borderRadius: 8, background: '#F8FAFC' }}>
+        {[['แผนก', dept], ['จำนวนพนักงาน', `${Object.keys(per).length} คน`], ['รวมเวร', `${T.n} เวร · ${num(T.cr)} วัน`], ['รวมชั่วโมง', `${num(T.h)} ชม.${T.ot ? ` + OT ${num(T.ot)}` : ''}`], ['วันเวลาที่พิมพ์', `${now.getDate()} ${TH_MON_S[now.getMonth()]} ${now.getFullYear() + 543} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} น.`]]
+          .map(([k, v], i) => <div key={k} style={{ padding: '4px 8px', borderLeft: i ? '1px solid #E2E8F0' : 'none' }}><div style={{ fontSize: '7.5pt', color: '#64748B' }}>{k}</div><div style={{ fontSize: '10pt', fontWeight: 700 }}>{v}</div></div>)}
+      </div>
+      <div className="font-head" style={{ marginTop: 10, fontSize: '11pt', fontWeight: 600, color: '#9D174D' }}>1. สรุปรายบุคคล</div>
+      <table style={{ marginTop: 4, width: '100%', borderCollapse: 'collapse', pageBreakInside: 'avoid' }}>
+        <thead><tr><th style={{ ...th, textAlign: 'left' }}>ชื่อ-สกุล</th><th style={th}>ประเภท</th><th style={th}>จำนวนเวร</th><th style={th}>เครดิต (วัน)</th><th style={th}>ชั่วโมง</th><th style={th}>OT (ชม.)</th><th style={th}>ไม่พบการลงเวลา</th></tr></thead>
+        <tbody>{Object.entries(per).map(([id, p]) => <tr key={id}>
+          <td style={td}><b>{nm(id)}</b> <span style={{ fontSize: '7.5pt', color: '#94A3B8' }}>{id}</span></td>
+          <td style={{ ...td, textAlign: 'center' }}>{employees[id]?.level}</td>
+          <td style={{ ...td, textAlign: 'center', fontWeight: 700 }}>{p.n}</td>
+          <td style={{ ...td, textAlign: 'center', fontWeight: 700, color: '#9D174D' }}>{num(p.cr)}</td>
+          <td style={{ ...td, textAlign: 'center', fontWeight: 700 }}>{num(p.h)}</td>
+          <td style={{ ...td, textAlign: 'center' }}>{p.ot ? num(p.ot) : '-'}</td>
+          <td style={{ ...td, textAlign: 'center', color: p.miss ? '#DC2626' : '#94A3B8', fontWeight: p.miss ? 700 : 400 }}>{p.miss ? `${p.miss} เวร` : '-'}</td></tr>)}
+          {!items.length && <tr><td colSpan="7" style={{ ...td, textAlign: 'center', color: '#94A3B8', padding: 14 }}>ไม่มีเวรของพนักงานรายวัน / Parttime ในช่วงวันที่นี้</td></tr>}
+          <tr style={{ background: '#FFFBEB' }}><td colSpan="2" style={{ ...td, textAlign: 'right', fontWeight: 700 }}>รวม</td><td style={{ ...td, textAlign: 'center', fontWeight: 700 }}>{T.n}</td><td style={{ ...td, textAlign: 'center', fontWeight: 700 }}>{num(T.cr)}</td><td style={{ ...td, textAlign: 'center', fontWeight: 700 }}>{num(T.h)}</td><td style={{ ...td, textAlign: 'center', fontWeight: 700 }}>{T.ot ? num(T.ot) : '-'}</td><td style={td}></td></tr>
+        </tbody>
+      </table>
+      {items.length > 0 && <>
+        <div className="font-head" style={{ marginTop: 10, fontSize: '11pt', fontWeight: 600, color: '#9D174D' }}>2. รายละเอียดรายวัน</div>
+        <table style={{ marginTop: 4, width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <colgroup><col style={{ width: '5%' }} /><col style={{ width: '24%' }} /><col style={{ width: '14%' }} /><col style={{ width: '20%' }} /><col style={{ width: '8%' }} /><col /></colgroup>
+          <thead><tr><th style={th}>ที่</th><th style={{ ...th, textAlign: 'left' }}>ชื่อ-สกุล</th><th style={th}>วันที่</th><th style={th}>กะ / เวลา</th><th style={th}>ชม.</th><th style={th}>ลงเวลาจริง</th></tr></thead>
+          <tbody>{items.map((x, i) => (
+            <tr key={x.id} style={{ pageBreakInside: 'avoid', background: i % 2 ? '#FCFCFD' : '#fff' }}>
+              <td style={{ ...td, textAlign: 'center', color: '#64748B' }}>{i + 1}</td>
+              <td style={td}>{nm(x.empId)}</td>
+              <td style={{ ...td, textAlign: 'center', whiteSpace: 'nowrap' }}>{swDm(x.date)}</td>
+              <td style={{ ...td, textAlign: 'center', whiteSpace: 'nowrap' }}>{x.custom ? <>OT {otLabel(x.part)}</> : <><b>{x.part}</b> <span style={{ fontSize: '7.5pt', color: '#64748B' }}>{SHIFT_TYPES[x.part].start.replace(':', '.')}–{SHIFT_TYPES[x.part].end.replace(':', '.')}</span></>}</td>
+              <td style={{ ...td, textAlign: 'center', fontWeight: 700, color: x.act.ok ? '#0F172A' : '#CBD5E1', textDecoration: x.act.ok ? 'none' : 'line-through' }}>{num(x.h)}</td>
+              <td style={{ ...td, fontSize: '8.5pt', color: x.act.c }}>{x.act.t}{x.act.ok ? '' : ' (ไม่นับ)'}</td>
+            </tr>))}</tbody>
+        </table>
+      </>}
+      <div style={{ marginTop: 6, fontSize: '8pt', color: '#475569' }}>หมายเหตุ: นับเฉพาะเวรทำงานในตารางเวร ไม่นับวันลา / Off · เวรที่ไม่พบการลงเวลาไม่นำมานับ · OT = คำขอ OT แบบช่วงเวลาที่อนุมัติแล้ว</div>
+      <div style={{ pageBreakInside: 'avoid', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginTop: 22 }}>
+        {sign('ผู้จัดทำ', 'หัวหน้าแผนก')}{sign('ผู้ตรวจสอบ', 'ฝ่ายบุคคล')}{sign('ผู้อนุมัติ', 'ผู้อำนวยการบริหาร')}
+      </div>
+      <div style={{ marginTop: 12, paddingTop: 4, borderTop: '1px solid #E2E8F0', fontSize: '7pt', color: '#94A3B8' }}>พิมพ์จากระบบลงเวลา โรงพยาบาลรักษ์สกล · พนักงานรายวัน / Parttime กำหนดจากคอลัมน์ Level ในชีต Employees</div>
+    </div>
+  );
+};
 // หน้าต่างเลือกแผนก + ช่วงวัน แล้วพิมพ์ / บันทึก PDF
-const OtReportModal = ({ role, user, employees, swaps, records, defMonth, defDept, onClose }) => {
+const OtReportModal = ({ kind = 'ot', schedules = {}, role, user, employees, swaps, records, defMonth, defDept, onClose }) => {
+  const tmp = kind === 'temp';
   const depts = [...new Set(Object.values(employees).map(e => e.dept).filter(d => d && d !== 'ADMIN'))].sort();
   const [dept, setDept] = useState(role === 'supervisor' ? user.dept : (defDept || depts[0] || ''));
   const [cut, setCut] = useState(() => { try { return +localStorage.getItem('rt_cutday') || 26; } catch (e) { return 26; } });
@@ -1949,10 +2029,10 @@ const OtReportModal = ({ role, user, employees, swaps, records, defMonth, defDep
   const pickMonth = ym => { if (!ym) return; setMonth(ym); setFrom(`${ym}-01`); setTo(monthEnd(ym)); };
   const [printing, setPrinting] = useState(false);
   const cycle = () => { const c = Math.min(Math.max(+cut || 26, 1), 28); try { localStorage.setItem('rt_cutday', c); } catch (e) {} setFrom(fmtInput(new Date(my, mm - 2, c + 1))); setTo(fmtInput(new Date(my, mm - 1, c))); };
-  const items = dept && from && to && from <= to ? otItems(swaps, employees, records, dept, from, to) : [];
+  const items = dept && from && to && from <= to ? (tmp ? tempItems(schedules, swaps, employees, records, dept, from, to) : otItems(swaps, employees, records, dept, from, to)) : [];
   useEffect(() => {
     if (!printing) return;
-    const old = document.title; document.title = `ขออนุมัติOT_${dept}_${from}_${to}`;
+    const old = document.title; document.title = `${tmp ? 'สรุปเวรรายวัน' : 'ขออนุมัติOT'}_${dept}_${from}_${to}`;
     document.body.classList.add('print-ot');
     const done = () => { document.body.classList.remove('print-ot'); document.title = old; setPrinting(false); window.removeEventListener('afterprint', done); };
     window.addEventListener('afterprint', done);
@@ -1962,8 +2042,8 @@ const OtReportModal = ({ role, user, employees, swaps, records, defMonth, defDep
   return (<>
     <div className="fixed inset-0 z-[250] bg-slate-900/50 flex items-end sm:items-center justify-center print-hide" onClick={onClose}>
       <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto p-5 space-y-3" onClick={ev => ev.stopPropagation()}>
-        <div className="flex items-center justify-between"><h3 className="text-lg font-bold text-slate-800">แบบขออนุมัติ OT / เสริมเวร</h3><button onClick={onClose} aria-label="ปิด" className="w-11 h-11 rounded-full text-slate-500 hover:bg-slate-100"><i className="fa-solid fa-xmark"></i></button></div>
-        <p className="text-sm text-slate-500">ดึงคำขอเพิ่มเวร OT / เสริมเวรที่หัวหน้าอนุมัติแล้ว ตามช่วงวันที่เลือก เพื่อพิมพ์เสนอผู้อำนวยการบริหาร</p>
+        <div className="flex items-center justify-between"><h3 className="text-lg font-bold text-slate-800">{tmp ? 'สรุปเวรรายวัน / Parttime' : 'แบบขออนุมัติ OT / เสริมเวร'}</h3><button onClick={onClose} aria-label="ปิด" className="w-11 h-11 rounded-full text-slate-500 hover:bg-slate-100"><i className="fa-solid fa-xmark"></i></button></div>
+        <p className="text-sm text-slate-500">{tmp ? 'สรุปเวรของพนักงาน Level "รายวัน" / "Parttime" ตามเวรที่ลงตารางเวร ในช่วงวันที่เลือก สำหรับคำนวณค่าจ้าง' : 'ดึงคำขอเพิ่มเวร OT / เสริมเวรที่หัวหน้าอนุมัติแล้ว ตามช่วงวันที่เลือก เพื่อพิมพ์เสนอผู้อำนวยการบริหาร'}</p>
         <div><label className={LABEL}>แผนก</label>
           {role === 'supervisor' ? <p className="font-semibold text-slate-800">{dept}</p>
             : <select value={dept} onChange={e => setDept(e.target.value)} className={`${FIELD} focus:border-primary`}>{depts.map(d => <option key={d} value={d}>{d}</option>)}</select>}
@@ -1978,12 +2058,12 @@ const OtReportModal = ({ role, user, employees, swaps, records, defMonth, defDep
           <input type="number" min="1" max="28" value={cut} onChange={e => setCut(e.target.value)} aria-label="วันตัดรอบ" className="w-16 h-10 border border-slate-200 rounded-lg text-center" />
           <button type="button" onClick={cycle} className="h-10 px-3 rounded-full bg-pink-50 text-pink-800 font-semibold">ใช้รอบ {thDate(fmtInput(new Date(my, mm - 2, Math.min(Math.max(+cut || 26, 1), 28) + 1)))} – {thDate(fmtInput(new Date(my, mm - 1, Math.min(Math.max(+cut || 26, 1), 28))))}</button>
         </div>
-        <p className="text-sm font-semibold text-slate-700 bg-slate-50 rounded-xl p-3">{from > to ? 'วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด' : `พบ ${items.length} รายการ · รวม ${Math.round(items.reduce((t, x) => t + x.h, 0) * 100) / 100} ชม.`}</p>
+        <p className="text-sm font-semibold text-slate-700 bg-slate-50 rounded-xl p-3">{from > to ? 'วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด' : tmp ? `พบ ${new Set(items.map(x => x.empId)).size} คน · ${items.filter(x => !x.custom).length} เวร` : `พบ ${items.length} รายการ · รวม ${Math.round(items.reduce((t, x) => t + x.h, 0) * 100) / 100} ชม.`}</p>
         <button onClick={() => setPrinting(true)} disabled={!dept || from > to} className="w-full h-12 rounded-xl bg-primary hover:bg-pink-700 text-white font-bold disabled:opacity-40"><i className="fa-solid fa-print mr-2"></i>พิมพ์ / บันทึก PDF</button>
         <p className="text-xs text-slate-500">บันทึกเป็น PDF: ในหน้าต่างพิมพ์ เลือกปลายทาง "บันทึกเป็น PDF" · กระดาษ A4 แนวตั้ง</p>
       </div>
     </div>
-    {printing && ReactDOM.createPortal(<div className="ot-print"><OtApprovalSheet items={items} employees={employees} dept={dept} from={from} to={to} /></div>, document.body)}
+    {printing && ReactDOM.createPortal(<div className="ot-print">{tmp ? <TempWorkSheet items={items} employees={employees} dept={dept} from={from} to={to} /> : <OtApprovalSheet items={items} employees={employees} dept={dept} from={from} to={to} />}</div>, document.body)}
   </>);
 };
 
@@ -2009,7 +2089,7 @@ const sampleCombo = (fr, shifts) => {
   while (picks.length < 60 && (s = bestShift(need, shifts))) { picks.push(s); Object.entries(catOf(s)).forEach(([c, v]) => { need[c] = r3((need[c] || 0) - v); }); }
   return { picks, left: need };
 };
-function planCat({ dates, emps, allEmps, schedules, frame, shifts, maxRun, restNight }) {
+function planCat({ dates, emps, allEmps, schedules, frame, shifts, maxRun, restNight, temp = {} }) {   // temp = รายวัน / Parttime (ใช้เติมหลังพนักงานประจำ)
   const cur = {}, credit = {}, cnt = {}, updates = [], short = [], days = [], used = {};
   const prevOf = d => fmtInput(new Date(new Date(d + 'T00:00:00').getTime() - 864e5));
   const ids = [...new Set([...allEmps, ...emps])];
@@ -2031,7 +2111,7 @@ function planCat({ dates, emps, allEmps, schedules, frame, shifts, maxRun, restN
     const skip = [];
     for (let guard = 0; guard < 80; guard++) {
       const s = bestShift(need, shifts, skip, used); if (!s) break;
-      const pick = emps.filter(id => free(id, d)).sort((a, b) => (cnt[a][s] || 0) - (cnt[b][s] || 0) || credit[a] - credit[b] || Math.random() - .5)[0];
+      const pick = emps.filter(id => free(id, d)).sort((a, b) => (temp[a] ? 1 : 0) - (temp[b] ? 1 : 0) || (cnt[a][s] || 0) - (cnt[b][s] || 0) || credit[a] - credit[b] || Math.random() - .5)[0];
       if (!pick) { skip.push(s); continue; }                                       // ไม่มีคนว่างสำหรับกะนี้ ลองกะอื่น
       cur[pick][d] = [s]; credit[pick] += creditOf(s); cnt[pick][s] = (cnt[pick][s] || 0) + 1; used[s] = (used[s] || 0) + 1;
       updates.push({ date: d, empId: pick, shifts: [s] }); added.push(s);
@@ -2060,7 +2140,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const [startDate, setStartDate] = useState(''), [endDate, setEndDate] = useState(''), [matrixMonth, setMatrixMonth] = useState(start?.month || defMonth);
   const [filterDept, setFilterDept] = useState(role === 'supervisor' ? user.dept : (start?.dept || '')), [filterEmp, setFilterEmp] = useState('');
   const [adjCell, setAdjCell] = useState(null);   // ช่องในตารางที่ส่งแล้ว -> เปิดหน้าต่างเพิ่ม / แก้เวร
-  const [otOpen, setOtOpen] = useState(false);     // แบบขออนุมัติ OT
+  const [otOpen, setOtOpen] = useState(false);     // แบบขออนุมัติ OT ('ot') / สรุปเวรรายวัน ('temp')
   const [exclByMonth, setExclByMonth] = useState(() => { try { return JSON.parse(localStorage.getItem('excludedEmpIdsByMonth_' + user.id)) || {}; } catch (e) { return {}; } });
   useEffect(() => { localStorage.setItem('excludedEmpIdsByMonth_' + user.id, JSON.stringify(exclByMonth)); }, [exclByMonth, user.id]);
   const excluded = exclByMonth[matrixMonth] || [];
@@ -2093,26 +2173,27 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const recByEmp = useMemo(() => { const m = {}; records.forEach(r => { if (r.date.startsWith(matrixMonth)) (m[r.empId] = m[r.empId] || []).push(r); }); return m; }, [records, matrixMonth]);
 
   const summaryMatrix = useMemo(() => matrixEmployees.map(empId => {
-    const recs = recByEmp[empId] || [], shiftsByDay = {}, shiftCounts = {};
+    const recs = recByEmp[empId] || [], shiftsByDay = {}, shiftCounts = {}, temp = isTempLevel(employees[empId]?.level);
     let credit = 0, late = 0;
     const add = s => { shiftCounts[s] = (shiftCounts[s] || 0) + 1; };
     daysArray.forEach(day => {
       const ds = dayStr(day), dayRecs = recs.filter(r => r.date === ds), sched = schedules[ds]?.[empId]?.shifts || [], ui = [];
       let absent = false;
-      if (adminTab === 'schedules') { sched.forEach(s => { if (s) add(s); credit += creditOf(s); }); shiftsByDay[day] = { absent, ui }; return; }
+      if (adminTab === 'schedules') { sched.forEach(s => { if (s) add(s); credit += temp ? workCredit(s) : creditOf(s); }); shiftsByDay[day] = { absent, ui }; return; }
       const worked = dayRecs.map(r => r.shiftId).filter(Boolean);
       worked.forEach(s => { add(s); ui.push({ shift: s, type: 'worked' }); });
-      credit += dayRecs.reduce((a, r) => a + (r.credit || 0), 0);
+      credit += temp ? worked.filter(s => sched.includes(s)).reduce((a, s) => a + workCredit(s), 0)   // รายวัน: นับตามเวรในตาราง (ที่มาทำจริง)
+        : dayRecs.reduce((a, r) => a + (r.credit || 0), 0);
       late += dayRecs.reduce((a, r) => a + (r.isLate ? Number(r.lateMinutes) : 0), 0);
       sched.filter(s => s && !worked.includes(s)).forEach(s => {
-        if (ds >= todayStr) { add(s); credit += creditOf(s); ui.push({ shift: s, type: 'pending' }); }
-        else if (LEAVE_LOCK.includes(s) || s === 'Off') { add(s); if (PAID.includes(s)) credit += 1; ui.push({ shift: s, type: 'leave' }); }
+        if (ds >= todayStr) { add(s); credit += temp ? workCredit(s) : creditOf(s); ui.push({ shift: s, type: 'pending' }); }
+        else if (LEAVE_LOCK.includes(s) || s === 'Off') { add(s); if (PAID.includes(s) && !temp) credit += 1; ui.push({ shift: s, type: 'leave' }); }
         else { add('ขาด'); absent = true; ui.push({ shift: s, type: 'absent' }); }
       });
       shiftsByDay[day] = { absent, ui };
     });
     const e = employees[empId];
-    return { empId, fname: e.fname, lname: e.lname, dept: e.dept, level: e.level, shiftsByDay, credit, late, ot: credit - localWorkDays, shiftCounts };
+    return { empId, fname: e.fname, lname: e.lname, dept: e.dept, level: e.level, shiftsByDay, credit, late, ot: temp ? null : credit - localWorkDays, temp, shiftCounts };
   }), [matrixEmployees.join(), recByEmp, schedules, employees, adminTab, matrixMonth, localWorkDays]);
 
   const getDaily = day => {
@@ -2233,7 +2314,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const preview = () => {
     if (!autoEmps.length) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกพนักงานอย่างน้อย 1 คน' });
     if (!frame.shifts.length) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกกะที่ใช้จัดอย่างน้อย 1 กะ' });
-    setPlan(planCat({ dates: daysArray.map(dayStr), emps: autoEmps, allEmps: dropdownEmps, schedules, frame, shifts: frame.shifts, ...params }));
+    setPlan(planCat({ dates: daysArray.map(dayStr), emps: autoEmps, allEmps: dropdownEmps, schedules, frame, shifts: frame.shifts, ...params, temp: Object.fromEntries(autoEmps.map(id => [id, isTempLevel(employees[id]?.level)])) }));
   };
   const stepFrame = (k, c, dir) => setFrame(f => { const st = c === 'บ' ? 0.125 : 1, v = Math.max(0, r3((+f[k][c] || 0) + dir * st)); return { ...f, [k]: { ...f[k], [c]: v } }; });
   const toggleShift = s => setFrame(f => ({ ...f, shifts: f.shifts.includes(s) ? f.shifts.filter(x => x !== s) : [...f.shifts, s] }));
@@ -2315,7 +2396,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const exportSummary = () => {
     if (!summaryMatrix.length) return Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสรุปสำหรับส่งออก", "info");
     const hdr = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'แผนก', ...daysArray, ...types, 'รวมเวรทั้งหมด', 'วันทำการ', 'เวร OT', ...(role === 'admin' ? ['รวมสาย (นาที)'] : [])].join(',');
-    const body = summaryMatrix.map(r => [r.empId, `${r.fname} ${r.lname}`, r.dept, ...daysArray.map(d => r.shiftsByDay[d].ui.map(e => e.shift).join(',') || '-'), ...types.map(t => r.shiftCounts[t] || 0), r.credit, localWorkDays, r.ot, ...(role === 'admin' ? [r.late] : [])]);
+    const body = summaryMatrix.map(r => [r.empId, `${r.fname} ${r.lname}`, r.dept, ...daysArray.map(d => r.shiftsByDay[d].ui.map(e => e.shift).join(',') || '-'), ...types.map(t => r.shiftCounts[t] || 0), r.credit, r.temp ? '-' : localWorkDays, r.temp ? '-' : r.ot, ...(role === 'admin' ? [r.late] : [])]);
     const sum = k => summaryMatrix.reduce((a, r) => a + r[k], 0);
     downloadCSV([[`สรุปภาพรวมแผนก: ${filterDept || 'ทุกแผนก'}`, `ประจำเดือน: ${matrixMonth}`], '', hdr, ...body, '',
       ['รวมยอดทั้งแผนก', ...Array(3 + daysArray.length + types.length - 1).fill(''), sum('credit'), '', sum('ot')], '', ...dailyRows()], `สรุปภาพรวมแผนก_${matrixMonth}.csv`);
@@ -2403,7 +2484,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
         <Actions onCancel={() => setAddData(null)} onOk={saveAdd} okText={saving ? 'บันทึก...' : 'เพิ่มข้อมูล'} disabled={saving} />
       </div></div></Modal>}
 
-      {otOpen && <OtReportModal role={role} user={user} employees={employees} swaps={swaps} records={records} defMonth={matrixMonth} defDept={filterDept} onClose={() => setOtOpen(false)} />}
+      {otOpen && <OtReportModal kind={otOpen} schedules={schedules} role={role} user={user} employees={employees} swaps={swaps} records={records} defMonth={matrixMonth} defDept={filterDept} onClose={() => setOtOpen(false)} />}
       {adjCell && <AdjustModal user={user} employees={employees} schedules={schedules} records={records} settings={settings} targetId={adjCell.empId} fixedDate={adjCell.ds} onClose={() => setAdjCell(null)} onSent={async () => { setAdjCell(null); await reload(); }} />}
       {cellData && <Modal><div className="p-6">
         <h3 className="font-bold text-slate-800 mb-1">จัดการเวร <span className="text-slate-500 font-semibold text-sm ml-2">{formatDisplayDate(cellData.dateStr)}</span></h3>
@@ -2484,7 +2565,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
             <label className="flex items-center gap-1">ทำงานติดกันไม่เกิน <input type="number" min="1" value={params.maxRun} onChange={e => setParams({ ...params, maxRun: Number(e.target.value) || 1 })} className="w-14 p-1 border border-slate-300 rounded-lg text-center" /> วัน</label>
             <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked={params.restNight} onChange={e => setParams({ ...params, restNight: e.target.checked })} className="w-4 h-4" /> พักวันถัดไปหลังเวรดึก</label>
           </div>
-          <p className="text-xs text-slate-500">นับเวร / ลา / Off ที่มีอยู่แล้วก่อน แล้วเติมเฉพาะส่วนที่ขาด ไม่จัดเกินกรอบ</p>
+          <p className="text-xs text-slate-500">นับเวร / ลา / Off ที่มีอยู่แล้วก่อน แล้วเติมเฉพาะส่วนที่ขาด ไม่จัดเกินกรอบ · จัดพนักงานประจำก่อน แล้วใช้รายวัน / Parttime เติมส่วนที่ยังขาด</p>
           <button onClick={saveFrame} className="text-xs font-bold text-slate-500 hover:text-primary">บันทึกกรอบนี้ไว้ใช้กับแผนก {filterDept}</button>
           <Actions onCancel={() => setAutoOpen(false)} onOk={preview} okText="ดูตัวอย่างการจัด" />
         </>}
@@ -2506,7 +2587,8 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
             {exportBtn({ logs: exportLogs, exceptions: exportEx, summary: exportSummary, schedules: exportSchedule }[adminTab], adminTab === 'schedules' ? 'fa-file-excel' : 'fa-file-csv')}
             <button onClick={() => window.print()} className={BTN}><i className="fa-solid fa-print mr-1.5 text-slate-400"></i>พิมพ์</button>
             {isMatrix && <button onClick={exportPdf} className={BTN}><i className="fa-solid fa-file-pdf mr-1.5 text-red-500"></i>PDF</button>}
-            <button onClick={() => setOtOpen(true)} className={BTN}><i className="fa-solid fa-file-signature mr-1.5 text-slate-400"></i>ขออนุมัติ OT</button>
+            <button onClick={() => setOtOpen('ot')} className={BTN}><i className="fa-solid fa-file-signature mr-1.5 text-slate-400"></i>ขออนุมัติ OT</button>
+            <button onClick={() => setOtOpen('temp')} className={BTN}><i className="fa-solid fa-user-clock mr-1.5 text-slate-400"></i>สรุปเวรรายวัน</button>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -2640,8 +2722,8 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
                   })}
                   {types.map(t => <td key={t} className="px-1 py-2 text-center font-bold text-primary bg-pink-50/30 border-x border-slate-50 text-xs">{row.shiftCounts[t] || 0}</td>)}
                   <td className="px-1 py-2 text-center font-extrabold text-slate-800 bg-slate-50/50 border-l border-slate-200">{row.credit}</td>
-                  <td className="px-1 py-2 text-center font-bold text-slate-500 bg-slate-50/50 border-l border-slate-200 text-xs">{localWorkDays}</td>
-                  <td className="px-1 py-2 text-center font-extrabold text-primary bg-pink-50 border-l border-pink-100">{row.ot > 0 ? `+${row.ot}` : row.ot}</td>
+                  <td className="px-1 py-2 text-center font-bold text-slate-500 bg-slate-50/50 border-l border-slate-200 text-xs">{row.temp ? '-' : localWorkDays}</td>
+                  <td className="px-1 py-2 text-center font-extrabold text-primary bg-pink-50 border-l border-pink-100" title={row.temp ? 'รายวัน / Parttime ไม่คิด OT' : undefined}>{row.temp ? '-' : row.ot > 0 ? `+${row.ot}` : row.ot}</td>
                   {showLate && <td className="px-1 py-2 text-center font-extrabold text-red-600 bg-red-50 border-l border-red-200">{row.late > 0 ? row.late : '-'}</td>}
                 </tr>
               ))}
