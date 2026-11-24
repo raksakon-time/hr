@@ -82,7 +82,7 @@ const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','ม�
 const TH_MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '23/11/69-จ';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '24/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -1963,6 +1963,72 @@ const OtReportModal = ({ role, user, employees, swaps, records, defMonth, defDep
   </>);
 };
 
+// ---------- จัดเวรตามกรอบอัตรากำลัง (เช้า / บ่าย / ดึก) ----------
+// กรอบ = ตัวเลขชุดเดียวกับแถว "สรุปอัตรากำลัง/วัน" (กะยาวนับเศษ เช่น ช21 = ช 1 + บ .75)
+// นับเวรที่มีอยู่แล้วในวันนั้นก่อน แล้วเลือกกะจากที่หัวหน้าเลือก ให้เติมส่วนที่ขาดได้มากที่สุดโดยไม่เกินกรอบ (ดึก > บ่าย > เช้า)
+const CATS = ['ช', 'บ', 'ด'], CAT_NAME = { 'ช': 'เช้า', 'บ': 'บ่าย', 'ด': 'ดึก' }, CAT_W = { 'ช': 1, 'บ': 2, 'ด': 3 };
+const catOf = s => SHIFT_CATEGORY_MAP[s] || {};
+const covOf = list => { const c = { 'ช': 0, 'บ': 0, 'ด': 0 }; list.forEach(s => { if (SHIFT_TYPES[s]) Object.entries(catOf(s)).forEach(([k, v]) => { if (k in c) c[k] += v; }); }); return c; };
+const r3 = n => Math.round(n * 1000) / 1000;
+const bestShift = (need, shifts, skip = [], used = {}) => {   // กะที่เติมได้มากสุด ถ้าเท่ากันใช้กะที่ถูกใช้น้อยกว่า (หมุนเวียน ช / ช6)
+  let best = null, bg = 0;
+  shifts.filter(s => !skip.includes(s)).forEach(s => {
+    const w = catOf(s); let gain = 0, over = false;
+    Object.entries(w).forEach(([c, v]) => { const n = Math.max(need[c] || 0, 0); if (v > n + 1e-6) over = true; gain += Math.min(v, n) * (CAT_W[c] || 0); });
+    if (!over && gain > 1e-9 && (gain > bg + 1e-9 || (Math.abs(gain - bg) <= 1e-9 && (used[s] || 0) < (used[best] || 0)))) { bg = gain; best = s; }
+  });
+  return best;
+};
+// ตัวอย่างชุดกะ 1 วัน (ไม่นับข้อจำกัดคน) ใช้แสดงในหน้าตั้งกรอบ
+const sampleCombo = (fr, shifts) => {
+  const need = { ...fr }, picks = []; let s;
+  while (picks.length < 60 && (s = bestShift(need, shifts))) { picks.push(s); Object.entries(catOf(s)).forEach(([c, v]) => { need[c] = r3((need[c] || 0) - v); }); }
+  return { picks, left: need };
+};
+function planCat({ dates, emps, allEmps, schedules, frame, shifts, maxRun, restNight }) {
+  const cur = {}, credit = {}, cnt = {}, updates = [], short = [], days = [], used = {};
+  const prevOf = d => fmtInput(new Date(new Date(d + 'T00:00:00').getTime() - 864e5));
+  const ids = [...new Set([...allEmps, ...emps])];
+  const getS = (id, d) => cur[id]?.[d] || schedules[d]?.[id]?.shifts || [];
+  ids.forEach(id => { cur[id] = {}; cnt[id] = {}; dates.forEach(d => { cur[id][d] = [...(schedules[d]?.[id]?.shifts || [])]; }); });
+  emps.forEach(id => { credit[id] = dates.reduce((a, d) => a + cur[id][d].reduce((b, s) => b + creditOf(s), 0), 0); });
+  const before = { ...credit };
+  const free = (id, d) => {
+    if (cur[id][d].length) return false;                                          // ช่องที่มีเวร / ลา / Off อยู่แล้ว ไม่แตะ
+    let p = prevOf(d), run = 0;
+    if (restNight && getS(id, p).some(s => s.includes('ด'))) return false;        // พักหลังเวรดึก
+    while (run < maxRun && getS(id, p).some(s => SHIFT_TYPES[s])) { run++; p = prevOf(p); }
+    return run < maxRun;                                                           // ทำงานติดกันไม่เกิน maxRun วัน
+  };
+  dates.forEach(d => {
+    const fr = frame[[0, 6].includes(new Date(d + 'T00:00:00').getDay()) ? 'we' : 'wd'] || {};
+    const have = covOf(ids.flatMap(id => cur[id][d])), need = {}, added = [];
+    CATS.forEach(c => { need[c] = r3((+fr[c] || 0) - have[c]); });
+    const skip = [];
+    for (let guard = 0; guard < 80; guard++) {
+      const s = bestShift(need, shifts, skip, used); if (!s) break;
+      const pick = emps.filter(id => free(id, d)).sort((a, b) => (cnt[a][s] || 0) - (cnt[b][s] || 0) || credit[a] - credit[b] || Math.random() - .5)[0];
+      if (!pick) { skip.push(s); continue; }                                       // ไม่มีคนว่างสำหรับกะนี้ ลองกะอื่น
+      cur[pick][d] = [s]; credit[pick] += creditOf(s); cnt[pick][s] = (cnt[pick][s] || 0) + 1; used[s] = (used[s] || 0) + 1;
+      updates.push({ date: d, empId: pick, shifts: [s] }); added.push(s);
+      Object.entries(catOf(s)).forEach(([c, v]) => { need[c] = r3((need[c] || 0) - v); });
+    }
+    const lack = CATS.filter(c => need[c] > 1e-6).map(c => ({ c, n: need[c] }));
+    if (lack.length) short.push({ date: d, lack });
+    days.push({ date: d, added, got: covOf(ids.flatMap(id => cur[id][d])), fr, lack });
+  });
+  return { updates, short, before, credit, days };
+}
+// แปลงกรอบแบบเดิม (รายกะ) เป็นกรอบรายช่วง
+const toCatFrame = (f, deptShifts) => {
+  if (f && f.v === 2) return f;
+  const conv = rows => { const c = { 'ช': 0, 'บ': 0, 'ด': 0 }; (rows || []).forEach(r => Object.entries(catOf(r.shift)).forEach(([k, v]) => { if (k in c) c[k] = r3(c[k] + v * (+r.count || 0)); })); return c; };
+  const used = [...new Set([...(f?.wd || []), ...(f?.we || [])].map(r => r.shift).filter(s => SHIFT_TYPES[s]))];
+  return { v: 2, wd: conv(f?.wd), we: conv(f?.we), shifts: used.length ? used : deptShifts };
+};
+const fmtN = n => `${+(+n).toFixed(3)}`;
+const comboText = list => { const c = {}; list.forEach(s => { c[s] = (c[s] || 0) + 1; }); return Object.entries(c).map(([s, n]) => n > 1 ? `${s}×${n}` : s).join(' · '); };
+
 function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings, swaps = [], reload = async () => {}, start = null }) {
   const now = new Date(), todayStr = fmtInput(now), defMonth = todayStr.slice(0, 7);
   const [adminTab, setAdminTab] = useState(start?.tab || (role === 'supervisor' ? 'summary' : 'logs'));
@@ -1980,7 +2046,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const [mapRec, setMapRec] = useState(null), [photoRec, setPhotoRec] = useState(null), [editData, setEditData] = useState(null), [addData, setAddData] = useState(null);
   const [saving, setSaving] = useState(false), [cellData, setCellData] = useState(null), [autoOpen, setAutoOpen] = useState(false);
   const [auto, setAuto] = useState({ shiftId: '', dayPattern: 'all', overwrite: false, assignMode: 'all', requiredCount: 1 });
-  const [autoEmps, setAutoEmps] = useState([]), [autoMode, setAutoMode] = useState('frame'), [frame, setFrame] = useState({ wd: [], we: [] }), [plan, setPlan] = useState(null), [params, setParams] = useState({ maxRun: 6, restNight: true });
+  const [autoEmps, setAutoEmps] = useState([]), [autoMode, setAutoMode] = useState('frame'), [frame, setFrame] = useState({ v: 2, wd: {}, we: {}, shifts: [] }), [frameTab, setFrameTab] = useState('wd'), [frameFrom, setFrameFrom] = useState(''), [plan, setPlan] = useState(null), [params, setParams] = useState({ maxRun: 6, restNight: true });
   const leaveOptions = role === 'admin' ? NON_WORK : ['Off', 'ลา', 'ป่วย', 'ขาด'];
   const info = (text, icon = 'success') => Swal.fire({ icon, text, timer: 1500, showConfirmButton: false });
   const nodata = () => Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสำหรับส่งออก", "info");
@@ -2112,22 +2178,36 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
     setSaving(false);
   };
 
-  // กรอบเริ่มต้น = ค่าเฉลี่ยจำนวนคนต่อกะต่อวัน (ธรรมดา/หยุด) จากตารางเดือนที่เลือก
+  // กรอบเริ่มต้น = ค่าเฉลี่ยอัตรากำลังต่อวัน (เช้า/บ่าย/ดึก) แยกวันธรรมดา/หยุด จากเดือนก่อน (ถ้าไม่มีข้อมูลใช้เดือนนี้)
   const deriveFrame = () => {
-    const acc = { wd: {}, we: {} }, n = { wd: 0, we: 0 };
-    daysArray.forEach(d => {
-      const k = [0, 6].includes(new Date(my, mm - 1, d).getDay()) ? 'we' : 'wd'; n[k]++;
-      matrixEmployees.forEach(id => (schedules[dayStr(d)]?.[id]?.shifts || []).forEach(s => { if (SHIFT_TYPES[s]) acc[k][s] = (acc[k][s] || 0) + 1; }));
-    });
-    const out = k => Object.entries(acc[k]).map(([shift, c]) => ({ shift, count: Math.round(c / Math.max(n[k], 1)) })).filter(x => x.count > 0);
-    return { wd: out('wd'), we: out('we') };
+    const calc = (y, m) => {
+      const n = new Date(y, m, 0).getDate(), acc = { wd: { 'ช': 0, 'บ': 0, 'ด': 0 }, we: { 'ช': 0, 'บ': 0, 'ด': 0 } }, cntD = { wd: 0, we: 0 }, used = new Set();
+      for (let d = 1; d <= n; d++) {
+        const ds = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`, k = [0, 6].includes(new Date(y, m - 1, d).getDay()) ? 'we' : 'wd';
+        const list = dropdownEmps.flatMap(id => schedules[ds]?.[id]?.shifts || []); list.forEach(s => { if (SHIFT_TYPES[s]) used.add(s); });
+        const c = covOf(list); if (c['ช'] + c['บ'] + c['ด'] > 0) { cntD[k]++; CATS.forEach(x => { acc[k][x] += c[x]; }); }
+      }
+      const avg = k => Object.fromEntries(CATS.map(x => [x, cntD[k] ? Math.round(acc[k][x] / cntD[k] * 8) / 8 : 0]));
+      return { ok: cntD.wd + cntD.we > 0, f: { v: 2, wd: avg('wd'), we: avg('we'), shifts: [...used] }, label: `${TH_MON_S[m - 1]} ${String(y + 543).slice(2)}` };
+    };
+    const pm = mm === 1 ? [my - 1, 12] : [my, mm - 1], a = calc(...pm), b = a.ok ? a : calc(my, mm);
+    const f = b.f; if (!f.shifts.length) f.shifts = getSortedShiftKeys(filterDept);
+    return { f, label: b.ok ? b.label : '' };
   };
-  const openAuto = () => { setAutoEmps(matrixEmployees); setFrame(settings?.frames?.[filterDept] || deriveFrame()); setPlan(null); setAutoOpen(true); };
+  const openAuto = () => {
+    setAutoEmps(matrixEmployees); setPlan(null); setFrameTab('wd');
+    const saved = settings?.frames?.[filterDept];
+    if (saved) { setFrame(toCatFrame(saved, getSortedShiftKeys(filterDept))); setFrameFrom('กรอบที่บันทึกไว้ของแผนก'); }
+    else { const d = deriveFrame(); setFrame(d.f); setFrameFrom(d.label ? `ค่าเฉลี่ยของ ${d.label} (เหมือนแถวสรุปอัตรากำลัง/วัน)` : ''); }
+    setAutoOpen(true);
+  };
   const preview = () => {
     if (!autoEmps.length) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกพนักงานอย่างน้อย 1 คน' });
-    const f = { wd: frame.wd.filter(r => r.shift && r.count > 0), we: frame.we.filter(r => r.shift && r.count > 0) };
-    setPlan(planFrame({ dates: daysArray.map(dayStr), emps: autoEmps, schedules, frame: f, ...params }));
+    if (!frame.shifts.length) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกกะที่ใช้จัดอย่างน้อย 1 กะ' });
+    setPlan(planCat({ dates: daysArray.map(dayStr), emps: autoEmps, allEmps: dropdownEmps, schedules, frame, shifts: frame.shifts, ...params }));
   };
+  const stepFrame = (k, c, dir) => setFrame(f => { const st = c === 'บ' ? 0.125 : 1, v = Math.max(0, r3((+f[k][c] || 0) + dir * st)); return { ...f, [k]: { ...f[k], [c]: v } }; });
+  const toggleShift = s => setFrame(f => ({ ...f, shifts: f.shifts.includes(s) ? f.shifts.filter(x => x !== s) : [...f.shifts, s] }));
   const saveFrame = async () => {
     const res = await sendToGoogleSheet('saveSettings', { frameDept: filterDept, frame });
     if (res?.status === 'success') { setSettings({ ...settings, frames: { ...(settings.frames || {}), [filterDept]: frame } }); info('บันทึกกรอบกำลังของแผนกแล้ว'); }
@@ -2142,7 +2222,6 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
     if (res?.status === 'success') info(`บันทึกสำเร็จ ${updates.length} ช่อง`);
     setSaving(false);
   };
-  const setRow = (k, i, patch) => setFrame(f => ({ ...f, [k]: f[k].map((x, j) => j === i ? { ...x, ...patch } : x) }));
 
   // ---------- ส่งออก PDF: ใช้หน้าพิมพ์แบบใหม่ แล้วให้เบราว์เซอร์บันทึกเป็น PDF (ชื่อไฟล์ตั้งจากชื่อเอกสาร) ----------
   const exportPdf = async () => {
@@ -2325,30 +2404,59 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
           <label className="flex items-center gap-2 mt-2 font-semibold text-slate-700 cursor-pointer"><input type="checkbox" checked={auto.overwrite} onChange={e => setAuto({ ...auto, overwrite: e.target.checked })} className="rounded border-slate-300 w-4 h-4" /> เขียนทับกะเดิม (เก็บรายการลาไว้)</label>
           <Actions onCancel={() => setAutoOpen(false)} onOk={runAuto} okText="เริ่มจัดเวร" disabled={saving} />
         </> : plan ? <>
-          <p className="font-bold text-slate-700">จัดได้ {plan.updates.length} ช่อง · {plan.short.length ? <span className="text-red-600">ขาดกรอบ {plan.short.length} จุด</span> : <span className="text-emerald-600">ครบตามกรอบ</span>}</p>
-          {plan.short.length > 0 && <div className="max-h-24 overflow-y-auto text-xs bg-red-50 border border-red-100 rounded-lg p-2 space-y-0.5">{plan.short.slice(0, 40).map((x, i) => <div key={i}>วันที่ {+x.date.slice(8)} · {x.shift} ขาด {x.need - x.got} (ได้ {x.got}/{x.need})</div>)}</div>}
-          <div className="max-h-44 overflow-y-auto border border-slate-200 rounded-lg"><table className="w-full text-xs"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-2 text-left">พนักงาน</th><th className="p-2">ก่อน</th><th className="p-2">หลัง</th><th className="p-2">OT</th></tr></thead>
-            <tbody>{autoEmps.map(id => <tr key={id} className="border-t border-slate-100"><td className="p-2 font-semibold">{employees[id].fname}</td><td className="p-2 text-center">{plan.before[id]}</td><td className="p-2 text-center font-bold">{plan.credit[id]}</td><td className="p-2 text-center text-primary font-bold">{plan.credit[id] - localWorkDays}</td></tr>)}</tbody></table></div>
-          <p className="text-xs text-slate-400">OT เทียบกับวันทำการ {localWorkDays} วัน ยังไม่บันทึกจนกว่าจะกดยืนยัน</p>
-          <Actions onCancel={() => setPlan(null)} onOk={() => commitPlan(plan.updates)} okText="บันทึกเวร" disabled={saving} />
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-2xl bg-slate-50 p-3"><p className="text-xs text-slate-500">เติมเวร</p><p className="text-xl font-bold">{plan.updates.length} ช่อง</p></div>
+            <div className="rounded-2xl bg-emerald-50 p-3"><p className="text-xs text-emerald-800">ตรงกรอบ</p><p className="text-xl font-bold text-emerald-800">{plan.days.length - plan.short.length} วัน</p></div>
+            <div className="rounded-2xl bg-amber-50 p-3"><p className="text-xs text-amber-800">ขาดกรอบ</p><p className="text-xl font-bold text-amber-800">{plan.short.length} วัน</p></div>
+          </div>
+          <div className="border border-slate-200 rounded-2xl p-3">
+            <p className="font-bold text-slate-700 mb-1">รายวัน</p>
+            <div className="max-h-52 overflow-y-auto divide-y divide-slate-100">{plan.days.map(x => (
+              <div key={x.date} className="flex items-center gap-2 py-1.5 text-xs">
+                <span className="w-14 shrink-0 font-bold text-slate-700">{['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'][new Date(x.date + 'T00:00:00').getDay()]} {+x.date.slice(8)}</span>
+                <span className="flex-1 min-w-0 text-slate-600">{x.added.length ? `เติม ${comboText(x.added)}` : 'ไม่ต้องเติม'} <span className="text-slate-400">· {CATS.filter(c => +x.fr[c] || x.got[c]).map(c => `${c} ${fmtN(x.got[c])}/${fmtN(+x.fr[c] || 0)}`).join(' ')}</span></span>
+                {x.lack.length ? <span className="shrink-0 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">{x.lack.map(l => `${CAT_NAME[l.c]}ขาด ${fmtN(l.n)}`).join(' ')}</span> : <span className="shrink-0 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">ตรงกรอบ</span>}
+              </div>))}</div>
+          </div>
+          <div className="max-h-44 overflow-y-auto border border-slate-200 rounded-2xl"><table className="w-full text-xs"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-2 text-left">พนักงาน</th><th className="p-2">เครดิตก่อน</th><th className="p-2">หลังจัด</th><th className="p-2">OT</th></tr></thead>
+            <tbody>{autoEmps.map(id => <tr key={id} className="border-t border-slate-100"><td className="p-2 font-semibold">{employees[id].fname}</td><td className="p-2 text-center">{fmtN(plan.before[id])}</td><td className="p-2 text-center font-bold">{fmtN(plan.credit[id])}</td><td className="p-2 text-center text-primary font-bold">{fmtN(plan.credit[id] - localWorkDays)}</td></tr>)}</tbody></table></div>
+          <p className="text-xs text-slate-500">ขาดกรอบ = คนว่างไม่พอ หรือกะที่เลือกไม่มีชุดที่รวมได้ตรงกรอบ · OT เทียบกับวันทำการ {localWorkDays} วัน · ยังไม่บันทึกจนกว่าจะกดบันทึก</p>
+          <Actions onCancel={() => setPlan(null)} onOk={() => commitPlan(plan.updates)} okText={pub.st === 'legacy' ? 'บันทึกเวร' : 'บันทึกเวร (ฉบับร่าง)'} disabled={saving} />
         </> : <>
-          {['wd', 'we'].map(k => (
-            <div key={k}><p className="font-bold text-slate-600 mb-1">{k === 'wd' ? 'กรอบวันธรรมดา' : 'กรอบวันหยุด (ส-อา)'}</p>
-              {frame[k].map((r, i) => (
-                <div key={i} className="flex gap-2 mb-1">
-                  <ShiftSelect dept={filterDept} leave={[]} value={r.shift} onChange={v => setRow(k, i, { shift: v })} cls="flex-1 p-2 border border-slate-300 rounded-xl font-semibold bg-white" />
-                  <input type="number" min="0" value={r.count} onChange={e => setRow(k, i, { count: Number(e.target.value) })} className="w-16 p-2 border border-slate-300 rounded-xl text-center font-bold" />
-                  <button onClick={() => setFrame(f => ({ ...f, [k]: f[k].filter((_, j) => j !== i) }))} className="w-9 rounded-xl bg-red-50 text-red-600"><i className="fa-solid fa-trash-can"></i></button>
-                </div>))}
-              <button onClick={() => setFrame(f => ({ ...f, [k]: [...f[k], { shift: getSortedShiftKeys(filterDept)[0], count: 1 }] }))} className="text-primary text-xs font-bold">+ เพิ่มกะในกรอบ</button>
-            </div>))}
+          <div className="border border-slate-200 rounded-2xl p-3">
+            <div className="flex items-center justify-between mb-1"><p className="font-bold text-slate-700">1. กรอบอัตรากำลังต่อวัน</p>
+              <div className="flex bg-slate-100 p-0.5 rounded-lg text-xs">{[['wd', 'จ-ศ'], ['we', 'ส-อา']].map(([k, l]) => <button key={k} onClick={() => setFrameTab(k)} className={`px-3 py-1.5 rounded-md font-bold ${frameTab === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500'}`}>{l}</button>)}</div></div>
+            {CATS.map(c => (
+              <div key={c} className="flex items-center gap-2.5 py-1.5">
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold ${c === 'ช' ? 'bg-slate-100 text-slate-800' : c === 'บ' ? 'bg-pink-100 text-pink-800' : 'bg-indigo-100 text-indigo-800'}`}>{c}</span>
+                <div className="flex-1 min-w-0"><p className="font-semibold text-slate-700">{CAT_NAME[c]}</p><p className="text-xs text-slate-400">ปรับครั้งละ {c === 'บ' ? '0.125' : '1'}</p></div>
+                <button onClick={() => stepFrame(frameTab, c, -1)} aria-label={`ลด${CAT_NAME[c]}`} className="w-10 h-10 rounded-full border border-slate-200 text-slate-600"><i className="fa-solid fa-minus"></i></button>
+                <input type="number" min="0" step={c === 'บ' ? 0.125 : 1} value={frame[frameTab]?.[c] ?? 0} onChange={e => setFrame(f => ({ ...f, [frameTab]: { ...f[frameTab], [c]: Math.max(0, +e.target.value || 0) } }))} aria-label={`กรอบ${CAT_NAME[c]}`} className="w-16 h-10 text-center text-lg font-bold border border-slate-200 rounded-xl" />
+                <button onClick={() => stepFrame(frameTab, c, 1)} aria-label={`เพิ่ม${CAT_NAME[c]}`} className="w-10 h-10 rounded-full border border-slate-200 text-slate-600"><i className="fa-solid fa-plus"></i></button>
+              </div>))}
+            {frameFrom && <p className="text-xs text-slate-400">ค่าเริ่มต้น: {frameFrom}</p>}
+          </div>
+          <div className="border border-slate-200 rounded-2xl p-3">
+            <p className="font-bold text-slate-700 mb-2">2. กะที่ใช้จัด <span className="text-xs font-normal text-slate-500">· แตะเพื่อเลือก (เลือกแล้ว {frame.shifts.length} กะ)</span></p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">{[...new Set([...getSortedShiftKeys(filterDept), ...frame.shifts])].filter(s => SHIFT_TYPES[s]).map(s => { const on = frame.shifts.includes(s); return (
+              <button key={s} onClick={() => toggleShift(s)} aria-pressed={on} className={`text-left rounded-xl px-2 py-1.5 border ${on ? 'border-primary bg-pink-50' : 'border-slate-200 bg-white'}`}>
+                <span className="flex items-center justify-between"><b className={on ? 'text-pink-800' : 'text-slate-700'}>{s}</b><i className={`fa-solid ${on ? 'fa-square-check text-primary' : 'fa-square text-slate-200'}`}></i></span>
+                <span className="block text-xs text-slate-500">{SHIFT_TYPES[s].start.slice(0, 5)}-{SHIFT_TYPES[s].end.slice(0, 5)}</span>
+                <span className="block text-xs font-semibold">{Object.entries(catOf(s)).map(([c, v]) => <span key={c} className={c === 'บ' ? 'text-pink-700' : c === 'ด' ? 'text-indigo-700' : 'text-slate-800'}>{c}{v === 1 ? '' : ' ' + fmtN(v)} </span>)}</span>
+              </button>); })}</div>
+          </div>
+          {(() => { const fr = frame[frameTab] || {}, sc = sampleCombo(fr, frame.shifts), lack = CATS.filter(c => sc.left[c] > 1e-6); return (
+            <div className={`rounded-2xl p-3 text-xs leading-relaxed ${lack.length ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-900'}`}>
+              <b>ตัวอย่าง 1 วัน ({frameTab === 'wd' ? 'จ-ศ' : 'ส-อา'}):</b> {sc.picks.length ? comboText(sc.picks) : '-'} ({sc.picks.length} คน)<br />
+              {lack.length ? <>ยังขาด {lack.map(c => `${CAT_NAME[c]} ${fmtN(sc.left[c])}`).join(' · ')} · ลองเลือกกะเพิ่ม</> : <>ได้ {CATS.map(c => `${CAT_NAME[c]} ${fmtN(+fr[c] || 0)}`).join(' · ')} <b>ตรงกรอบ</b></>}
+            </div>); })()}
           <div className="flex items-center gap-3 flex-wrap text-xs font-semibold text-slate-600">
             <label className="flex items-center gap-1">ทำงานติดกันไม่เกิน <input type="number" min="1" value={params.maxRun} onChange={e => setParams({ ...params, maxRun: Number(e.target.value) || 1 })} className="w-14 p-1 border border-slate-300 rounded-lg text-center" /> วัน</label>
             <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked={params.restNight} onChange={e => setParams({ ...params, restNight: e.target.checked })} className="w-4 h-4" /> พักวันถัดไปหลังเวรดึก</label>
           </div>
-          <p className="text-xs text-slate-400">เติมเฉพาะช่องที่ยังว่าง ไม่แตะลา/Off/เวรที่จัดไว้แล้ว</p>
+          <p className="text-xs text-slate-500">นับเวร / ลา / Off ที่มีอยู่แล้วก่อน แล้วเติมเฉพาะส่วนที่ขาด ไม่จัดเกินกรอบ</p>
           <button onClick={saveFrame} className="text-xs font-bold text-slate-500 hover:text-primary">บันทึกกรอบนี้ไว้ใช้กับแผนก {filterDept}</button>
-          <Actions onCancel={() => setAutoOpen(false)} onOk={preview} okText="ดูตัวอย่าง" />
+          <Actions onCancel={() => setAutoOpen(false)} onOk={preview} okText="ดูตัวอย่างการจัด" />
         </>}
       </div></div></Modal>}
 
