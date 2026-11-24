@@ -82,7 +82,7 @@ const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','ม�
 const TH_MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const THAI_DAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 
-const APP_BUILD = '24/11/69-ก';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
+const APP_BUILD = '24/11/69-ค';   // เปลี่ยนทุกครั้งที่ปล่อยไฟล์ใหม่ เพื่อเช็กว่าเครื่องไหนโหลดฉบับไหน
 // ================= ธีมสี (เก็บตามเครื่องใน localStorage) =================
 const THEMES = [
   { key: 'pink', name: 'ชมพู (แบบเดิม)', desc: 'โทนอบอุ่น ชมพูกุหลาบ', sw: ['#db2777', '#9d174d', '#fce7f3'] },
@@ -131,11 +131,35 @@ const resolveTarget = (now, sch, id, shift) => {
 };
 
 let pendingWrites = 0, writeSeq = 0, syncing = false;
+// สถานะ "กำลังประมวลผล" ให้หน้าจัดการแสดงวงกลมหมุน
+let uiBusy = 0;
+const busySubs = new Set();
+const busyAdd = n => { uiBusy = Math.max(0, uiBusy + n); busySubs.forEach(f => f(uiBusy)); };
 const sendToGoogleSheet = async (action, payload = {}, retries = 3) => {
   const write = action !== 'getInitialData';
-  if (write) { pendingWrites++; writeSeq++; }
+  if (write) { pendingWrites++; writeSeq++; busyAdd(1); }
   try { return await postToSheet_(action, payload, retries); }
-  finally { if (write) { pendingWrites--; writeSeq++; } }
+  finally { if (write) { pendingWrites--; writeSeq++; busyAdd(-1); } }
+};
+// วงกลมหมุนกลางจอ ขึ้นเมื่อรอเกิน 0.3 วินาที และกันการกดซ้ำระหว่างรอ
+const BusySpinner = () => {
+  const [n, setN] = useState(uiBusy), [show, setShow] = useState(false), [long, setLong] = useState(false);
+  useEffect(() => { busySubs.add(setN); return () => busySubs.delete(setN); }, []);
+  useEffect(() => {
+    if (!n) { setShow(false); setLong(false); return; }
+    const a = setTimeout(() => setShow(true), 300), b = setTimeout(() => setLong(true), 8000);
+    return () => { clearTimeout(a); clearTimeout(b); };
+  }, [n > 0]);
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-[1050] bg-white/40 flex items-center justify-center print-hide" role="status" aria-live="polite">
+      <div className="bg-white rounded-3xl shadow-xl border border-slate-100 px-7 py-5 flex flex-col items-center gap-3">
+        <div className="w-11 h-11 rounded-full border-4 border-pink-100 border-t-primary animate-spin" aria-hidden="true"></div>
+        <p className="font-semibold text-slate-700">กำลังประมวลผล...</p>
+        {long && <p className="text-xs text-slate-500 text-center">ระบบกำลังบันทึก อาจใช้เวลาสักครู่<br />กรุณาอย่าปิดหน้านี้</p>}
+      </div>
+    </div>
+  );
 };
 const postToSheet_ = async (action, payload = {}, retries = 3) => {
   for (let i = 0; i < retries; i++) {
@@ -2029,7 +2053,8 @@ const toCatFrame = (f, deptShifts) => {
 const fmtN = n => `${+(+n).toFixed(3)}`;
 const comboText = list => { const c = {}; list.forEach(s => { c[s] = (c[s] || 0) + 1; }); return Object.entries(c).map(([s, n]) => n > 1 ? `${s}×${n}` : s).join(' · '); };
 
-function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings, swaps = [], reload = async () => {}, start = null }) {
+function ReportView({ role, user, records, setRecords, employees, schedules, setSchedules, sendToGoogleSheet, settings, setSettings, swaps = [], reload: reload0 = async () => {}, start = null }) {
+  const reload = async () => { busyAdd(1); try { return await reload0(); } finally { busyAdd(-1); } };   // โหลดข้อมูลใหม่หลังบันทึก ก็ขึ้นวงกลมหมุนด้วย
   const now = new Date(), todayStr = fmtInput(now), defMonth = todayStr.slice(0, 7);
   const [adminTab, setAdminTab] = useState(start?.tab || (role === 'supervisor' ? 'summary' : 'logs'));
   const [startDate, setStartDate] = useState(''), [endDate, setEndDate] = useState(''), [matrixMonth, setMatrixMonth] = useState(start?.month || defMonth);
@@ -2052,7 +2077,11 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
   const nodata = () => Swal.fire("แจ้งเตือน", "ไม่มีข้อมูลสำหรับส่งออก", "info");
 
   const matches = (id, e) => { if (!filterEmp) return true; const s = filterEmp.toLowerCase(); return id.toLowerCase().includes(s) || `${e.fname} ${e.lname}`.toLowerCase().includes(s); };
-  const filteredRecords = records.filter(r => { const e = employees[r.empId]; return e && (!startDate || r.date >= startDate) && (!endDate || r.date <= endDate) && (!filterDept || e.dept === filterDept) && matches(r.empId, e); });
+  // แท็บประวัติ: ถ้ายังไม่เลือกวันที่ แสดงเฉพาะวันล่าสุดที่มีการลงเวลา (วันนี้ ถ้ามี) — วันอื่นเลือกช่วงวันที่เอง
+  const inScope = r => { const e = employees[r.empId]; return e && (!filterDept || e.dept === filterDept) && matches(r.empId, e); };
+  const latestDay = records.reduce((m, r) => r.date <= todayStr && r.date > m && inScope(r) ? r.date : m, '');
+  const logsLatest = adminTab === 'logs' && !startDate && !endDate && !!latestDay;
+  const filteredRecords = records.filter(r => inScope(r) && (logsLatest ? r.date === latestDay : (!startDate || r.date >= startDate) && (!endDate || r.date <= endDate)));
   const exceptionRecords = filteredRecords.filter(r => exFilter === 'late' ? r.isLate : (r.date < todayStr && !r.timeOut));
 
   const [my, mm] = matrixMonth.split('-').map(Number);
@@ -2333,6 +2362,7 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
 
   return (
     <div className="mt-2 pb-12">
+      <BusySpinner />
       {isMatrix && filterDept && <SchedPrintSheet mode={adminTab} showLate={adminTab === 'summary' && showLate} rows={summaryMatrix} types={types} daysArray={daysArray} dayStr={dayStr} schedules={schedules} getDaily={getDaily} my={my} mm={mm} dept={filterDept} matrixMonth={matrixMonth} workDays={localWorkDays} pub={pub} user={user} />}
       <div className={`hidden ${isMatrix && filterDept ? '' : 'print-show'} text-center mb-6`}>
         <h2 className="text-2xl font-bold text-black mb-1">{title}</h2>
@@ -2482,7 +2512,11 @@ function ReportView({ role, user, records, setRecords, employees, schedules, set
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
           {isMatrix
             ? <input type="month" value={matrixMonth} onChange={e => setMatrixMonth(e.target.value)} className={`col-span-2 md:col-span-1 ${IN}`} />
-            : <><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={IN} /><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={IN} /></>}
+            : <><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} aria-label="ตั้งแต่วันที่" className={IN} /><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} aria-label="ถึงวันที่" className={IN} /></>}
+          {adminTab === 'logs' && <p className="col-span-2 md:col-span-4 text-xs font-semibold text-slate-500 flex flex-wrap items-center gap-2">
+            {logsLatest ? <><span className="px-2.5 py-1 rounded-full bg-pink-50 text-pink-800"><i className="fa-solid fa-calendar-day mr-1"></i>แสดงวันล่าสุด: {formatDisplayDate(latestDay)}{latestDay === todayStr ? ' (วันนี้)' : ''}</span>เลือกวันที่ด้านบนเพื่อดูวันอื่น</>
+              : (startDate || endDate) && <><span>แสดงช่วง {startDate ? formatDisplayDate(startDate) : 'เริ่มต้น'} – {endDate ? formatDisplayDate(endDate) : 'ล่าสุด'}</span><button onClick={() => { setStartDate(''); setEndDate(''); }} className="h-8 px-3 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">กลับไปวันล่าสุด</button></>}
+          </p>}
           <select value={filterDept} onChange={e => setFilterDept(e.target.value)} disabled={role === 'supervisor'} className={`${IN} bg-white disabled:bg-slate-100 disabled:text-slate-400`}>{role === 'admin' && <option value="">ทุกแผนก</option>}{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select>
           <input type="text" placeholder="ค้นหาชื่อ..." value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={IN} />
           {isMatrix && (
